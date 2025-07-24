@@ -1,0 +1,440 @@
+{
+	"info": {
+		"_postman_id": "94dacee1-d57c-49dd-9b44-ecaaea8d801a",
+		"name": "HRMS",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "26597040"
+	},
+	"item": [
+		{
+			"name": "salary",
+			"item": [
+				{
+					"name": "list slips",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhbGljZTFAY29ycC5jb20iLCJyb2xlcyI6WyJST0xFX0VNUExPWUVFIl0sImlhdCI6MTc1MzM1Mzk3OSwiZXhwIjoxNzUzMzU3NTc5fQ.6NPN2vh9Orf6rsBW5Vd1PuxmbF7ADOhk0v9tu87Ji0M",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:8080/salary/slips",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8080",
+							"path": [
+								"salary",
+								"slips"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get one month slip",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhbGljZTFAY29ycC5jb20iLCJyb2xlcyI6WyJST0xFX0VNUExPWUVFIl0sImlhdCI6MTc1MzM1Mzk3OSwiZXhwIjoxNzUzMzU3NTc5fQ.6NPN2vh9Orf6rsBW5Vd1PuxmbF7ADOhk0v9tu87Ji0M",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:8080/salary/slip?year=2025&month=7",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8080",
+							"path": [
+								"salary",
+								"slip"
+							],
+							"query": [
+								{
+									"key": "year",
+									"value": "2025"
+								},
+								{
+									"key": "month",
+									"value": "7"
+								}
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Attendence",
+			"item": [
+				{
+					"name": "Checkin",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhbGljZTFAY29ycC5jb20iLCJyb2xlcyI6WyJST0xFX0VNUExPWUVFIl0sImlhdCI6MTc1MzM1ODY2MSwiZXhwIjoxNzUzMzYyMjYxfQ.8WYCVnntSkDFoY7oY8yj0c8cRBCAxLl55LmhDkXL0IE",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:8080/attendance/punch?type=CHECK_IN",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8080",
+							"path": [
+								"attendance",
+								"punch"
+							],
+							"query": [
+								{
+									"key": "type",
+									"value": "CHECK_IN"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Check out",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhbGljZTFAY29ycC5jb20iLCJyb2xlcyI6WyJST0xFX0VNUExPWUVFIl0sImlhdCI6MTc1MzM1ODY2MSwiZXhwIjoxNzUzMzYyMjYxfQ.8WYCVnntSkDFoY7oY8yj0c8cRBCAxLl55LmhDkXL0IE",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:8080/attendance/punch?type=CHECK_OUT",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8080",
+							"path": [
+								"attendance",
+								"punch"
+							],
+							"query": [
+								{
+									"key": "type",
+									"value": "CHECK_OUT"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "BreakOut",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhbGljZTFAY29ycC5jb20iLCJyb2xlcyI6WyJST0xFX0VNUExPWUVFIl0sImlhdCI6MTc1MzM1ODY2MSwiZXhwIjoxNzUzMzYyMjYxfQ.8WYCVnntSkDFoY7oY8yj0c8cRBCAxLl55LmhDkXL0IE",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:8080/attendance/punch?type=BREAK_OUT",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8080",
+							"path": [
+								"attendance",
+								"punch"
+							],
+							"query": [
+								{
+									"key": "type",
+									"value": "BREAK_OUT"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "BreakIN",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhbGljZTFAY29ycC5jb20iLCJyb2xlcyI6WyJST0xFX0VNUExPWUVFIl0sImlhdCI6MTc1MzM1ODY2MSwiZXhwIjoxNzUzMzYyMjYxfQ.8WYCVnntSkDFoY7oY8yj0c8cRBCAxLl55LmhDkXL0IE",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:8080/attendance/punch?type=BREAK_IN",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8080",
+							"path": [
+								"attendance",
+								"punch"
+							],
+							"query": [
+								{
+									"key": "type",
+									"value": "BREAK_IN"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "My month summary",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhbGljZTFAY29ycC5jb20iLCJyb2xlcyI6WyJST0xFX0VNUExPWUVFIl0sImlhdCI6MTc1MzM1ODY2MSwiZXhwIjoxNzUzMzYyMjYxfQ.8WYCVnntSkDFoY7oY8yj0c8cRBCAxLl55LmhDkXL0IE",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:8080/attendance/me?month=2025-07",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8080",
+							"path": [
+								"attendance",
+								"me"
+							],
+							"query": [
+								{
+									"key": "month",
+									"value": "2025-07"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Admin view employee Attendence",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhZG1pbkBjb3JwLmNvbSIsInJvbGVzIjpbIlJPTEVfQURNSU4iXSwiaWF0IjoxNzUzMzU5MDU4LCJleHAiOjE3NTMzNjI2NTh9.nkLF73bVrFtL5Ngjfo4Vibc8-SWf0aUfzEUwjekCGus",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:8080/attendance/14?month=2025-07",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8080",
+							"path": [
+								"attendance",
+								"14"
+							],
+							"query": [
+								{
+									"key": "month",
+									"value": "2025-07"
+								}
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Login Admin",
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{ \r\n\"email\":\"admin@corp.com\", \r\n\"password\":\"admin123\"\r\n }",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://localhost:8080/auth/login",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8080",
+					"path": [
+						"auth",
+						"login"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Login Employees",
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n  \"email\": \"alice1@corp.com\",\r\n  \"password\": \"Passw0rd!\"\r\n}\r\n",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://localhost:8080/auth/login",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8080",
+					"path": [
+						"auth",
+						"login"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "View Profile",
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": [
+						{
+							"key": "token",
+							"value": "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhbGljZTFAY29ycC5jb20iLCJyb2xlcyI6WyJST0xFX0VNUExPWUVFIl0sImlhdCI6MTc1MzM1Mzk3OSwiZXhwIjoxNzUzMzU3NTc5fQ.6NPN2vh9Orf6rsBW5Vd1PuxmbF7ADOhk0v9tu87Ji0M",
+							"type": "string"
+						}
+					]
+				},
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "http://localhost:8080/profile/me",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8080",
+					"path": [
+						"profile",
+						"me"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Register Employees",
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": [
+						{
+							"key": "token",
+							"value": "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhZG1pbkBjb3JwLmNvbSIsInJvbGVzIjpbIlJPTEVfQURNSU4iXSwiaWF0IjoxNzUzMjgzODMwLCJleHAiOjE3NTMyODc0MzB9.0Dgji2KlS1I-1k_OdUSPzptxIuAHitxzL7NqbbeuRYw",
+							"type": "string"
+						}
+					]
+				},
+				"method": "POST",
+				"header": [
+					{
+						"key": "",
+						"value": "",
+						"type": "text",
+						"disabled": true
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n  \"email\"   : \"alice1@corp.com\",\r\n  \"password\": \"Passw0rd!\",\r\n  \"name\"    : \"Alice Fernando\",\r\n  \"jobTitle\": \"Lecturer\",\r\n  \"contact\" : \"+94-77-123-4567\"\r\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://localhost:8080/admin/users",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8080",
+					"path": [
+						"admin",
+						"users"
+					]
+				}
+			},
+			"response": []
+		}
+	]
+}
