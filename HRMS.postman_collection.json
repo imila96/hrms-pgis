@@ -303,6 +303,127 @@
 			]
 		},
 		{
+			"name": "leave",
+			"item": [
+				{
+					"name": "apply Leave",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhbGljZTFAY29ycC5jb20iLCJyb2xlcyI6WyJST0xFX0VNUExPWUVFIl0sImlhdCI6MTc1MzQ1NDc5MiwiZXhwIjoxNzUzNDU4MzkyfQ.bcPEy09m8_szLDpUuzPYlHAsN7IefdxKZ2QeDAgnFWI",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n  \"type\"  : \"ANNUAL\",\r\n  \"start\" : \"2025-08-12\",\r\n  \"end\"   : \"2025-08-14\",\r\n  \"reason\": \"Family trip\"\r\n}\r\n",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://localhost:8080/leave",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8080",
+							"path": [
+								"leave"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Leave balance",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhbGljZTFAY29ycC5jb20iLCJyb2xlcyI6WyJST0xFX0VNUExPWUVFIl0sImlhdCI6MTc1MzQ1NDc5MiwiZXhwIjoxNzUzNDU4MzkyfQ.bcPEy09m8_szLDpUuzPYlHAsN7IefdxKZ2QeDAgnFWI",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n  \"type\"  : \"ANNUAL\",\r\n  \"start\" : \"2025-08-12\",\r\n  \"end\"   : \"2025-08-14\",\r\n  \"reason\": \"Family trip\"\r\n}\r\n"
+						},
+						"url": {
+							"raw": "http://localhost:8080/leave/balance?year=2025",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8080",
+							"path": [
+								"leave",
+								"balance"
+							],
+							"query": [
+								{
+									"key": "year",
+									"value": "2025"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "approve leave admin/hr",
+					"request": {
+						"method": "GET",
+						"header": []
+					},
+					"response": []
+				},
+				{
+					"name": "get all pending leaves to approve-deny HR",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhZG1pbkBjb3JwLmNvbSIsInJvbGVzIjpbIlJPTEVfQURNSU4iXSwiaWF0IjoxNzUzNDU2ODgwLCJleHAiOjE3NTM0NjA0ODB9.J7Uauen-Cxai7zz6ikPDLEjsD8h0g1ArBGAYWaxNZy8",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:8080/leave/pending",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8080",
+							"path": [
+								"leave",
+								"pending"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
 			"name": "Login Admin",
 			"request": {
 				"method": "POST",
