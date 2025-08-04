@@ -113,4 +113,13 @@ public class AnnouncementServiceImpl implements AnnouncementService {
                 a.getPublishedDate(),
                 a.getPublishedBy()!=null ? userRepo.findById(a.getPublishedBy()).map(u->u.getEmail()).orElse(null) : null);
     }
+
+    @Override @Transactional(readOnly = true)
+    public List<AnnouncementDto> list(AnnouncementStatus status) {
+        // if caller passes null we just fetch everything
+        return repo.search(status)                // reuse the custom JPQL already in the repo
+                .stream()
+                .map(this::toDto)
+                .toList();
+    }
 }

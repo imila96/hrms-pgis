@@ -1,5 +1,6 @@
 package com.pgis.hrms.modules.announcement.service;
 
+import com.pgis.hrms.modules.announcement.model.AnnouncementStatus;
 import com.pgis.hrms.modules.policy.model.Policy;
 import com.pgis.hrms.modules.announcement.dto.*;
 import java.util.*;
@@ -17,4 +18,8 @@ public interface AnnouncementService {
 
     /* Event hook from PolicyService */
     void publishPolicyAnnouncement(Policy p);
+
+    List<AnnouncementDto> list(AnnouncementStatus status);
+
+
 }
