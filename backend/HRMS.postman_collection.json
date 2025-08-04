@@ -3,7 +3,8 @@
 		"_postman_id": "94dacee1-d57c-49dd-9b44-ecaaea8d801a",
 		"name": "HRMS",
 		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
-		"_exporter_id": "26597040"
+		"_exporter_id": "26597040",
+		"_collection_link": "https://team-ihub.postman.co/workspace/imila~69062d95-94da-4b89-b198-db2afbe3727c/collection/26597040-94dacee1-d57c-49dd-9b44-ecaaea8d801a?action=share&source=collection_link&creator=26597040"
 	},
 	"item": [
 		{
@@ -47,7 +48,7 @@
 							"bearer": [
 								{
 									"key": "token",
-									"value": "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhbGljZTFAY29ycC5jb20iLCJyb2xlcyI6WyJST0xFX0VNUExPWUVFIl0sImlhdCI6MTc1MzM1Mzk3OSwiZXhwIjoxNzUzMzU3NTc5fQ.6NPN2vh9Orf6rsBW5Vd1PuxmbF7ADOhk0v9tu87Ji0M",
+									"value": "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhbGljZTFAY29ycC5jb20iLCJyb2xlcyI6WyJST0xFX0VNUExPWUVFIl0sImlhdCI6MTc1NDI4MTM1NywiZXhwIjoxNzU0Mjg0OTU3fQ.8C3QA7dYNmJLXjwExOgmmvHBCeNqQJFAjaV5FqvXC2M",
 									"type": "string"
 								}
 							]
@@ -313,7 +314,7 @@
 							"bearer": [
 								{
 									"key": "token",
-									"value": "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhbGljZTFAY29ycC5jb20iLCJyb2xlcyI6WyJST0xFX0VNUExPWUVFIl0sImlhdCI6MTc1MzQ1NDc5MiwiZXhwIjoxNzUzNDU4MzkyfQ.bcPEy09m8_szLDpUuzPYlHAsN7IefdxKZ2QeDAgnFWI",
+									"value": "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhbGljZTFAY29ycC5jb20iLCJyb2xlcyI6WyJST0xFX0VNUExPWUVFIl0sImlhdCI6MTc1Mzk2MDM5MywiZXhwIjoxNzUzOTYzOTkzfQ.oRqvdv_73uOLqcAiprLwwdE4OaFxsCBH9k65ZnSRzFY",
 									"type": "string"
 								}
 							]
@@ -322,7 +323,7 @@
 						"header": [],
 						"body": {
 							"mode": "raw",
-							"raw": "{\r\n  \"type\"  : \"ANNUAL\",\r\n  \"start\" : \"2025-08-12\",\r\n  \"end\"   : \"2025-08-14\",\r\n  \"reason\": \"Family trip\"\r\n}\r\n",
+							"raw": "{\r\n  \"type\": \"CASUAL\",\r\n  \"startDate\": \"2025-08-12\",\r\n  \"endDate\":   \"2025-08-14\",\r\n  \"reason\":    \"Family trip\"\r\n}\r\n",
 							"options": {
 								"raw": {
 									"language": "json"
@@ -345,22 +346,25 @@
 				},
 				{
 					"name": "Get Leave balance",
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
 					"request": {
 						"auth": {
 							"type": "bearer",
 							"bearer": [
 								{
 									"key": "token",
-									"value": "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhbGljZTFAY29ycC5jb20iLCJyb2xlcyI6WyJST0xFX0VNUExPWUVFIl0sImlhdCI6MTc1MzQ1NDc5MiwiZXhwIjoxNzUzNDU4MzkyfQ.bcPEy09m8_szLDpUuzPYlHAsN7IefdxKZ2QeDAgnFWI",
+									"value": "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhbGljZTFAY29ycC5jb20iLCJyb2xlcyI6WyJST0xFX0VNUExPWUVFIl0sImlhdCI6MTc1Mzk2MDM5MywiZXhwIjoxNzUzOTYzOTkzfQ.oRqvdv_73uOLqcAiprLwwdE4OaFxsCBH9k65ZnSRzFY",
 									"type": "string"
 								}
 							]
 						},
-						"method": "POST",
+						"method": "GET",
 						"header": [],
 						"body": {
 							"mode": "raw",
-							"raw": "{\r\n  \"type\"  : \"ANNUAL\",\r\n  \"start\" : \"2025-08-12\",\r\n  \"end\"   : \"2025-08-14\",\r\n  \"reason\": \"Family trip\"\r\n}\r\n"
+							"raw": ""
 						},
 						"url": {
 							"raw": "http://localhost:8080/leave/balance?year=2025",
@@ -386,8 +390,40 @@
 				{
 					"name": "approve leave admin/hr",
 					"request": {
-						"method": "GET",
-						"header": []
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhZG1pbkBjb3JwLmNvbSIsInJvbGVzIjpbIlJPTEVfQURNSU4iXSwiaWF0IjoxNzUzOTYxNDM2LCJleHAiOjE3NTM5NjUwMzZ9.B47l2ZvY4V3Jz5ac9PffIiV5t2DknwA2eVqFa5qVWGI",
+									"type": "string"
+								}
+							]
+						},
+						"method": "PATCH",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": ""
+						},
+						"url": {
+							"raw": "http://localhost:8080/leave/3?approve=true",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8080",
+							"path": [
+								"leave",
+								"3"
+							],
+							"query": [
+								{
+									"key": "approve",
+									"value": "true"
+								}
+							]
+						}
 					},
 					"response": []
 				},
@@ -399,7 +435,7 @@
 							"bearer": [
 								{
 									"key": "token",
-									"value": "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhZG1pbkBjb3JwLmNvbSIsInJvbGVzIjpbIlJPTEVfQURNSU4iXSwiaWF0IjoxNzUzNDU2ODgwLCJleHAiOjE3NTM0NjA0ODB9.J7Uauen-Cxai7zz6ikPDLEjsD8h0g1ArBGAYWaxNZy8",
+									"value": "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhZG1pbkBjb3JwLmNvbSIsInJvbGVzIjpbIlJPTEVfQURNSU4iXSwiaWF0IjoxNzUzOTcxODk4LCJleHAiOjE3NTM5NzU0OTh9.AUtHOH3-iF9ZSVpX8e2rddz821AS2XJhyJlj6G9T9IM",
 									"type": "string"
 								}
 							]
