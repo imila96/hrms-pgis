@@ -14,9 +14,10 @@ import {
 import { Visibility, VisibilityOff, Email } from "@mui/icons-material";
 import { useAuth } from "../../context/AuthContext";
 import { useNavigate } from "react-router-dom";
+import axios from "axios";
 
 const Login = () => {
-  const { login } = useAuth();
+  const { setUser } = useAuth();
   const navigate = useNavigate();
 
   const [form, setForm] = useState({ email: "", password: "" });
@@ -28,22 +29,43 @@ const Login = () => {
     setForm({ ...form, [e.target.name]: e.target.value });
   };
 
-const handleSubmit = (e) => {
-  e.preventDefault();
-  const role = login(form);
+  const handleSubmit = async (e) => {
+    e.preventDefault();
 
-  if (role) {
-    setError("");
-    if (role === "system-admin") {
-      navigate("/admin/users");
-    } else if (role === "hr") {
-      navigate("/hr/employee-records");
+    try {
+      const response = await axios.post("http://localhost:8080/auth/login", {
+        email: form.email,
+        password: form.password,
+      });
+
+      const { accessToken, roles } = response.data;
+
+      // Store accessToken locally
+      localStorage.setItem("token", accessToken);
+      // setUser({ role: roles[0].toLowerCase().replace("role_", "") });
+      setUser({ role: "hr" });
+
+      setError("");
+
+      // Redirect based on role
+      if (roles.includes("ROLE_ADMIN")) {
+        navigate("/admin/users");
+      } else if (roles.includes("ROLE_HR")) {
+        navigate("/hr/employee-records");
+      } else if (roles.includes("ROLE_EMPLOYEE")) {
+        navigate("/hr/employee-records");
+      } else {
+        setError("Something went wrong! Please try again later");
+      }
+    } catch (err) {
+      console.error(err);
+      if (err.response && err.response.status === 401) {
+        setError("Invalid credentials. Please try again.");
+      } else {
+        setError("An error occurred. Please try again later.");
+      }
     }
-  } else {
-    setError("Invalid credentials. Please try again.");
-  }
-};
-
+  };
 
   return (
     <Box
