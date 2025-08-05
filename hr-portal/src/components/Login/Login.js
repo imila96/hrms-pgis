@@ -1,5 +1,10 @@
 // src/components/Login/Login.js
-import React, { useState } from "react";
+
+// To do
+// Implement password encryption
+// Implement forgot password feature
+
+import React, { useState, useEffect } from "react";
 import {
   Box,
   Button,
@@ -25,6 +30,17 @@ const Login = () => {
   const [rememberMe, setRememberMe] = useState(false);
   const [error, setError] = useState("");
 
+  useEffect(() => {
+    const savedEmail = localStorage.getItem("rememberedEmail");
+    const savedPassword = localStorage.getItem("rememberedPassword");
+    const remember = localStorage.getItem("rememberMe") === "true";
+
+    if (remember && savedEmail && savedPassword) {
+      setForm({ email: savedEmail, password: savedPassword });
+      setRememberMe(true);
+    }
+  }, []);
+
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value });
   };
@@ -42,10 +58,20 @@ const Login = () => {
 
       // Store accessToken locally
       localStorage.setItem("token", accessToken);
-      // setUser({ role: roles[0].toLowerCase().replace("role_", "") });
-      setUser({ role: "hr" });
+      setUser({ role: roles[0].toLowerCase().replace("role_", "") });
 
       setError("");
+
+      //Save email/password if 'Remember Me' is checked
+      if (rememberMe) {
+        localStorage.setItem("rememberedEmail", form.email);
+        localStorage.setItem("rememberedPassword", form.password);
+        localStorage.setItem("rememberMe", "true");
+      } else {
+        localStorage.removeItem("rememberedEmail");
+        localStorage.removeItem("rememberedPassword");
+        localStorage.setItem("rememberMe", "false");
+      }
 
       // Redirect based on role
       if (roles.includes("ROLE_ADMIN")) {
