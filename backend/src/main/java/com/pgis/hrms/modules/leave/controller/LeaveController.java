@@ -27,7 +27,6 @@ public class LeaveController {
     }
 
     /* ---- apply (employee) ---- */
-    /* ---- apply (employee) ---- */
     @PostMapping
     @PreAuthorize("hasRole('EMPLOYEE')")
     public void apply(@AuthenticationPrincipal UserDetails ud,

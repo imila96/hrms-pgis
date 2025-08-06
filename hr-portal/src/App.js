@@ -27,7 +27,7 @@ const ProtectedRoute = ({ children }) => {
 // Role-specific route (admin)
 const AdminRoute = ({ children }) => {
   const { user } = useAuth();
-  return user && user.role === "system-admin" ? children : <Navigate to="/" replace />;
+  return user && user.role === "admin" ? children : <Navigate to="/" replace />;
 };
 
 // Role-specific route (HR)
@@ -64,9 +64,6 @@ function App() {
               </HrRoute>
             }
           />
-
-          
-          
 
           {/* Catch-all */}
           <Route path="*" element={<Navigate to="/" replace />} />

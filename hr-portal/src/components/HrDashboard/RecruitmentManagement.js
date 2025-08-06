@@ -1,4 +1,7 @@
-import React, { useState } from "react";
+// For now only 3 services available in backend related to recruitment management.(getAllOpening, createJob and closeJob)
+// So hrstaff can create new job opening, and edit jobs which has status open only. delete is not required.
+
+import React, { useState, useEffect } from "react";
 import {
   Box,
   Typography,
@@ -17,38 +20,11 @@ import {
   TextField,
   DialogActions,
   IconButton,
+  Snackbar,
+  Alert,
 } from "@mui/material";
-import { computeHeadingLevel } from "@testing-library/dom";
 import { Delete, Edit } from "@mui/icons-material";
 import axiosInstance from "../../AxiosInstance";
-import { useEffect } from "react";
-
-const initialApplications = [
-  {
-    id: 1,
-    title: "lecture",
-    description: "Machine learning lecture",
-    department: "Computer Science",
-    status: "open",
-    postedDate: "2024/10/15",
-  },
-  {
-    id: 2,
-    title: "lecture",
-    description: "Machine learning lecture",
-    department: "Computer Science",
-    status: "open",
-    postedDate: "2024/10/15",
-  },
-  {
-    id: 3,
-    title: "lecture",
-    description: "Machine learning lecture",
-    department: "Computer Science",
-    status: "open",
-    postedDate: "2024/10/15",
-  },
-];
 
 const RecruitmentManagement = () => {
   const [jobOpening, setJobOpening] = useState([]);
@@ -61,6 +37,11 @@ const RecruitmentManagement = () => {
   const [editJobOpening, setEditJobOpening] = useState(null);
   const [dialogOpen, setDialogOpen] = useState(false);
 
+  // Snackbar states
+  const [snackbarOpen, setSnackbarOpen] = useState(false);
+  const [snackbarMessage, setSnackbarMessage] = useState("");
+  const [snackbarSeverity, setSnackbarSeverity] = useState("info");
+
   useEffect(() => {
     fetchJobOpenings();
   }, []);
@@ -70,21 +51,35 @@ const RecruitmentManagement = () => {
       const response = await axiosInstance.get(
         "http://localhost:8080/hr/recruitment/openings"
       );
-
       setJobOpening(response.data);
     } catch (error) {
       console.error("Error fetching job openings", error);
       if (error.response && error.response.status === 403) {
-        alert("Access denied. Please log in again.");
+        showSnackbar("Access denied. Please log in again.", "error");
       }
     }
+  };
+
+  const showSnackbar = (message, severity = "info") => {
+    setSnackbarMessage(message);
+    setSnackbarSeverity(severity);
+    setSnackbarOpen(true);
+  };
+
+  const handleSnackbarClose = () => {
+    setSnackbarOpen(false);
   };
 
   const openDialog = (job = null) => {
     setEditJobOpening(job);
     setFormData(
       job
-        ? { ...job }
+        ? {
+            title: job.title,
+            description: job.description,
+            department: job.department,
+            status: job.active ? "Open" : "Closed",
+          }
         : { title: "", description: "", department: "", status: "" }
     );
     setDialogOpen(true);
@@ -93,7 +88,12 @@ const RecruitmentManagement = () => {
   const closeDialog = () => {
     setDialogOpen(false);
     setEditJobOpening(null);
-    setFormData({ name: "", email: "", position: "" });
+    setFormData({
+      title: "",
+      description: "",
+      department: "",
+      status: "",
+    });
   };
 
   const handleChange = (e) => {
@@ -101,41 +101,49 @@ const RecruitmentManagement = () => {
   };
 
   const handleSave = async () => {
-    if (
-      !formData.title ||
-      !formData.description ||
-      !formData.department ||
-      !formData.status
-    ) {
-      alert("Please fill all fields");
+    if (!formData.status) {
+      showSnackbar("Please select a status", "warning");
       return;
     }
 
-    const newJob = {
-      title: formData.title,
-      description: formData.description,
-      department: formData.department,
-      status: formData.status,
-    };
-
     try {
       if (editJobOpening) {
-        alert("Update not implemented yet");
-      } else {
-        await axiosInstance.post("/hr/recruitment/create", newJob);
+        const originalStatus = editJobOpening.active ? "Open" : "Closed";
 
-        fetchJobOpenings();
+        if (formData.status === originalStatus) {
+          showSnackbar("No changes detected", "info");
+          return;
+        }
+
+        if (formData.status === "Closed" && editJobOpening.active) {
+          await axiosInstance.put(`/hr/recruitment/close/${editJobOpening.id}`);
+          showSnackbar("Job status updated to Closed", "success");
+        } else {
+          showSnackbar("Only closing open jobs is allowed", "info");
+        }
+      } else {
+        const newJob = {
+          title: formData.title,
+          description: formData.description,
+          department: formData.department,
+          active: formData.status === "Open",
+        };
+        await axiosInstance.post("/hr/recruitment/create", newJob);
+        showSnackbar("Job opening created successfully!", "success");
       }
+
+      fetchJobOpenings();
       closeDialog();
     } catch (error) {
       console.error("Error saving job opening", error);
-      alert("Failed to save job opening.");
+      showSnackbar("Failed to save job opening.", "error");
     }
   };
 
   const handleDelete = (id) => {
     if (window.confirm("Are you sure you want to delete this Job Opening?")) {
       setJobOpening(jobOpening.filter((job) => job.id !== id));
+      showSnackbar("Job opening deleted (client-side only)", "info");
     }
   };
 
@@ -176,7 +184,7 @@ const RecruitmentManagement = () => {
           <TableBody>
             {jobOpening.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={4} align="center">
+                <TableCell colSpan={6} align="center">
                   No job opening records.
                 </TableCell>
               </TableRow>
@@ -191,15 +199,19 @@ const RecruitmentManagement = () => {
                     {new Date(job.postedDate).toLocaleDateString()}
                   </TableCell>
                   <TableCell>
-                    <IconButton color="primary" onClick={() => openDialog(job)}>
+                    <IconButton
+                      color="primary"
+                      onClick={() => openDialog(job)}
+                      disabled={!job.active}
+                    >
                       <Edit />
                     </IconButton>
-                    <IconButton
+                    {/* <IconButton
                       color="error"
                       onClick={() => handleDelete(job.id)}
                     >
                       <Delete />
-                    </IconButton>
+                    </IconButton> */}
                   </TableCell>
                 </TableRow>
               ))
@@ -221,6 +233,7 @@ const RecruitmentManagement = () => {
             value={formData.title}
             onChange={handleChange}
             required
+            disabled={!!editJobOpening}
           />
           <TextField
             label="Description"
@@ -230,6 +243,7 @@ const RecruitmentManagement = () => {
             value={formData.description}
             onChange={handleChange}
             required
+            disabled={!!editJobOpening}
           />
           <TextField
             label="Department"
@@ -239,16 +253,25 @@ const RecruitmentManagement = () => {
             value={formData.department}
             onChange={handleChange}
             required
+            disabled={!!editJobOpening}
           />
-          <TextField
-            label="Status"
-            name="status"
+
+          <Select
             fullWidth
-            margin="dense"
+            name="status"
             value={formData.status}
             onChange={handleChange}
+            margin="dense"
+            displayEmpty
             required
-          />
+            sx={{ mt: 2 }}
+          >
+            <MenuItem value="">
+              <em>Select status</em>
+            </MenuItem>
+            <MenuItem value="Open">Open</MenuItem>
+            <MenuItem value="Closed">Closed</MenuItem>
+          </Select>
         </DialogContent>
 
         <DialogActions>
@@ -258,6 +281,21 @@ const RecruitmentManagement = () => {
           </Button>
         </DialogActions>
       </Dialog>
+
+      <Snackbar
+        open={snackbarOpen}
+        autoHideDuration={3000}
+        onClose={handleSnackbarClose}
+        anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
+      >
+        <Alert
+          severity={snackbarSeverity}
+          onClose={handleSnackbarClose}
+          sx={{ width: "100%" }}
+        >
+          {snackbarMessage}
+        </Alert>
+      </Snackbar>
     </Box>
   );
 };
