@@ -1,4 +1,6 @@
 package com.pgis.hrms.modules.recruitment.dto;
 
-public class JobOpeningDto {
+import java.time.LocalDate;
+
+public record JobOpeningDto(Long jobOpeningId, LocalDate jobOpeningDate, Boolean active) {
 }
