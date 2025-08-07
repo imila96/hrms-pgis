@@ -1,4 +1,4 @@
-package com.pgis.hrms.core.attendance.dto;
+package com.pgis.hrms.modules.attendance.dto;
 
 import java.time.*;
 

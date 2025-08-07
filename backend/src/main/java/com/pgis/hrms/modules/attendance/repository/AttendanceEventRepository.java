@@ -1,6 +1,6 @@
-package com.pgis.hrms.core.attendance.repository;
+package com.pgis.hrms.modules.attendance.repository;
 
-import com.pgis.hrms.core.attendance.model.AttendanceEvent;
+import com.pgis.hrms.modules.attendance.model.AttendanceEvent;
 import org.springframework.data.jpa.repository.*;
 import org.springframework.data.repository.query.Param;
 import java.time.*;
