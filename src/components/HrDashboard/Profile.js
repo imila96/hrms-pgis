@@ -45,7 +45,6 @@ const Profile = () => {
         dateHired: data.hireDate,
         address: data.address,
       };
-      console.log(mappedUser);
       setUser(mappedUser);
       setTempUser(mappedUser);
     } catch (err) {
