@@ -14,6 +14,13 @@ import ForgetPassword from "./components/ForgetPassword/ForgetPassword";
 import AdminDashboard from "./components/AdminDashboard/AdminDashboard";
 import HrDashboard from "./components/HrDashboard/HrDashboard";
 
+// keep your existing HR‐subpages imports
+import EmployeeRecords from "./components/HrDashboard/EmployeeRecords";
+import LeaveManagement from "./components/HrDashboard/LeaveManagement";
+import AttendanceTracking from "./components/HrDashboard/AttendanceTracking";
+import RecruitmentManagement from "./components/HrDashboard/RecruitmentManagement";
+import PolicyManagement from "./components/HrDashboard/PolicyManagement";
+
 import EmployeeDashboardLayout from "./components/EmployeeDashboard/DashboardLayout";
 import Profile from "./components/EmployeeDashboard/Profile";
 import Salary from "./components/EmployeeDashboard/Salary";
@@ -25,22 +32,26 @@ import Reports from "./components/EmployeeDashboard/Reports";
 
 import { AuthProvider, useAuth } from "./context/AuthContext";
 
-// Protected and role-based routes
+// 1. generic guard
 const ProtectedRoute = ({ children }) => {
   const { user } = useAuth();
   return user ? children : <Navigate to="/" replace />;
 };
 
+// 2. admin only
 const AdminRoute = ({ children }) => {
   const { user } = useAuth();
-  return user && user.role === "system-admin" ? children : <Navigate to="/" replace />;
+  // adjust role name if needed ("admin" vs "system-admin")
+  return user && user.role === "admin" ? children : <Navigate to="/" replace />;
 };
 
+// 3. HR only
 const HrRoute = ({ children }) => {
   const { user } = useAuth();
   return user && user.role === "hr" ? children : <Navigate to="/" replace />;
 };
 
+// 4. Employee only
 const EmployeeRoute = ({ children }) => {
   const { user } = useAuth();
   return user && user.role === "employee" ? children : <Navigate to="/" replace />;
@@ -51,12 +62,12 @@ function App() {
     <AuthProvider>
       <Router>
         <Routes>
-          {/* Public routes */}
+          {/* public */}
           <Route path="/" element={<Login />} />
           <Route path="/register" element={<Register />} />
           <Route path="/forgot-password" element={<ForgetPassword />} />
 
-          {/* Admin routes */}
+          {/* admin */}
           <Route
             path="/admin/*"
             element={
@@ -66,7 +77,7 @@ function App() {
             }
           />
 
-          {/* HR routes */}
+          {/* HR (preserves your old integrations) */}
           <Route
             path="/hr/*"
             element={
@@ -74,9 +85,18 @@ function App() {
                 <HrDashboard />
               </HrRoute>
             }
-          />
+          >
+            {/* if HrDashboard doesn’t handle its own subroutes, you can add them here: */}
+            <Route path="records" element={<EmployeeRecords />} />
+            <Route path="leave-management" element={<LeaveManagement />} />
+            <Route path="attendance-tracking" element={<AttendanceTracking />} />
+            <Route path="recruitment" element={<RecruitmentManagement />} />
+            <Route path="policies" element={<PolicyManagement />} />
+            {/* redirect /hr → /hr/records */}
+            <Route path="" element={<Navigate to="records" replace />} />
+          </Route>
 
-          {/* Employee routes */}
+          {/* employee */}
           <Route
             path="/employee/*"
             element={
@@ -92,11 +112,10 @@ function App() {
             <Route path="policies" element={<Policies />} />
             <Route path="complaints" element={<Complaints />} />
             <Route path="reports" element={<Reports />} />
-            {/* Redirect /employee to /employee/profile */}
             <Route path="" element={<Navigate to="profile" replace />} />
           </Route>
 
-          {/* Catch-all redirect */}
+          {/* catch-all */}
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </Router>

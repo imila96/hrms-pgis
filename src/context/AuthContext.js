@@ -1,41 +1,57 @@
 // src/context/AuthContext.js
 import React, { createContext, useState, useContext } from "react";
 
-// Create Auth Context
 const AuthContext = createContext(null);
 
-// Provider component to wrap the app
 export const AuthProvider = ({ children }) => {
-  const [user, setUser] = useState(null); // Store user info or null
+  // 1. hydrate from localStorage (old logic)
+  const [user, setUser] = useState(() => {
+    const token = localStorage.getItem("token");
+    const role = localStorage.getItem("role");
+    const email = localStorage.getItem("email");
+    if (!token || !role || !email) return null;
+    return { email, role };
+  });
 
-  // Simulate login function
+  // 2. new login logic (with hard-coded creds)
   const login = ({ email, password }) => {
-    // Replace with real API call & validation
-    if (email === "admin@workhub.com" && password === "Admin@123") {
-      setUser({ email, role: "system-admin" });
-      return "system-admin"; // return role
-    }
-    if (email === "hr@workhub.com" && password === "Hr@123") {
-      setUser({ email, role: "hr" });
-      return "hr"; // return role
-    }
-    if (email === "user@workhub.com" && password === "User@123") {
-    setUser({ email, role: "employee" });
-    return "employee";
-  }
+    let role = null;
 
-    return null; // login failed
+    if (email === "admin@workhub.com" && password === "Admin@123") {
+      role = "system-admin";
+    } else if (email === "hr@workhub.com" && password === "Hr@123") {
+      role = "hr";
+    } else if (email === "user@workhub.com" && password === "User@123") {
+      role = "employee";
+    }
+
+    if (!role) {
+      return null; // login failed
+    }
+
+    // persist exactly as old code did
+    localStorage.setItem("token", "dummy-token");
+    localStorage.setItem("role", role);
+    localStorage.setItem("email", email);
+
+    // update state
+    setUser({ email, role });
+    return role;
   };
 
-  // Logout function
-  const logout = () => setUser(null);
+  // 3. logout clears both state and storage (old + new)
+  const logout = () => {
+    setUser(null);
+    localStorage.removeItem("token");
+    localStorage.removeItem("role");
+    localStorage.removeItem("email");
+  };
 
   return (
-    <AuthContext.Provider value={{ user, login, logout }}>
+    <AuthContext.Provider value={{ user, setUser, login, logout }}>
       {children}
     </AuthContext.Provider>
   );
 };
 
-// Custom hook for easy usage
 export const useAuth = () => useContext(AuthContext);

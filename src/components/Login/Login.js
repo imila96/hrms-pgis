@@ -1,5 +1,5 @@
 // src/components/Login/Login.js
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Box,
   Button,
@@ -14,9 +14,10 @@ import {
 import { Visibility, VisibilityOff, Email } from "@mui/icons-material";
 import { useAuth } from "../../context/AuthContext";
 import { useNavigate } from "react-router-dom";
+import axios from "axios";
 
 const Login = () => {
-  const { login } = useAuth();
+  const { setUser } = useAuth();
   const navigate = useNavigate();
 
   const [form, setForm] = useState({ email: "", password: "" });
@@ -24,29 +25,70 @@ const Login = () => {
   const [rememberMe, setRememberMe] = useState(false);
   const [error, setError] = useState("");
 
+  useEffect(() => {
+    const savedEmail = localStorage.getItem("rememberedEmail");
+    const savedPassword = localStorage.getItem("rememberedPassword");
+    const remember = localStorage.getItem("rememberMe") === "true";
+
+    if (remember && savedEmail && savedPassword) {
+      setForm({ email: savedEmail, password: savedPassword });
+      setRememberMe(true);
+    }
+  }, []);
+
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value });
   };
 
-const handleSubmit = (e) => {
-  e.preventDefault();
-  const role = login(form);
+  const handleSubmit = async (e) => {
+    e.preventDefault();
 
-  if (role) {
-    setError("");
-    if (role === "system-admin") {
-      navigate("/admin/profile");
-    } else if (role === "hr") {
-      navigate("/hr/profile");
+    try {
+      const response = await axios.post("http://localhost:8080/auth/login", {
+        email: form.email,
+        password: form.password,
+      });
+
+      const { accessToken, roles } = response.data;
+
+      // Store accessToken locally
+      localStorage.setItem("token", accessToken);
+      const role = roles[0].toLowerCase().replace("role_", "");
+      setUser({ role });
+      localStorage.setItem("role", role);
+
+      setError("");
+
+      if (rememberMe) {
+        localStorage.setItem("rememberedEmail", form.email);
+        localStorage.setItem("rememberedPassword", form.password);
+        localStorage.setItem("rememberMe", "true");
+      } else {
+        localStorage.removeItem("rememberedEmail");
+        localStorage.removeItem("rememberedPassword");
+        localStorage.setItem("rememberMe", "false");
+      }
+
+      
+      // Redirect by role
+      if (roles.includes("ROLE_ADMIN")) {
+        navigate("/admin/profile");
+      } else if (roles.includes("ROLE_HR")) {
+        navigate("/hr/profile");
+      } else if (roles.includes("ROLE_EMPLOYEE")) {
+        navigate("/employee/profile");
+      } else {
+        setError("Unknown role. Please contact admin.");
+      }
+    } catch (err) {
+      console.error(err);
+      if (err.response?.status === 401) {
+        setError("Invalid credentials. Please try again.");
+      } else {
+        setError("An error occurred. Please try again later.");
+      }
     }
-    else if (role === "employee") {
-  navigate("/employee/profile");
-}
-  } else {
-    setError("Invalid credentials. Please try again.");
-  }
-};
-
+  };
 
   return (
     <Box
@@ -75,6 +117,7 @@ const handleSubmit = (e) => {
         <Typography color="text.secondary" mb={3}>
           Sign in to access your dashboard
         </Typography>
+
         <form onSubmit={handleSubmit}>
           <TextField
             fullWidth
@@ -93,6 +136,7 @@ const handleSubmit = (e) => {
             }}
             required
           />
+
           <TextField
             fullWidth
             margin="normal"
@@ -107,7 +151,7 @@ const handleSubmit = (e) => {
               endAdornment: (
                 <InputAdornment position="end">
                   <IconButton
-                    onClick={() => setShowPassword((show) => !show)}
+                    onClick={() => setShowPassword((prev) => !prev)}
                     edge="end"
                     size="small"
                     aria-label="toggle password visibility"
@@ -118,6 +162,7 @@ const handleSubmit = (e) => {
               ),
             }}
           />
+
           <Typography
             variant="caption"
             color="text.secondary"
@@ -128,6 +173,7 @@ const handleSubmit = (e) => {
             Password must contain at least 8 characters with uppercase,
             lowercase, numbers, and special characters
           </Typography>
+
           <FormControlLabel
             control={
               <Checkbox
@@ -139,11 +185,13 @@ const handleSubmit = (e) => {
             label="Remember Me"
             sx={{ mb: 2 }}
           />
+
           {error && (
             <Typography color="error" variant="body2" mb={2}>
               {error}
             </Typography>
           )}
+
           <Button
             type="submit"
             variant="contained"
@@ -154,7 +202,6 @@ const handleSubmit = (e) => {
             Sign In
           </Button>
 
-          {/* Replaced with react-router navigation */}
           <Link
             underline="hover"
             sx={{ display: "block", mb: 1, cursor: "pointer" }}
@@ -162,6 +209,7 @@ const handleSubmit = (e) => {
           >
             Forgot Password?
           </Link>
+
           <Typography variant="body2" color="text.secondary">
             Don't have an account?{" "}
             <Link
