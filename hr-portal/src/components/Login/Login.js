@@ -58,7 +58,9 @@ const Login = () => {
 
       // Store accessToken locally
       localStorage.setItem("token", accessToken);
-      setUser({ role: roles[0].toLowerCase().replace("role_", "") });
+      const role = roles[0].toLowerCase().replace("role_", "");
+      setUser({ role });
+      localStorage.setItem("role", role); 
 
       setError("");
 
