@@ -60,7 +60,7 @@ const Login = () => {
       localStorage.setItem("token", accessToken);
       const role = roles[0].toLowerCase().replace("role_", "");
       setUser({ role });
-      localStorage.setItem("role", role); 
+      localStorage.setItem("role", role);
 
       setError("");
 
