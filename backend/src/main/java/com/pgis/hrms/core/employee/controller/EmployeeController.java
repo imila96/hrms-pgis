@@ -1,9 +1,9 @@
-package com.pgis.hrms.modules.Employee.controller;
+package com.pgis.hrms.core.employee.controller;
 
 
 
-import com.pgis.hrms.modules.Employee.dto.EmployeeDto;
-import com.pgis.hrms.modules.Employee.service.EmployeeService;
+import com.pgis.hrms.core.employee.dto.EmployeeDto;
+import com.pgis.hrms.core.employee.service.EmployeeService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -28,19 +28,20 @@ public class EmployeeController {
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<EmployeeDto> getById(@PathVariable Long id) {
+    public ResponseEntity<EmployeeDto> getById(@PathVariable Integer id) {
         return ResponseEntity.ok(employeeService.getEmployeeById(id));
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<EmployeeDto> update(@PathVariable Long id, @RequestBody EmployeeDto dto) {
+    public ResponseEntity<EmployeeDto> update(
+            @PathVariable Integer id,
+            @RequestBody EmployeeDto dto) {
         return ResponseEntity.ok(employeeService.updateEmployee(id, dto));
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> delete(@PathVariable Long id) {
+    public ResponseEntity<Void> delete(@PathVariable Integer id) {
         employeeService.deleteEmployee(id);
         return ResponseEntity.noContent().build();
     }
 }
-

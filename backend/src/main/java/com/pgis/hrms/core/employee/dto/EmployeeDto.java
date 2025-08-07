@@ -1,23 +1,16 @@
-package com.pgis.hrms.modules.Employee.entity;
+package com.pgis.hrms.core.employee.dto;
 
 
-import jakarta.persistence.*;
 import lombok.*;
 
 import java.time.LocalDate;
 
-@Entity
-@Table(name = "employees")
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class EmployeeTest {
-
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
-
+public class EmployeeDto {
+    private Integer id;
     private String name;
     private String contact;
     private String jobTitle;

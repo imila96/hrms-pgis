@@ -1,4 +1,4 @@
-package com.pgis.hrms.modules.attendance.model;
+package com.pgis.hrms.core.attendance.model;
 
 public enum AttendanceEventType {
     CHECK_IN,

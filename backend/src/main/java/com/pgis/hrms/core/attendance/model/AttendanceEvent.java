@@ -1,4 +1,4 @@
-package com.pgis.hrms.modules.attendance.model;
+package com.pgis.hrms.core.attendance.model;
 
 import com.pgis.hrms.core.employee.entity.Employee;
 import jakarta.persistence.*;

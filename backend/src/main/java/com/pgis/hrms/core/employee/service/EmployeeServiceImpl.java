@@ -1,10 +1,11 @@
-package com.pgis.hrms.modules.Employee.service;
+package com.pgis.hrms.core.employee.service;
 
 
 
-import com.pgis.hrms.modules.Employee.repository.EmployeeRepositoryTest;
-import com.pgis.hrms.modules.Employee.dto.EmployeeDto;
-import com.pgis.hrms.modules.Employee.entity.EmployeeTest;
+import com.pgis.hrms.core.employee.entity.Employee;
+import com.pgis.hrms.core.employee.mapper.EmployeeMapper;
+import com.pgis.hrms.core.employee.repository.EmployeeRepository;
+import com.pgis.hrms.core.employee.dto.EmployeeDto;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -15,32 +16,33 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class EmployeeServiceImpl implements EmployeeService {
 
-    private final EmployeeRepositoryTest employeeRepository;
-    private final com.pgis.hrms.modules.Employee.mapper.EmployeeMapper employeeMapper;
+    private final EmployeeRepository employeeRepository;
+    private final EmployeeMapper     employeeMapper;
 
     @Override
-    public EmployeeDto createEmployee(com.pgis.hrms.modules.Employee.dto.EmployeeDto dto) {
-        EmployeeTest saved = employeeRepository.save(employeeMapper.toEntity(dto));
+    public EmployeeDto createEmployee(EmployeeDto dto) {
+        Employee saved = employeeRepository.save(employeeMapper.toEntity(dto));
         return employeeMapper.toDto(saved);
     }
 
     @Override
     public List<EmployeeDto> getAllEmployees() {
-        return employeeRepository.findAll().stream()
+        return employeeRepository.findAll()
+                .stream()
                 .map(employeeMapper::toDto)
                 .collect(Collectors.toList());
     }
 
     @Override
-    public EmployeeDto getEmployeeById(Long id) {
-        EmployeeTest e = employeeRepository.findById(id)
+    public EmployeeDto getEmployeeById(Integer id) {
+        Employee e = employeeRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Employee not found"));
         return employeeMapper.toDto(e);
     }
 
     @Override
-    public EmployeeDto updateEmployee(Long id, EmployeeDto dto) {
-        EmployeeTest existing = employeeRepository.findById(id)
+    public EmployeeDto updateEmployee(Integer id, EmployeeDto dto) {
+        Employee existing = employeeRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Employee not found"));
 
         existing.setName(dto.getName());
@@ -50,11 +52,12 @@ public class EmployeeServiceImpl implements EmployeeService {
         existing.setAddress(dto.getAddress());
         existing.setEmail(dto.getEmail());
 
-        return employeeMapper.toDto(employeeRepository.save(existing));
+        Employee updated = employeeRepository.save(existing);
+        return employeeMapper.toDto(updated);
     }
 
     @Override
-    public void deleteEmployee(Long id) {
+    public void deleteEmployee(Integer id) {
         employeeRepository.deleteById(id);
     }
 }

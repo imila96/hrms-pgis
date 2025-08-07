@@ -2,14 +2,16 @@ package com.pgis.hrms.core.employee.entity;
 
 import com.pgis.hrms.core.auth.entity.User;
 import jakarta.persistence.*;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import lombok.*;
 
 import java.time.LocalDate;
 
-@Getter @Setter @NoArgsConstructor
-@Entity @Table(name = "employee")
+@Entity
+@Table(name = "employee")
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
 public class Employee {
 
     @Id
@@ -20,6 +22,7 @@ public class Employee {
     private String  address;
     private String  jobTitle;
     private LocalDate hireDate;
+    private String email;
 
     /* link back to auth account */
     @OneToOne @MapsId

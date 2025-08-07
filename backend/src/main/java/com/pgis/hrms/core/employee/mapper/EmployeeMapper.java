@@ -1,17 +1,17 @@
-package com.pgis.hrms.modules.Employee.mapper;
+package com.pgis.hrms.core.employee.mapper;
 
-import com.pgis.hrms.modules.Employee.dto.EmployeeDto;
-import com.pgis.hrms.modules.Employee.entity.EmployeeTest;
+import com.pgis.hrms.core.employee.entity.Employee;
+import com.pgis.hrms.core.employee.dto.EmployeeDto;
 import org.springframework.stereotype.Component;
 
 @Component
 public class EmployeeMapper {
 
-    public com.pgis.hrms.modules.Employee.dto.EmployeeDto toDto(EmployeeTest e) {
+    public EmployeeDto toDto(Employee e) {
         if (e == null) return null;
 
-        return com.pgis.hrms.modules.Employee.dto.EmployeeDto.builder()
-                .id(e.getId())
+        return EmployeeDto.builder()
+                .id(e.getEmployeeId())
                 .name(e.getName())
                 .contact(e.getContact())
                 .jobTitle(e.getJobTitle())
@@ -21,11 +21,11 @@ public class EmployeeMapper {
                 .build();
     }
 
-    public EmployeeTest toEntity(EmployeeDto dto) {
+    public Employee toEntity(EmployeeDto dto) {
         if (dto == null) return null;
 
-        return EmployeeTest.builder()
-                .id(dto.getId())
+        return Employee.builder()
+                .employeeId(dto.getId())
                 .name(dto.getName())
                 .contact(dto.getContact())
                 .jobTitle(dto.getJobTitle())
