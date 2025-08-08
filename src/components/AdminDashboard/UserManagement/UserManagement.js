@@ -7,7 +7,7 @@ import {
 import { Delete, Edit } from "@mui/icons-material";
 import api from "../../../AxiosInstance";
 
-const ROLE_OPTIONS = ["ADMIN", "HR", "EMPLOYEE"];
+const ROLE_OPTIONS = ["ADMIN", "HR", "EMPLOYEE","DIRECTOR"];
 
 export default function UserManagement() {
   // main users table
