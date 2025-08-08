@@ -6,6 +6,7 @@ import com.pgis.hrms.core.employee.dto.EmployeeDto;
 import com.pgis.hrms.core.employee.service.EmployeeService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -44,4 +45,11 @@ public class EmployeeController {
         employeeService.deleteEmployee(id);
         return ResponseEntity.noContent().build();
     }
+
+    @PreAuthorize("hasAnyRole('ADMIN','HR','EMPLOYEE')")
+    @GetMapping("/me")
+    public ResponseEntity<EmployeeDto> me() {
+        return ResponseEntity.ok(employeeService.getMyProfile());
+    }
+
 }

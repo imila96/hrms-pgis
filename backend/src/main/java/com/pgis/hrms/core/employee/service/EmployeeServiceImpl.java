@@ -7,6 +7,7 @@ import com.pgis.hrms.core.employee.mapper.EmployeeMapper;
 import com.pgis.hrms.core.employee.repository.EmployeeRepository;
 import com.pgis.hrms.core.employee.dto.EmployeeDto;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -59,5 +60,13 @@ public class EmployeeServiceImpl implements EmployeeService {
     @Override
     public void deleteEmployee(Integer id) {
         employeeRepository.deleteById(id);
+    }
+
+    @Override
+    public EmployeeDto getMyProfile() {
+        String email = SecurityContextHolder.getContext().getAuthentication().getName();
+        Employee emp = employeeRepository.findByUserEmail(email)
+                .orElseThrow(() -> new RuntimeException("Employee not found"));
+        return employeeMapper.toDto(emp);
     }
 }
