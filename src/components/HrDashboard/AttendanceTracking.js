@@ -112,7 +112,7 @@ const AttendanceTracking = () => {
                 <MenuItem key={emp.id} value={emp.id}>
                   <Grid container alignItems="center" spacing={1}>
                     <Grid item>
-                      {emp.name} ({emp.id})
+                      {emp.name} (EMP{emp.id.toString()})
                     </Grid>
                   </Grid>
                 </MenuItem>
