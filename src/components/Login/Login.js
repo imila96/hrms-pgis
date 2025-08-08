@@ -77,6 +77,8 @@ const Login = () => {
         navigate("/hr/profile");
       } else if (roles.includes("ROLE_EMPLOYEE")) {
         navigate("/employee/profile");
+      } else if (roles.includes("ROLE_DIRECTOR")) {
+        navigate("/director/profile");
       } else {
         setError("Unknown role. Please contact admin.");
       }

@@ -47,7 +47,7 @@ public class EmployeeController {
         return ResponseEntity.noContent().build();
     }
 
-    @PreAuthorize("hasAnyRole('ADMIN','HR','EMPLOYEE')")
+    @PreAuthorize("hasAnyRole('ADMIN','HR','EMPLOYEE','DIRECTOR')")
     @GetMapping("/me")
     public ResponseEntity<EmployeeDto> me() {
         return ResponseEntity.ok(employeeService.getMyProfile());

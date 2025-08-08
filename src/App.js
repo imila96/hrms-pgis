@@ -14,7 +14,7 @@ import ForgetPassword from "./components/ForgetPassword/ForgetPassword";
 import AdminDashboard from "./components/AdminDashboard/AdminDashboard";
 import HrDashboard from "./components/HrDashboard/HrDashboard";
 
-// keep your existing HR‐subpages imports
+// HR subpages (you kept these imports; fine to keep even if HrDashboard handles its own routes)
 import EmployeeRecords from "./components/HrDashboard/EmployeeRecords";
 import LeaveManagement from "./components/HrDashboard/LeaveManagement";
 import AttendanceTracking from "./components/HrDashboard/AttendanceTracking";
@@ -30,32 +30,40 @@ import Policies from "./components/EmployeeDashboard/Policies";
 import Complaints from "./components/EmployeeDashboard/Complaints";
 import Reports from "./components/EmployeeDashboard/Reports";
 
+import DirectorDashboard from "./components/DirectorDashboard/DirectorDashboard";
+
 import { AuthProvider, useAuth } from "./context/AuthContext";
 
-// 1. generic guard
+/* ---------------- Guards ---------------- */
+
 const ProtectedRoute = ({ children }) => {
   const { user } = useAuth();
   return user ? children : <Navigate to="/" replace />;
 };
 
-// 2. admin only
 const AdminRoute = ({ children }) => {
   const { user } = useAuth();
-  // adjust role name if needed ("admin" vs "system-admin")
   return user && user.role === "admin" ? children : <Navigate to="/" replace />;
 };
 
-// 3. HR only
 const HrRoute = ({ children }) => {
   const { user } = useAuth();
   return user && user.role === "hr" ? children : <Navigate to="/" replace />;
 };
 
-// 4. Employee only
 const EmployeeRoute = ({ children }) => {
   const { user } = useAuth();
   return user && user.role === "employee" ? children : <Navigate to="/" replace />;
 };
+
+const DirectorRoute = ({ children }) => {
+  const { user } = useAuth();
+  return user && (user.role === "director" || user.roles?.includes("director"))
+    ? children
+    : <Navigate to="/" replace />;
+};
+
+/* ---------------- App ---------------- */
 
 function App() {
   return (
@@ -77,7 +85,7 @@ function App() {
             }
           />
 
-          {/* HR (preserves your old integrations) */}
+          {/* HR (your HrDashboard already defines its own internal <Routes/>) */}
           <Route
             path="/hr/*"
             element={
@@ -86,15 +94,25 @@ function App() {
               </HrRoute>
             }
           >
-            {/* if HrDashboard doesn’t handle its own subroutes, you can add them here: */}
+            {/* If HrDashboard did NOT render its own routes, these would apply.
+                Keeping them is harmless, but they won't render unless HrDashboard uses <Outlet/>. */}
             <Route path="records" element={<EmployeeRecords />} />
             <Route path="leave-management" element={<LeaveManagement />} />
             <Route path="attendance-tracking" element={<AttendanceTracking />} />
             <Route path="recruitment" element={<RecruitmentManagement />} />
             <Route path="policies" element={<PolicyManagement />} />
-            {/* redirect /hr → /hr/records */}
             <Route path="" element={<Navigate to="records" replace />} />
           </Route>
+
+          {/* director */}
+          <Route
+            path="/director/*"
+            element={
+              <DirectorRoute>
+                <DirectorDashboard />
+              </DirectorRoute>
+            }
+          />
 
           {/* employee */}
           <Route
