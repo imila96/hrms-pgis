@@ -1,5 +1,5 @@
 // src/components/EmployeeDashboard/Profile.js
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   Box,
   Typography,
@@ -8,33 +8,49 @@ import {
   Grid,
   TextField,
   Button,
-  Divider,
+  Snackbar,
+  Alert,
+  CircularProgress,
 } from "@mui/material";
+import axiosInstance from "../../AxiosInstance";
 
-const initialUser = {
-  staffID: "EMP123",
-  fullName: "Inzam Shahib",
-  email: "inzamshahib0@gmail.com",
-  contactNumber: "+94 71 234 5678",
-  department: "Department of computer Science",
-  position: "Demonstrator",
-  dateHired: "2019-01-15",
-  userID: "u004",
-  avatarUrl: "https://i.pravatar.cc/150?img=3",
+const emptyProfile = {
+  id: "",
+  name: "",
+  email: "",
+  contact: "",
+  jobTitle: "",
+  hireDate: "",
+  address: "",
 };
 
 const Profile = () => {
-  const [user, setUser] = useState(initialUser);
+  const [user, setUser] = useState(emptyProfile);
+  const [tempUser, setTempUser] = useState(emptyProfile);
   const [editMode, setEditMode] = useState(false);
-  const [tempUser, setTempUser] = useState(user);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [snack, setSnack] = useState({ open: false, msg: "", severity: "success" });
+
+  useEffect(() => {
+    const load = async () => {
+      try {
+        const { data } = await axiosInstance.get("/hr/employees/me");
+        setUser(data);
+        setTempUser(data);
+      } catch (e) {
+        console.error(e);
+        setSnack({ open: true, msg: "Failed to load profile", severity: "error" });
+      } finally {
+        setLoading(false);
+      }
+    };
+    load();
+  }, []);
 
   const handleEditToggle = () => {
-    if (editMode) {
-      setTempUser(user); // discard changes on cancel
-      setEditMode(false);
-    } else {
-      setEditMode(true);
-    }
+    if (editMode) setTempUser(user); // discard changes
+    setEditMode((v) => !v);
   };
 
   const handleChange = (e) => {
@@ -42,11 +58,31 @@ const Profile = () => {
     setTempUser((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleSave = () => {
-    // Add API call here if needed
-    setUser(tempUser);
-    setEditMode(false);
+  const handleSave = async () => {
+    try {
+      setSaving(true);
+      const { data } = await axiosInstance.put(`/hr/employees/${user.id}`, {
+        ...tempUser,
+      });
+      setUser(data);
+      setTempUser(data);
+      setEditMode(false);
+      setSnack({ open: true, msg: "Profile updated", severity: "success" });
+    } catch (e) {
+      console.error(e);
+      setSnack({ open: true, msg: "Failed to update profile", severity: "error" });
+    } finally {
+      setSaving(false);
+    }
   };
+
+  if (loading) {
+    return (
+      <Box sx={{ display: "grid", placeItems: "center", height: 300 }}>
+        <CircularProgress />
+      </Box>
+    );
+  }
 
   return (
     <Paper
@@ -69,27 +105,26 @@ const Profile = () => {
         sx={{ borderBottom: 1, borderColor: "divider", pb: 3 }}
       >
         <Avatar
-          src={user.avatarUrl}
-          alt={user.fullName}
+          src={"https://i.pravatar.cc/150?img=3"}
+          alt={user.name}
           sx={{ width: 96, height: 96, mr: 4, boxShadow: 2 }}
         />
         <Box>
           <Typography variant="h4" fontWeight="bold" gutterBottom>
-            {user.fullName}
+            {user.name || "—"}
           </Typography>
           <Typography variant="subtitle1" color="text.secondary" gutterBottom>
-            {user.position}
+            {user.jobTitle || "—"}
           </Typography>
           <Typography variant="body2" color="text.secondary">
-            {user.email}
+            {user.email || "—"}
           </Typography>
           <Typography variant="body2" color="text.secondary">
-            {user.contactNumber}
+            {user.contact || "—"}
           </Typography>
         </Box>
       </Box>
 
-      {/* Main content area */}
       {!editMode ? (
         <>
           <Typography
@@ -101,27 +136,21 @@ const Profile = () => {
           <Grid container spacing={3} sx={{ mb: 4 }}>
             <Grid item xs={6}>
               <Typography variant="subtitle2" color="text.secondary" gutterBottom>
-                Staff ID
+                Employee ID
               </Typography>
-              <Typography variant="body1">{user.staffID}</Typography>
+              <Typography variant="body1">{user.id ?? "—"}</Typography>
             </Grid>
             <Grid item xs={6}>
               <Typography variant="subtitle2" color="text.secondary" gutterBottom>
-                User ID
+                Hire Date
               </Typography>
-              <Typography variant="body1">{user.userID}</Typography>
+              <Typography variant="body1">{user.hireDate || "—"}</Typography>
             </Grid>
-            <Grid item xs={6}>
+            <Grid item xs={12}>
               <Typography variant="subtitle2" color="text.secondary" gutterBottom>
-                Department
+                Address
               </Typography>
-              <Typography variant="body1">{user.department}</Typography>
-            </Grid>
-            <Grid item xs={6}>
-              <Typography variant="subtitle2" color="text.secondary" gutterBottom>
-                Date Hired
-              </Typography>
-              <Typography variant="body1">{user.dateHired}</Typography>
+              <Typography variant="body1">{user.address || "—"}</Typography>
             </Grid>
           </Grid>
 
@@ -147,29 +176,21 @@ const Profile = () => {
           <Grid container spacing={3} sx={{ mb: 4 }}>
             <Grid item xs={6}>
               <TextField
-                label="Staff ID"
-                name="staffID"
-                value={tempUser.staffID}
-                onChange={handleChange}
+                label="Employee ID"
+                value={user.id}
                 fullWidth
+                disabled
               />
             </Grid>
-            <Grid item xs={6}>
-              <TextField
-                label="User ID"
-                name="userID"
-                value={tempUser.userID}
-                onChange={handleChange}
-                fullWidth
-              />
-            </Grid>
-            <Grid item xs={6}>
+            <Grid item xs={6} />
+            <Grid item xs={12}>
               <TextField
                 label="Full Name"
-                name="fullName"
-                value={tempUser.fullName}
+                name="name"
+                value={tempUser.name}
                 onChange={handleChange}
                 fullWidth
+                required
               />
             </Grid>
             <Grid item xs={6}>
@@ -180,22 +201,14 @@ const Profile = () => {
                 value={tempUser.email}
                 onChange={handleChange}
                 fullWidth
+                required
               />
             </Grid>
             <Grid item xs={6}>
               <TextField
                 label="Contact Number"
-                name="contactNumber"
-                value={tempUser.contactNumber}
-                onChange={handleChange}
-                fullWidth
-              />
-            </Grid>
-            <Grid item xs={6}>
-              <TextField
-                label="Department"
-                name="department"
-                value={tempUser.department}
+                name="contact"
+                value={tempUser.contact}
                 onChange={handleChange}
                 fullWidth
               />
@@ -203,44 +216,52 @@ const Profile = () => {
             <Grid item xs={6}>
               <TextField
                 label="Position"
-                name="position"
-                value={tempUser.position}
+                name="jobTitle"
+                value={tempUser.jobTitle}
                 onChange={handleChange}
                 fullWidth
               />
             </Grid>
             <Grid item xs={6}>
               <TextField
-                label="Date Hired"
-                name="dateHired"
+                label="Hire Date"
+                name="hireDate"
                 type="date"
-                value={tempUser.dateHired}
+                value={tempUser.hireDate || ""}
                 onChange={handleChange}
                 InputLabelProps={{ shrink: true }}
                 fullWidth
               />
             </Grid>
+            <Grid item xs={12}>
+              <TextField
+                label="Address"
+                name="address"
+                value={tempUser.address}
+                onChange={handleChange}
+                fullWidth
+                multiline
+                rows={3}
+              />
+            </Grid>
           </Grid>
 
-          <Box
-            display="flex"
-            justifyContent="center"
-            gap={3}
-            sx={{ mt: 2 }}
-          >
+          <Box display="flex" justifyContent="center" gap={3} sx={{ mt: 2 }}>
             <Button
               variant="contained"
               color="primary"
               size="large"
               onClick={handleSave}
+              disabled={saving}
               sx={{ minWidth: 120 }}
             >
-              Save
+              {saving ? "Saving..." : "Save"}
             </Button>
             <Button
               variant="outlined"
               size="large"
               onClick={handleEditToggle}
+              disabled={saving}
               sx={{ minWidth: 120 }}
             >
               Cancel
@@ -248,6 +269,21 @@ const Profile = () => {
           </Box>
         </>
       )}
+
+      <Snackbar
+        open={snack.open}
+        autoHideDuration={3500}
+        onClose={() => setSnack((s) => ({ ...s, open: false }))}
+        anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
+      >
+        <Alert
+          onClose={() => setSnack((s) => ({ ...s, open: false }))}
+          severity={snack.severity}
+          sx={{ width: "100%" }}
+        >
+          {snack.msg}
+        </Alert>
+      </Snackbar>
     </Paper>
   );
 };
