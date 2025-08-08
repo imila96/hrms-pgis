@@ -1,8 +1,14 @@
-// src/components/EmployeeDashboard/Profile.js
 import React, { useEffect, useState } from "react";
 import {
-  Box, Typography, Paper, Grid, TextField, Button,
-  Snackbar, Alert, CircularProgress
+  Box,
+  Typography,
+  Paper,
+  Grid,
+  TextField,
+  Button,
+  Snackbar,
+  Alert,
+  CircularProgress,
 } from "@mui/material";
 import axiosInstance from "../../AxiosInstance";
 
@@ -47,10 +53,10 @@ export default function Profile() {
       await axiosInstance.put(`/hr/employees/${user.id}`, {
         id: user.id,
         name: temp.fullName,
-        email: user.email,             // read-only, keep same
+        email: user.email, // read-only, keep same
         contact: temp.contactNumber,
-        jobTitle: user.position,       // read-only
-        hireDate: user.dateHired,      // read-only
+        jobTitle: user.position, // read-only
+        hireDate: user.dateHired, // read-only
         address: temp.address,
       });
       setUser({ ...temp });
@@ -73,8 +79,22 @@ export default function Profile() {
   if (!user) return null;
 
   return (
-    <Paper sx={{ p: 5, maxWidth: 720, mx: "auto", mt: 5, boxShadow: 3, borderRadius: 3 }}>
-      <Box display="flex" alignItems="center" mb={4} sx={{ borderBottom: 1, borderColor: "divider", pb: 3 }}>
+    <Paper
+      sx={{
+        p: 5,
+        maxWidth: 720,
+        mx: "auto",
+        mt: 5,
+        boxShadow: 3,
+        borderRadius: 3,
+      }}
+    >
+      <Box
+        display="flex"
+        alignItems="center"
+        mb={4}
+        sx={{ borderBottom: 1, borderColor: "divider", pb: 3 }}
+      >
         <Box>
           <Typography variant="h4" fontWeight="bold" gutterBottom>
             {user.fullName}
@@ -82,72 +102,198 @@ export default function Profile() {
           <Typography variant="subtitle1" color="text.secondary" gutterBottom>
             {user.position}
           </Typography>
-          <Typography variant="body2" color="text.secondary">{user.email}</Typography>
-          <Typography variant="body2" color="text.secondary">{user.contactNumber}</Typography>
+          <Typography variant="body2" color="text.secondary">
+            {user.email}
+          </Typography>
+          <Typography variant="body2" color="text.secondary">
+            {user.contactNumber}
+          </Typography>
         </Box>
       </Box>
 
       {!edit ? (
         <>
-          <Typography variant="h6" sx={{ mb: 2, fontWeight: "medium", color: "primary.main" }}>
+          <Typography
+            variant="h6"
+            sx={{ mb: 2, fontWeight: "medium", color: "primary.main" }}
+          >
             Employee Details
           </Typography>
           <Grid container spacing={3} sx={{ mb: 4 }}>
-            <Grid item xs={6}><Typography variant="subtitle2" color="text.secondary">Employee ID</Typography><Typography>{user.empID}</Typography></Grid>
-            <Grid item xs={6}><Typography variant="subtitle2" color="text.secondary">Date Hired</Typography><Typography>{user.dateHired || "—"}</Typography></Grid>
-            <Grid item xs={6}><Typography variant="subtitle2" color="text.secondary">Department</Typography><Typography>{user.department}</Typography></Grid>
-            <Grid item xs={6}><Typography variant="subtitle2" color="text.secondary">Position</Typography><Typography>{user.position}</Typography></Grid>
-            <Grid item xs={12}><Typography variant="subtitle2" color="text.secondary">Address</Typography><Typography>{user.address || "—"}</Typography></Grid>
+            <Grid item xs={6}>
+              <Typography variant="subtitle2" color="text.secondary">
+                Employee ID
+              </Typography>
+              <Typography>{user.empID}</Typography>
+            </Grid>
+            <Grid item xs={6}>
+              <Typography variant="subtitle2" color="text.secondary">
+                Full Name
+              </Typography>
+              <Typography>{user.fullName}</Typography>
+            </Grid>
+
+            <Grid item xs={12}>
+              <Typography variant="subtitle2" color="text.secondary">
+                Address
+              </Typography>
+              <Typography>{user.address || "—"}</Typography>
+            </Grid>
+
+            <Grid item xs={12}>
+              <Typography variant="subtitle2" color="text.secondary">
+                Email
+              </Typography>
+              <Typography>{user.email || "—"}</Typography>
+            </Grid>
+
+            <Grid item xs={12}>
+              <Typography variant="subtitle2" color="text.secondary">
+                Contact No
+              </Typography>
+              <Typography>{user.contactNumber || "—"}</Typography>
+            </Grid>
+
+            <Grid item xs={6}>
+              <Typography variant="subtitle2" color="text.secondary">
+                Department
+              </Typography>
+              <Typography>{user.department}</Typography>
+            </Grid>
+
+            <Grid item xs={6}>
+              <Typography variant="subtitle2" color="text.secondary">
+                Position
+              </Typography>
+              <Typography>{user.position}</Typography>
+            </Grid>
+
+            <Grid item xs={6}>
+              <Typography variant="subtitle2" color="text.secondary">
+                Date Hired
+              </Typography>
+              <Typography>{user.dateHired || "—"}</Typography>
+            </Grid>
           </Grid>
 
           <Box textAlign="center">
-            <Button variant="contained" size="large" onClick={() => setEdit(true)} sx={{ minWidth: 140 }}>
+            <Button
+              variant="contained"
+              size="large"
+              onClick={() => setEdit(true)}
+              sx={{ minWidth: 140 }}
+            >
               Edit Profile
             </Button>
           </Box>
         </>
       ) : (
         <>
-          <Typography variant="h6" sx={{ mb: 3, fontWeight: "medium", color: "primary.main" }}>
+          <Typography
+            variant="h6"
+            sx={{ mb: 3, fontWeight: "medium", color: "primary.main" }}
+          >
             Edit Profile
           </Typography>
           <Grid container spacing={3} sx={{ mb: 4 }}>
-            <Grid item xs={6}><TextField label="Employee ID" value={user.empID} fullWidth disabled /></Grid>
-            <Grid item xs={6}><TextField label="Date Hired" value={user.dateHired || ""} fullWidth disabled /></Grid>
+            <Grid item xs={6}>
+              <TextField
+                label="Employee ID"
+                value={user.empID}
+                fullWidth
+                disabled
+              />
+            </Grid>
+            <Grid item xs={6}>
+              <TextField
+                label="Date Hired"
+                value={user.dateHired || ""}
+                fullWidth
+                disabled
+              />
+            </Grid>
 
             <Grid item xs={12}>
-              <TextField label="Full Name" fullWidth value={temp.fullName}
-                         onChange={(e) => setTemp({ ...temp, fullName: e.target.value })} />
+              <TextField
+                label="Full Name"
+                fullWidth
+                value={temp.fullName}
+                onChange={(e) => setTemp({ ...temp, fullName: e.target.value })}
+              />
             </Grid>
             <Grid item xs={6}>
               <TextField label="Email" fullWidth value={user.email} disabled />
             </Grid>
             <Grid item xs={6}>
-              <TextField label="Contact Number" fullWidth value={temp.contactNumber}
-                         onChange={(e) => setTemp({ ...temp, contactNumber: e.target.value })} />
+              <TextField
+                label="Contact Number"
+                fullWidth
+                value={temp.contactNumber}
+                onChange={(e) =>
+                  setTemp({ ...temp, contactNumber: e.target.value })
+                }
+              />
             </Grid>
-            <Grid item xs={6}><TextField label="Department" fullWidth value={user.department} disabled /></Grid>
-            <Grid item xs={6}><TextField label="Position" fullWidth value={user.position} disabled /></Grid>
+            <Grid item xs={6}>
+              <TextField
+                label="Department"
+                fullWidth
+                value={user.department}
+                disabled
+              />
+            </Grid>
+            <Grid item xs={6}>
+              <TextField
+                label="Position"
+                fullWidth
+                value={user.position}
+                disabled
+              />
+            </Grid>
             <Grid item xs={12}>
-              <TextField label="Address" fullWidth multiline rows={3} value={temp.address}
-                         onChange={(e) => setTemp({ ...temp, address: e.target.value })} />
+              <TextField
+                label="Address"
+                fullWidth
+                multiline
+                rows={3}
+                value={temp.address}
+                onChange={(e) => setTemp({ ...temp, address: e.target.value })}
+              />
             </Grid>
           </Grid>
 
           <Box display="flex" justifyContent="center" gap={3}>
-            <Button variant="contained" onClick={onSave} disabled={saving} sx={{ minWidth: 120 }}>
+            <Button
+              variant="contained"
+              onClick={onSave}
+              disabled={saving}
+              sx={{ minWidth: 120 }}
+            >
               {saving ? "Saving..." : "Save"}
             </Button>
-            <Button variant="outlined" onClick={() => { setTemp(user); setEdit(false); }} disabled={saving} sx={{ minWidth: 120 }}>
+            <Button
+              variant="outlined"
+              onClick={() => {
+                setTemp(user);
+                setEdit(false);
+              }}
+              disabled={saving}
+              sx={{ minWidth: 120 }}
+            >
               Cancel
             </Button>
           </Box>
         </>
       )}
 
-      <Snackbar open={snack.open} autoHideDuration={3000}
-        onClose={() => setSnack((s) => ({ ...s, open: false }))}>
-        <Alert severity={snack.sev} sx={{ width: "100%" }}>{snack.msg}</Alert>
+      <Snackbar
+        open={snack.open}
+        autoHideDuration={3000}
+        onClose={() => setSnack((s) => ({ ...s, open: false }))}
+      >
+        <Alert severity={snack.sev} sx={{ width: "100%" }}>
+          {snack.msg}
+        </Alert>
       </Snackbar>
     </Paper>
   );

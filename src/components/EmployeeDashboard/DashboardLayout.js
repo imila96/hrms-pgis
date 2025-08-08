@@ -32,9 +32,9 @@ const drawerWidth = 240;
 
 const menuItems = [
   { label: "Profile", path: "/employee/profile" },
-  { label: "Salary Details", path: "/employee/salary" },
+  // { label: "Salary Details", path: "/employee/salary" },
   { label: "Attendance", path: "/employee/attendance" },
-  { label: "Leave Management", path: "/employee/leave" },
+  { label: "Leave History", path: "/employee/leave" },
   { label: "Policies & Announcements", path: "/employee/policies" },
   { label: "Complaints / Issues", path: "/employee/complaints" },
   { label: "Public Reports", path: "/employee/reports" },
@@ -77,7 +77,10 @@ const DashboardLayout = () => {
 
   return (
     <Box sx={{ display: "flex" }}>
-      <AppBar position="fixed" sx={{ zIndex: (theme) => theme.zIndex.drawer + 1 }}>
+      <AppBar
+        position="fixed"
+        sx={{ zIndex: (theme) => theme.zIndex.drawer + 1 }}
+      >
         <Toolbar sx={{ display: "flex", justifyContent: "space-between" }}>
           <Typography variant="h6" noWrap>
             Employee Dashboard
@@ -87,7 +90,11 @@ const DashboardLayout = () => {
           <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
             {/* Theme Switch */}
             <IconButton color="inherit" onClick={colorMode.toggleColorMode}>
-              {theme.palette.mode === "dark" ? <Brightness7 /> : <Brightness4 />}
+              {theme.palette.mode === "dark" ? (
+                <Brightness7 />
+              ) : (
+                <Brightness4 />
+              )}
             </IconButton>
 
             {/* Notifications */}
