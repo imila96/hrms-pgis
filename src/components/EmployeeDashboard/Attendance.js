@@ -1,53 +1,149 @@
-// src/components/EmployeeDashboard/Attendance.js
-import React from "react";
+import React, { useState, useEffect } from "react";
 import {
-  Paper,
+  Box,
   Typography,
+  Paper,
   Table,
-  TableBody,
-  TableCell,
   TableHead,
   TableRow,
-  TableContainer,
+  TableCell,
+  TableBody,
+  TextField,
+  Grid,
+  CircularProgress,
 } from "@mui/material";
+import axiosInstance from "../../AxiosInstance";
+import dayjs from "dayjs";
 
 const Attendance = () => {
-  // Dummy attendance records
-  const attendanceRecords = [
-    { date: "2025-07-01", checkIn: "08:30", checkOut: "17:00", status: "Present" },
-    { date: "2025-07-02", checkIn: "08:45", checkOut: "16:50", status: "Present" },
-    { date: "2025-07-03", checkIn: "-", checkOut: "-", status: "Absent" },
-    { date: "2025-07-04", checkIn: "08:40", checkOut: "17:10", status: "Present" },
-  ];
+  const [attendanceRecords, setAttendanceRecords] = useState([]);
+  const [selectedMonth, setSelectedMonth] = useState(dayjs().format("YYYY-MM"));
+  const [loading, setLoading] = useState(false);
+  const [summary, setSummary] = useState(null);
+
+  useEffect(() => {
+    fetchAttendanceData();
+  }, [selectedMonth]);
+
+  const fetchAttendanceData = async () => {
+    setLoading(true);
+    try {
+      const response = await axiosInstance.get("/attendance/me", {
+        params: { month: selectedMonth },
+      });
+      setAttendanceRecords(response.data);
+      calculateSummary(response.data);
+    } catch (error) {
+      console.error("Error fetching attendance data:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const calculateSummary = (records) => {
+    const presentDays = records.filter((r) => r.paidMinutes > 0).length;
+    const absentDays = records.filter((r) => !r.firstIn && !r.lastOut).length;
+    const totalPaidMinutes = records.reduce((sum, r) => sum + r.paidMinutes, 0);
+    const avgWorkingMinutes = presentDays
+      ? Math.round(totalPaidMinutes / presentDays)
+      : 0;
+
+    setSummary({
+      presentDays,
+      absentDays,
+      totalPaidMinutes,
+      avgWorkingMinutes,
+    });
+  };
+
+  const formatTime = (datetime) => {
+    if (!datetime) return "-";
+    return dayjs(datetime).format("hh:mm A");
+  };
+
+  const formatDate = (date) => {
+    return dayjs(date).format("MMM D, YYYY");
+  };
 
   return (
-    <Paper sx={{ p: 3, maxWidth: 800 }}>
-      <Typography variant="h6" gutterBottom>
-        Attendance Records
+    <Box sx={{ p: 3 }}>
+      <Typography variant="h5" gutterBottom>
+        My Attendance
       </Typography>
-      <TableContainer>
-        <Table>
-          <TableHead>
-            <TableRow>
-              <TableCell>Date</TableCell>
-              <TableCell>Check-In Time</TableCell>
-              <TableCell>Check-Out Time</TableCell>
-              <TableCell>Status</TableCell>
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {attendanceRecords.map(({ date, checkIn, checkOut, status }) => (
-              <TableRow key={date}>
-                <TableCell>{date}</TableCell>
-                <TableCell>{checkIn}</TableCell>
-                <TableCell>{checkOut}</TableCell>
-                <TableCell>{status}</TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </TableContainer>
-    </Paper>
+
+      {/* Month Selector */}
+      <Paper sx={{ p: 2, mb: 3 }}>
+        <Grid container spacing={2}>
+          <Grid item xs={12} md={6}>
+            <TextField
+              label="Select Month"
+              type="month"
+              value={selectedMonth}
+              onChange={(e) => setSelectedMonth(e.target.value)}
+              fullWidth
+              InputLabelProps={{ shrink: true }}
+            />
+          </Grid>
+        </Grid>
+      </Paper>
+
+      {loading ? (
+        <Box display="flex" justifyContent="center" mt={5}>
+          <CircularProgress />
+        </Box>
+      ) : (
+        <>
+          {/* Summary Panel */}
+          {summary && (
+            <Paper sx={{ p: 2, mb: 3 }}>
+              <Typography variant="subtitle1">Monthly Summary</Typography>
+              <Grid container spacing={2}>
+                <Grid item xs={12} sm={3}>
+                  Present Days: {summary.presentDays}
+                </Grid>
+                <Grid item xs={12} sm={3}>
+                  Absent Days: {summary.absentDays}
+                </Grid>
+                <Grid item xs={12} sm={3}>
+                  Total Paid Hours: {(summary.totalPaidMinutes / 60).toFixed(1)}{" "}
+                  hrs
+                </Grid>
+                <Grid item xs={12} sm={3}>
+                  Avg Daily Hours: {(summary.avgWorkingMinutes / 60).toFixed(1)}{" "}
+                  hrs
+                </Grid>
+              </Grid>
+            </Paper>
+          )}
+
+          {/* Attendance Table */}
+          <Paper>
+            <Table>
+              <TableHead>
+                <TableRow>
+                  <TableCell>Date</TableCell>
+                  <TableCell>First In</TableCell>
+                  <TableCell>Last Out</TableCell>
+                  <TableCell>Break (min)</TableCell>
+                  <TableCell>Paid (min)</TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {attendanceRecords.map((rec) => (
+                  <TableRow key={rec.workDate}>
+                    <TableCell>{formatDate(rec.workDate)}</TableCell>
+                    <TableCell>{formatTime(rec.firstIn)}</TableCell>
+                    <TableCell>{formatTime(rec.lastOut)}</TableCell>
+                    <TableCell>{rec.breakMinutes}</TableCell>
+                    <TableCell>{rec.paidMinutes}</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </Paper>
+        </>
+      )}
+    </Box>
   );
 };
 

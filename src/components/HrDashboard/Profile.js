@@ -14,6 +14,18 @@ import {
 } from "@mui/material";
 import axiosInstance from "../../AxiosInstance";
 
+const toViewModel = (e) => ({
+  empID: `EMP${e.id}`,
+  id: e.id,
+  fullName: e.name ?? "",
+  email: e.email ?? "",
+  contactNumber: e.contact ?? "",
+  department: e.department ?? "—",
+  position: e.jobTitle ?? "—",
+  dateHired: e.hireDate ?? "",
+  address: e.address ?? "",
+});
+
 const Profile = () => {
   const [user, setUser] = useState(null);
   const [editMode, setEditMode] = useState(false);
@@ -30,23 +42,10 @@ const Profile = () => {
   const fetchEmployee = async () => {
     setLoading(true);
     try {
-      const response = await axiosInstance.get(
-        "http://localhost:8080/hr/employees/14"
-      );
-      const data = response.data;
-
-      const mappedUser = {
-        empID: `EMP${data.id.toString()}`,
-        fullName: data.name,
-        email: data.email,
-        contactNumber: data.contact,
-        department: data.department,
-        position: data.jobTitle,
-        dateHired: data.hireDate,
-        address: data.address,
-      };
-      setUser(mappedUser);
-      setTempUser(mappedUser);
+      const { data } = await axiosInstance.get("/hr/employees/me");
+      const vm = toViewModel(data);
+      setUser(vm);
+      setTempUser(vm);
     } catch (err) {
       console.error(err);
       setError("Failed to load employee profile.");
