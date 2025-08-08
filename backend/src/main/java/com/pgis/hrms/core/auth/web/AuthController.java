@@ -30,7 +30,6 @@ public class AuthController {
         User u = new User();
         u.setEmail(r.email());
         u.setPassword(encoder.encode(r.password()));
-        u.getRoles().add(roleRepo.findByCode("EMPLOYEE").orElseThrow());
         userRepo.save(u);
     }
 

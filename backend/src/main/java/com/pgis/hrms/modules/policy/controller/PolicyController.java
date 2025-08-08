@@ -19,7 +19,7 @@ public class PolicyController {
 
     /* ---------- HR endpoints ---------- */
     @PostMapping
-    @PreAuthorize("hasRole('HR')")
+    @PreAuthorize("hasAnyRole('HR','ADMIN')")
     public Map<String,Integer> create(@AuthenticationPrincipal UserDetails ud,
                                       @RequestBody PolicyDetailDto body) {
         Integer id = svc.create(ud.getUsername(), body);
@@ -27,7 +27,7 @@ public class PolicyController {
     }
 
     @PutMapping("/{id}")
-    @PreAuthorize("hasRole('HR')")
+    @PreAuthorize("hasAnyRole('HR','ADMIN')")
     public void update(@PathVariable Integer id,
                        @AuthenticationPrincipal UserDetails ud,
                        @RequestBody PolicyDetailDto body) {
@@ -36,7 +36,7 @@ public class PolicyController {
 
     /* ---------- Director decision ---------- */
     @PatchMapping("/{id}")
-    @PreAuthorize("hasRole('DIRECTOR')")
+    @PreAuthorize("hasAnyRole('DIRECTOR','ADMIN')")
     public void decide(@PathVariable Integer id,
                        @RequestParam boolean approve,
                        @AuthenticationPrincipal UserDetails ud) {
