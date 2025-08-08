@@ -19,6 +19,7 @@ public class EmployeeController {
     private final EmployeeService employeeService;
 
     @PostMapping
+    @PreAuthorize("hasAnyRole('HR','ADMIN')")
     public ResponseEntity<EmployeeDto> create(@RequestBody EmployeeDto dto) {
         return ResponseEntity.ok(employeeService.createEmployee(dto));
     }

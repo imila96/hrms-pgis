@@ -2,6 +2,7 @@ package com.pgis.hrms.modules.leave.controller;
 
 import com.pgis.hrms.core.auth.repository.UserRepository;
 import com.pgis.hrms.modules.leave.dto.*;
+import com.pgis.hrms.modules.leave.repository.LeaveApplicationRepository;
 import com.pgis.hrms.modules.leave.service.LeaveService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.format.annotation.DateTimeFormat;
@@ -20,6 +21,8 @@ public class LeaveController {
 
     private final LeaveService  svc;
     private final UserRepository userRepo;
+
+    private final LeaveApplicationRepository appRepo;
 
     private Integer currentEmpId(String email) {
         return userRepo.findByEmail(email).map(u->u.getEmployee().getEmployeeId())
@@ -50,5 +53,21 @@ public class LeaveController {
                        @AuthenticationPrincipal UserDetails ud) {
         Integer hrUserId = userRepo.findByEmail(ud.getUsername()).map(u->u.getUserId()).orElse(0);
         svc.decide(leaveId, approve, hrUserId);
+    }
+
+    @GetMapping("/my")
+    @PreAuthorize("hasRole('EMPLOYEE')")
+    public List<MyLeaveDto> myLeaves(@AuthenticationPrincipal UserDetails ud) {
+        int empId = currentEmpId(ud.getUsername());
+        return appRepo.findByEmployeeEmployeeIdOrderByRequestedAtDesc(empId)
+                .stream()
+                .map(a -> new MyLeaveDto(
+                        a.getLeaveId(),
+                        a.getLeaveType(),
+                        a.getStartDate(),
+                        a.getEndDate(),
+                        a.getStatus(),
+                        a.getReason()))
+                .toList();
     }
 }

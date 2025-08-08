@@ -2,6 +2,7 @@ package com.pgis.hrms.modules.leave.service;
 
 import com.pgis.hrms.core.employee.entity.Employee;
 import com.pgis.hrms.core.employee.repository.EmployeeRepository;
+import com.pgis.hrms.modules.leave.config.LeaveConfig;
 import com.pgis.hrms.modules.leave.dto.*;
 import com.pgis.hrms.modules.leave.model.*;
 import com.pgis.hrms.modules.leave.repository.*;
@@ -12,10 +13,14 @@ import org.springframework.web.multipart.MultipartFile;
 import java.time.*;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
 public class LeaveService {
+
+    private final LeaveConfig leaveConfig;
 
     private final EmployeeRepository       empRepo;
     private final LeaveApplicationRepository appRepo;
@@ -87,10 +92,37 @@ public class LeaveService {
     }
 
     // balance view
-    @Transactional(readOnly = true)
+    @Transactional
     public List<LeaveBalanceDto> balances(Integer empId, int year) {
-        return balRepo.findByEmployeeEmployeeIdAndYear(empId, year)
+        Employee emp = empRepo.getReferenceById(empId);
+
+        // existing balances for this employee/year
+        Map<LeaveType, LeaveBalance> existing = balRepo
+                .findByEmployeeEmployeeIdAndYear(empId, year)
                 .stream()
+                .collect(Collectors.toMap(LeaveBalance::getLeaveType, Function.identity()));
+
+        // seed missing & align entitlements from properties
+        leaveConfig.getEntitlements().forEach((type, entitled) -> {
+            LeaveBalance b = existing.get(type);
+            if (b == null) {
+                b = new LeaveBalance();
+                b.setEmployee(emp);
+                b.setLeaveType(type);
+                b.setYear(year);
+                b.setEntitled(entitled);
+                b.setTaken(0);
+                balRepo.save(b);
+                existing.put(type, b);
+            } else if (b.getEntitled() != entitled) {
+                // optional: update if config changed
+                b.setEntitled(entitled);
+                balRepo.save(b);
+            }
+        });
+
+        return existing.values().stream()
+                .sorted(Comparator.comparing(LeaveBalance::getLeaveType))
                 .map(b -> new LeaveBalanceDto(b.getLeaveType(), b.getEntitled(), b.getTaken(), b.remaining()))
                 .toList();
     }

@@ -11,4 +11,6 @@ public interface LeaveApplicationRepository extends JpaRepository<LeaveApplicati
     List<LeaveApplication>
     findByStatusOrderByRequestedAtDesc(LeaveStatus status);
 
+    List<LeaveApplication> findByEmployeeEmployeeIdOrderByRequestedAtDesc(Integer employeeId);
+
 }
