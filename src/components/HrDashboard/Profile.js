@@ -40,7 +40,7 @@ const Profile = () => {
         fullName: data.name,
         email: data.email,
         contactNumber: data.contact,
-        department: "Human Resources", // if not from backend
+        department: data.department,
         position: data.jobTitle,
         dateHired: data.hireDate,
         address: data.address,
@@ -218,7 +218,6 @@ const Profile = () => {
         </Alert>
       </Snackbar>
 
-      {/* Header with Avatar and basic info */}
       <Box
         display="flex"
         alignItems="center"

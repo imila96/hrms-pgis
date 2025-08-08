@@ -1,6 +1,7 @@
 package com.pgis.hrms.core.employee.entity;
 
 import com.pgis.hrms.core.auth.entity.User;
+import jakarta.annotation.Nullable;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -23,6 +24,8 @@ public class Employee {
     private String  jobTitle;
     private LocalDate hireDate;
     private String email;
+    @Column(nullable = true)
+    private String department;
 
     /* link back to auth account */
     @OneToOne @MapsId
