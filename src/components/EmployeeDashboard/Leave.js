@@ -89,33 +89,40 @@ export default function Leave() {
 
       <TableContainer>
         <Table>
-          <TableHead>
-            <TableRow>
-              <TableCell>Leave Type</TableCell>
-              <TableCell>Start Date</TableCell>
-              <TableCell>End Date</TableCell>
-              <TableCell>Status</TableCell>
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {leaves.length === 0 ? (
-              <TableRow>
-                <TableCell colSpan={4} align="center">No leave applications yet.</TableCell>
-              </TableRow>
-            ) : (
-              leaves.map(row => (
-                <TableRow key={row.id}>
-                  <TableCell>{row.type}</TableCell>
-                  <TableCell>{row.start}</TableCell>
-                  <TableCell>{row.end}</TableCell>
-                  <TableCell>
-                    <Chip size="small" label={row.status} color={statusColor(row.status)} />
-                  </TableCell>
-                </TableRow>
-              ))
-            )}
-          </TableBody>
-        </Table>
+  <TableHead>
+    <TableRow>
+      <TableCell>Leave Type</TableCell>
+      <TableCell>Start Date</TableCell>
+      <TableCell>End Date</TableCell>
+      <TableCell>Reason</TableCell> {/* NEW */}
+      <TableCell>Status</TableCell>
+    </TableRow>
+  </TableHead>
+  <TableBody>
+    {leaves.length === 0 ? (
+      <TableRow>
+        <TableCell colSpan={5} align="center">No leave applications yet.</TableCell>
+      </TableRow>
+    ) : (
+      leaves.map(row => (
+        <TableRow key={row.id}>
+          <TableCell>{row.type}</TableCell>
+          <TableCell>{row.start}</TableCell>
+          <TableCell>{row.end}</TableCell>
+          <TableCell title={row.reason || "—"}>
+            <Box sx={{ maxWidth: 260, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+              {row.reason || "—"}
+            </Box>
+          </TableCell>
+          <TableCell>
+            <Chip size="small" label={row.status} color={statusColor(row.status)} />
+          </TableCell>
+        </TableRow>
+      ))
+    )}
+  </TableBody>
+</Table>
+
       </TableContainer>
 
       {/* Apply dialog */}

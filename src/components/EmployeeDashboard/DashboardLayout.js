@@ -34,7 +34,7 @@ const menuItems = [
   { label: "Profile", path: "/employee/profile" },
   // { label: "Salary Details", path: "/employee/salary" },
   { label: "Attendance", path: "/employee/attendance" },
-  { label: "Leave History", path: "/employee/leave" },
+  { label: "My Leaves", path: "/employee/leave" },
   { label: "Policies & Announcements", path: "/employee/policies" },
   { label: "Complaints / Issues", path: "/employee/complaints" },
   { label: "Public Reports", path: "/employee/reports" },

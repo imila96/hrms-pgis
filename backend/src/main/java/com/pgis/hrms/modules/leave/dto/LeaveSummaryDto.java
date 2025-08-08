@@ -10,4 +10,6 @@ public record LeaveSummaryDto(
         LeaveType type,
         LocalDate start,
         LocalDate end,
-        LeaveStatus status) {}
+        LeaveStatus status,
+        String  reason
+) {}
