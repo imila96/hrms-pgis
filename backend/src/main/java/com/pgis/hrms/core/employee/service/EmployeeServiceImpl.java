@@ -33,6 +33,7 @@ public class EmployeeServiceImpl implements EmployeeService {
             u.setEmail(dto.getEmail());
             // set a temp password or your own onboarding flow
             u.setPassword(encoder.encode("Temp123!"));
+            u.setAdminPasswordAssigned(false);
             return userRepo.save(u);
         });
 

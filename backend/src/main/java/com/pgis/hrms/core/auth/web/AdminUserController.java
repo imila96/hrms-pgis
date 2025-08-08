@@ -111,4 +111,26 @@ public class AdminUserController {
         return new UserSummary(u.getUserId(), u.getEmail(), roleCodes, hasEmployee);
         // if LAZY breaks here, replace with: boolean hasEmployee = empRepo.existsById(u.getUserId());
     }
+
+    @GetMapping("/pending-password")
+    public List<UserSummary> pendingPassword() {
+        return userRepo.findAll().stream()
+                .filter(u -> Boolean.FALSE.equals(u.getAdminPasswordAssigned()))
+                .filter(u -> u.getEmployee() != null)
+                .map(this::toSummary)
+                .toList();
+    }
+
+    // B) Admin sets initial password for an existing user
+    @PutMapping("/{id}/password")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void setPassword(@PathVariable Integer id, @RequestBody @Valid SetPasswordRequest r) {
+        var u = userRepo.findById(id).orElseThrow();
+        u.setPassword(encoder.encode(r.password()));
+        u.setAdminPasswordAssigned(true);
+        u.setPasswordChangedAt(java.time.LocalDateTime.now());
+        userRepo.save(u);
+    }
+
+    public record SetPasswordRequest(@jakarta.validation.constraints.Size(min = 6) String password) {}
 }
