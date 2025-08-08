@@ -1,5 +1,6 @@
 package com.pgis.hrms.core.auth.web;
 
+import com.pgis.hrms.core.auth.dto.PendingUserDto;
 import com.pgis.hrms.core.auth.entity.Role;
 import com.pgis.hrms.core.auth.entity.User;
 import com.pgis.hrms.core.auth.repository.RoleRepository;
@@ -53,6 +54,9 @@ public class AdminUserController {
         User u = new User();
         u.setEmail(r.email());
         u.setPassword(encoder.encode(r.password()));
+        // Admin is setting the password now → mark as assigned
+        u.setAdminPasswordAssigned(true);
+        u.setPasswordChangedAt(java.time.LocalDateTime.now());
         userRepo.save(u); // no roles here
         return toSummary(u);
     }
@@ -75,15 +79,14 @@ public class AdminUserController {
         Set<String> trigger = Set.of("ADMIN", "HR", "EMPLOYEE");
         if (!Collections.disjoint(r.roles(), trigger) && empRepo.findById(u.getUserId()).isEmpty()) {
             Employee e = new Employee();
-            e.setUser(u); // <-- @MapsId copies PK from u.getUserId()
+            e.setUser(u); // @MapsId copies PK from u.getUserId()
             e.setName(Optional.ofNullable(r.name()).orElse(u.getEmail()));
             e.setEmail(Optional.ofNullable(r.empEmail()).orElse(u.getEmail()));
             e.setJobTitle(Optional.ofNullable(r.jobTitle()).orElse("Staff"));
             e.setHireDate(Optional.ofNullable(r.hireDate()).orElse(LocalDate.now()));
             e.setContact(r.contact());
             e.setAddress(r.address());
-
-            empRepo.save(e); // will PERSIST (id is null), PK comes from @MapsId
+            empRepo.save(e);
         }
     }
 
@@ -91,37 +94,11 @@ public class AdminUserController {
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void delete(@PathVariable Integer id) {
-        // optional: delete employee row first because of FK
-        empRepo.findById(id).ifPresent(empRepo::delete);
+        empRepo.findById(id).ifPresent(empRepo::delete); // due to FK
         userRepo.deleteById(id);
     }
 
-    /* ------------------------- DTOs -------------------------- */
-    public record CreateUserRequest(@Email String email, @Size(min = 6) String password) {}
-    public record SetRolesRequest(
-            @NotEmpty Set<String> roles,   // e.g. ["ADMIN"] or ["HR"] or ["EMPLOYEE"]
-            String name, String contact, String jobTitle, LocalDate hireDate, String address,
-            String empEmail               // optional, employee email; default uses user's email
-    ) {}
-    public record UserSummary(Integer id, String email, List<String> roles, boolean hasEmployee) {}
-
-    private UserSummary toSummary(User u) {
-        List<String> roleCodes = u.getRoles().stream().map(Role::getCode).toList();
-        boolean hasEmployee = u.getEmployee() != null;
-        return new UserSummary(u.getUserId(), u.getEmail(), roleCodes, hasEmployee);
-        // if LAZY breaks here, replace with: boolean hasEmployee = empRepo.existsById(u.getUserId());
-    }
-
-    @GetMapping("/pending-password")
-    public List<UserSummary> pendingPassword() {
-        return userRepo.findAll().stream()
-                .filter(u -> Boolean.FALSE.equals(u.getAdminPasswordAssigned()))
-                .filter(u -> u.getEmployee() != null)
-                .map(this::toSummary)
-                .toList();
-    }
-
-    // B) Admin sets initial password for an existing user
+    /* -------------------- PASSWORD ASSIGN -------------------- */
     @PutMapping("/{id}/password")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void setPassword(@PathVariable Integer id, @RequestBody @Valid SetPasswordRequest r) {
@@ -132,5 +109,33 @@ public class AdminUserController {
         userRepo.save(u);
     }
 
-    public record SetPasswordRequest(@jakarta.validation.constraints.Size(min = 6) String password) {}
+    /* --------- PENDING (HR-created, no admin password yet) --- */
+    @GetMapping("/pending-password")
+    public List<PendingUserDto> pendingPassword() {
+        return userRepo.findPendingUsersWithEmployee();
+    }
+
+    /* ------------------------- DTOs -------------------------- */
+    public record CreateUserRequest(@Email String email, @Size(min = 6) String password) {}
+    public record SetRolesRequest(
+            @NotEmpty Set<String> roles,
+            String name, String contact, String jobTitle, LocalDate hireDate, String address,
+            String empEmail
+    ) {}
+    public record SetPasswordRequest(@Size(min = 6) String password) {}
+
+    public record UserSummary(
+            Integer id,
+            String email,
+            List<String> roles,
+            boolean hasEmployee,
+            boolean adminPasswordAssigned // NEW
+    ) {}
+
+    private UserSummary toSummary(User u) {
+        List<String> roleCodes = u.getRoles().stream().map(Role::getCode).toList();
+        boolean hasEmployee = u.getEmployee() != null; // or empRepo.existsById(u.getUserId())
+        boolean assigned = Boolean.TRUE.equals(u.getAdminPasswordAssigned());
+        return new UserSummary(u.getUserId(), u.getEmail(), roleCodes, hasEmployee, assigned);
+    }
 }
