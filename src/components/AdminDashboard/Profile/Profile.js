@@ -1,5 +1,5 @@
-// src/components/EmployeeDashboard/Profile.js
-import React, { useState } from "react";
+// src/components/AdminDashboard/Profile/Profile.js
+import React, { useEffect, useState } from "react";
 import {
   Box,
   Typography,
@@ -8,33 +8,53 @@ import {
   Grid,
   TextField,
   Button,
-  Divider,
 } from "@mui/material";
-
-const initialUser = {
-  staffID: "EMP123456",
-  fullName: "Bathiya Wimalasinghe",
-  email: "bathiya0@gmail.com",
-  contactNumber: "+94 71 234 5678",
-  department: "administration",
-  position: "System Administrator",
-  dateHired: "2019-01-15",
-  userID: "u004",
-  avatarUrl: "https://i.pravatar.cc/150?img=3",
-};
+import api from "../../../AxiosInstance"; // NOTE: path is correct for this folder depth
 
 const Profile = () => {
-  const [user, setUser] = useState(initialUser);
+  const [user, setUser] = useState(null);
+  const [tempUser, setTempUser] = useState(null);
   const [editMode, setEditMode] = useState(false);
-  const [tempUser, setTempUser] = useState(user);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+
+  // Fetch real profile on mount
+  useEffect(() => {
+    let mounted = true;
+    (async () => {
+      try {
+        const { data } = await api.get("/hr/employees/me"); // JWT auto-attached
+        if (!mounted) return;
+
+        const mapped = {
+          staffID: String(data.id ?? ""),
+          userID: String(data.userId ?? ""),
+          fullName: data.name ?? "",
+          email: data.email ?? "",
+          contactNumber: data.contact ?? "",
+          department: data.department ?? "", // backend may not have this yet
+          position: data.jobTitle ?? "",
+          dateHired: data.hireDate ?? "",
+          avatarUrl: `https://ui-avatars.com/api/?name=${encodeURIComponent(
+            data.name || "U"
+          )}`,
+        };
+        setUser(mapped);
+        setTempUser(mapped);
+      } catch (e) {
+        setError(e?.response?.data?.message || "Failed to load profile");
+      } finally {
+        setLoading(false);
+      }
+    })();
+    return () => {
+      mounted = false;
+    };
+  }, []);
 
   const handleEditToggle = () => {
-    if (editMode) {
-      setTempUser(user); // discard changes on cancel
-      setEditMode(false);
-    } else {
-      setEditMode(true);
-    }
+    if (editMode) setTempUser(user); // discard edits on cancel
+    setEditMode(!editMode);
   };
 
   const handleChange = (e) => {
@@ -42,11 +62,33 @@ const Profile = () => {
     setTempUser((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleSave = () => {
-    // Add API call here if needed
+  const handleSave = async () => {
+    // Enable when backend PUT is ready. For now, keep local update.
+    // await api.put(`/hr/employees/${tempUser.staffID}`, {
+    //   id: Number(tempUser.staffID),
+    //   userId: Number(tempUser.userID),
+    //   name: tempUser.fullName,
+    //   email: tempUser.email,
+    //   contact: tempUser.contactNumber,
+    //   jobTitle: tempUser.position,
+    //   hireDate: tempUser.dateHired,
+    //   address: "",
+    // });
     setUser(tempUser);
     setEditMode(false);
   };
+
+  if (loading)
+    return (
+      <Typography sx={{ mt: 6, textAlign: "center" }}>Loading…</Typography>
+    );
+  if (error)
+    return (
+      <Typography color="error" sx={{ mt: 6, textAlign: "center" }}>
+        {error}
+      </Typography>
+    );
+  if (!user) return null;
 
   return (
     <Paper
@@ -222,12 +264,7 @@ const Profile = () => {
             </Grid>
           </Grid>
 
-          <Box
-            display="flex"
-            justifyContent="center"
-            gap={3}
-            sx={{ mt: 2 }}
-          >
+          <Box display="flex" justifyContent="center" gap={3} sx={{ mt: 2 }}>
             <Button
               variant="contained"
               color="primary"
