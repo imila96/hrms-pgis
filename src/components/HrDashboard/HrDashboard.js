@@ -33,6 +33,7 @@ import AttendanceTracking from "./AttendanceTracking";
 import RecruitmentManagement from "./RecruitmentManagement";
 import PolicyManagement from "./PolicyManagement";
 import Profile from "./Profile";
+import AnnouncementManagement from "./AnnouncementManagement";
 
 // Optional: theme context
 const ColorModeContext = React.createContext({ toggleColorMode: () => {} });
@@ -46,6 +47,7 @@ const tabItems = [
   { label: "Attendance Tracking", path: "/hr/attendance" },
   { label: "Recruitment", path: "/hr/recruitment" },
   { label: "Policies", path: "/hr/policies" },
+  { label: "Announcements", path: "/hr/announcements" },
 ];
 
 const HrDashboard = () => {
@@ -80,7 +82,10 @@ const HrDashboard = () => {
 
   return (
     <Box sx={{ display: "flex" }}>
-      <AppBar position="fixed" sx={{ zIndex: (theme) => theme.zIndex.drawer + 1 }}>
+      <AppBar
+        position="fixed"
+        sx={{ zIndex: (theme) => theme.zIndex.drawer + 1 }}
+      >
         <Toolbar sx={{ display: "flex", justifyContent: "space-between" }}>
           <Typography variant="h6" noWrap>
             HR Dashboard
@@ -89,7 +94,11 @@ const HrDashboard = () => {
           <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
             {/* Theme Toggle */}
             <IconButton color="inherit" onClick={colorMode.toggleColorMode}>
-              {theme.palette.mode === "dark" ? <Brightness7 /> : <Brightness4 />}
+              {theme.palette.mode === "dark" ? (
+                <Brightness7 />
+              ) : (
+                <Brightness4 />
+              )}
             </IconButton>
 
             {/* Notifications */}
@@ -106,7 +115,9 @@ const HrDashboard = () => {
                   <Avatar src={user.photoURL} />
                 ) : (
                   <Avatar>
-                    {getInitials(user?.name || user?.email) || <AccountCircleIcon />}
+                    {getInitials(user?.name || user?.email) || (
+                      <AccountCircleIcon />
+                    )}
                   </Avatar>
                 )}
               </IconButton>
@@ -132,7 +143,10 @@ const HrDashboard = () => {
         sx={{
           width: drawerWidth,
           flexShrink: 0,
-          [`& .MuiDrawer-paper`]: { width: drawerWidth, boxSizing: "border-box" },
+          [`& .MuiDrawer-paper`]: {
+            width: drawerWidth,
+            boxSizing: "border-box",
+          },
         }}
       >
         <Toolbar />
@@ -163,6 +177,7 @@ const HrDashboard = () => {
           <Route path="attendance" element={<AttendanceTracking />} />
           <Route path="recruitment" element={<RecruitmentManagement />} />
           <Route path="policies" element={<PolicyManagement />} />
+          <Route path="announcements" element={<AnnouncementManagement />} />
         </Routes>
       </Box>
     </Box>

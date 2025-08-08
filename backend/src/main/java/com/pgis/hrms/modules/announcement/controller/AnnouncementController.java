@@ -20,7 +20,6 @@ public class AnnouncementController {
 
     private final AnnouncementService svc;
 
-    /* ──────────────── HR workflow ──────────────── */
 
     /** create a new draft (HR / Admin) */
     @PostMapping
