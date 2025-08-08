@@ -1,292 +1,148 @@
 // src/components/AdminDashboard/Profile/Profile.js
 import React, { useEffect, useState } from "react";
 import {
-  Box,
-  Typography,
-  Avatar,
-  Paper,
-  Grid,
-  TextField,
-  Button,
+  Box, Typography, Paper, Grid, TextField, Button,
+  Snackbar, Alert, CircularProgress
 } from "@mui/material";
-import api from "../../../AxiosInstance"; // NOTE: path is correct for this folder depth
+import api from "../../../AxiosInstance";
 
-const Profile = () => {
+const mapVM = (e) => ({
+  empID: `EMP${e.id}`,
+  id: e.id,
+  fullName: e.name ?? "",
+  email: e.email ?? "",
+  contactNumber: e.contact ?? "",
+  department: e.department ?? "—",
+  position: e.jobTitle ?? "—",
+  dateHired: e.hireDate ?? "",
+  address: e.address ?? "",
+});
+
+export default function AdminProfile() {
   const [user, setUser] = useState(null);
-  const [tempUser, setTempUser] = useState(null);
-  const [editMode, setEditMode] = useState(false);
+  const [temp, setTemp] = useState(null);
+  const [edit, setEdit] = useState(false);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [snack, setSnack] = useState({ open: false, msg: "", sev: "success" });
 
-  // Fetch real profile on mount
   useEffect(() => {
-    let mounted = true;
     (async () => {
       try {
-        const { data } = await api.get("/hr/employees/me"); // JWT auto-attached
-        if (!mounted) return;
-
-        const mapped = {
-          staffID: String(data.id ?? ""),
-          userID: String(data.userId ?? ""),
-          fullName: data.name ?? "",
-          email: data.email ?? "",
-          contactNumber: data.contact ?? "",
-          department: data.department ?? "", // backend may not have this yet
-          position: data.jobTitle ?? "",
-          dateHired: data.hireDate ?? "",
-          avatarUrl: `https://ui-avatars.com/api/?name=${encodeURIComponent(
-            data.name || "U"
-          )}`,
-        };
-        setUser(mapped);
-        setTempUser(mapped);
-      } catch (e) {
-        setError(e?.response?.data?.message || "Failed to load profile");
+        const { data } = await api.get("/hr/employees/me");
+        const vm = mapVM(data);
+        setUser(vm);
+        setTemp(vm);
+      } catch {
+        setSnack({ open: true, msg: "Failed to load profile", sev: "error" });
       } finally {
         setLoading(false);
       }
     })();
-    return () => {
-      mounted = false;
-    };
   }, []);
 
-  const handleEditToggle = () => {
-    if (editMode) setTempUser(user); // discard edits on cancel
-    setEditMode(!editMode);
+  const onSave = async () => {
+    try {
+      setSaving(true);
+      await api.put(`/hr/employees/${user.id}`, {
+        id: user.id,
+        name: temp.fullName,
+        email: user.email,          // keep read-only
+        contact: temp.contactNumber,
+        jobTitle: user.position,    // keep read-only here
+        hireDate: user.dateHired,   // keep read-only here
+        address: temp.address,
+      });
+      setUser({ ...temp });
+      setEdit(false);
+      setSnack({ open: true, msg: "Profile updated", sev: "success" });
+    } catch {
+      setSnack({ open: true, msg: "Update failed", sev: "error" });
+    } finally {
+      setSaving(false);
+    }
   };
 
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    setTempUser((prev) => ({ ...prev, [name]: value }));
-  };
-
-  const handleSave = async () => {
-    // Enable when backend PUT is ready. For now, keep local update.
-    // await api.put(`/hr/employees/${tempUser.staffID}`, {
-    //   id: Number(tempUser.staffID),
-    //   userId: Number(tempUser.userID),
-    //   name: tempUser.fullName,
-    //   email: tempUser.email,
-    //   contact: tempUser.contactNumber,
-    //   jobTitle: tempUser.position,
-    //   hireDate: tempUser.dateHired,
-    //   address: "",
-    // });
-    setUser(tempUser);
-    setEditMode(false);
-  };
-
-  if (loading)
+  if (loading) {
     return (
-      <Typography sx={{ mt: 6, textAlign: "center" }}>Loading…</Typography>
+      <Box sx={{ display: "grid", placeItems: "center", height: 300 }}>
+        <CircularProgress />
+      </Box>
     );
-  if (error)
-    return (
-      <Typography color="error" sx={{ mt: 6, textAlign: "center" }}>
-        {error}
-      </Typography>
-    );
+  }
   if (!user) return null;
 
   return (
-    <Paper
-      sx={{
-        p: 5,
-        maxWidth: 720,
-        mx: "auto",
-        mt: 5,
-        boxShadow: 3,
-        borderRadius: 3,
-        backgroundColor: (theme) =>
-          theme.palette.mode === "light" ? "#fafafa" : "#121212",
-      }}
-    >
-      {/* Header with Avatar and basic info */}
-      <Box
-        display="flex"
-        alignItems="center"
-        mb={4}
-        sx={{ borderBottom: 1, borderColor: "divider", pb: 3 }}
-      >
-        <Avatar
-          src={user.avatarUrl}
-          alt={user.fullName}
-          sx={{ width: 96, height: 96, mr: 4, boxShadow: 2 }}
-        />
+    <Paper sx={{ p: 5, maxWidth: 720, mx: "auto", mt: 5, boxShadow: 3, borderRadius: 3 }}>
+      <Box display="flex" alignItems="center" mb={4} sx={{ borderBottom: 1, borderColor: "divider", pb: 3 }}>
         <Box>
-          <Typography variant="h4" fontWeight="bold" gutterBottom>
-            {user.fullName}
-          </Typography>
-          <Typography variant="subtitle1" color="text.secondary" gutterBottom>
-            {user.position}
-          </Typography>
-          <Typography variant="body2" color="text.secondary">
-            {user.email}
-          </Typography>
-          <Typography variant="body2" color="text.secondary">
-            {user.contactNumber}
-          </Typography>
+          <Typography variant="h4" fontWeight="bold" gutterBottom>{user.fullName}</Typography>
+          <Typography variant="subtitle1" color="text.secondary" gutterBottom>{user.position}</Typography>
+          <Typography variant="body2" color="text.secondary">{user.email}</Typography>
+          <Typography variant="body2" color="text.secondary">{user.contactNumber}</Typography>
         </Box>
       </Box>
 
-      {/* Main content area */}
-      {!editMode ? (
+      {!edit ? (
         <>
-          <Typography
-            variant="h6"
-            sx={{ mb: 2, fontWeight: "medium", color: "primary.main" }}
-          >
+          <Typography variant="h6" sx={{ mb: 2, fontWeight: "medium", color: "primary.main" }}>
             Employee Details
           </Typography>
           <Grid container spacing={3} sx={{ mb: 4 }}>
-            <Grid item xs={6}>
-              <Typography variant="subtitle2" color="text.secondary" gutterBottom>
-                Staff ID
-              </Typography>
-              <Typography variant="body1">{user.staffID}</Typography>
-            </Grid>
-            <Grid item xs={6}>
-              <Typography variant="subtitle2" color="text.secondary" gutterBottom>
-                User ID
-              </Typography>
-              <Typography variant="body1">{user.userID}</Typography>
-            </Grid>
-            <Grid item xs={6}>
-              <Typography variant="subtitle2" color="text.secondary" gutterBottom>
-                Department
-              </Typography>
-              <Typography variant="body1">{user.department}</Typography>
-            </Grid>
-            <Grid item xs={6}>
-              <Typography variant="subtitle2" color="text.secondary" gutterBottom>
-                Date Hired
-              </Typography>
-              <Typography variant="body1">{user.dateHired}</Typography>
-            </Grid>
+            <Grid item xs={6}><Typography variant="subtitle2" color="text.secondary">Employee ID</Typography><Typography>{user.empID}</Typography></Grid>
+            <Grid item xs={6}><Typography variant="subtitle2" color="text.secondary">Date Hired</Typography><Typography>{user.dateHired || "—"}</Typography></Grid>
+            <Grid item xs={6}><Typography variant="subtitle2" color="text.secondary">Department</Typography><Typography>{user.department}</Typography></Grid>
+            <Grid item xs={6}><Typography variant="subtitle2" color="text.secondary">Position</Typography><Typography>{user.position}</Typography></Grid>
+            <Grid item xs={12}><Typography variant="subtitle2" color="text.secondary">Address</Typography><Typography>{user.address || "—"}</Typography></Grid>
           </Grid>
 
           <Box textAlign="center">
-            <Button
-              variant="contained"
-              size="large"
-              onClick={handleEditToggle}
-              sx={{ minWidth: 140 }}
-            >
+            <Button variant="contained" size="large" onClick={() => setEdit(true)} sx={{ minWidth: 140 }}>
               Edit Profile
             </Button>
           </Box>
         </>
       ) : (
         <>
-          <Typography
-            variant="h6"
-            sx={{ mb: 3, fontWeight: "medium", color: "primary.main" }}
-          >
+          <Typography variant="h6" sx={{ mb: 3, fontWeight: "medium", color: "primary.main" }}>
             Edit Profile
           </Typography>
           <Grid container spacing={3} sx={{ mb: 4 }}>
-            <Grid item xs={6}>
-              <TextField
-                label="Staff ID"
-                name="staffID"
-                value={tempUser.staffID}
-                onChange={handleChange}
-                fullWidth
-              />
+            <Grid item xs={6}><TextField label="Employee ID" value={user.empID} fullWidth disabled /></Grid>
+            <Grid item xs={6}><TextField label="Date Hired" value={user.dateHired || ""} fullWidth disabled /></Grid>
+
+            <Grid item xs={12}>
+              <TextField label="Full Name" fullWidth value={temp.fullName}
+                         onChange={(e) => setTemp({ ...temp, fullName: e.target.value })} />
             </Grid>
+            <Grid item xs={6}><TextField label="Email" fullWidth value={user.email} disabled /></Grid>
             <Grid item xs={6}>
-              <TextField
-                label="User ID"
-                name="userID"
-                value={tempUser.userID}
-                onChange={handleChange}
-                fullWidth
-              />
+              <TextField label="Contact Number" fullWidth value={temp.contactNumber}
+                         onChange={(e) => setTemp({ ...temp, contactNumber: e.target.value })} />
             </Grid>
-            <Grid item xs={6}>
-              <TextField
-                label="Full Name"
-                name="fullName"
-                value={tempUser.fullName}
-                onChange={handleChange}
-                fullWidth
-              />
-            </Grid>
-            <Grid item xs={6}>
-              <TextField
-                label="Email"
-                name="email"
-                type="email"
-                value={tempUser.email}
-                onChange={handleChange}
-                fullWidth
-              />
-            </Grid>
-            <Grid item xs={6}>
-              <TextField
-                label="Contact Number"
-                name="contactNumber"
-                value={tempUser.contactNumber}
-                onChange={handleChange}
-                fullWidth
-              />
-            </Grid>
-            <Grid item xs={6}>
-              <TextField
-                label="Department"
-                name="department"
-                value={tempUser.department}
-                onChange={handleChange}
-                fullWidth
-              />
-            </Grid>
-            <Grid item xs={6}>
-              <TextField
-                label="Position"
-                name="position"
-                value={tempUser.position}
-                onChange={handleChange}
-                fullWidth
-              />
-            </Grid>
-            <Grid item xs={6}>
-              <TextField
-                label="Date Hired"
-                name="dateHired"
-                type="date"
-                value={tempUser.dateHired}
-                onChange={handleChange}
-                InputLabelProps={{ shrink: true }}
-                fullWidth
-              />
+            <Grid item xs={6}><TextField label="Department" fullWidth value={user.department} disabled /></Grid>
+            <Grid item xs={6}><TextField label="Position" fullWidth value={user.position} disabled /></Grid>
+            <Grid item xs={12}>
+              <TextField label="Address" fullWidth multiline rows={3} value={temp.address}
+                         onChange={(e) => setTemp({ ...temp, address: e.target.value })} />
             </Grid>
           </Grid>
 
-          <Box display="flex" justifyContent="center" gap={3} sx={{ mt: 2 }}>
-            <Button
-              variant="contained"
-              color="primary"
-              size="large"
-              onClick={handleSave}
-              sx={{ minWidth: 120 }}
-            >
-              Save
+          <Box display="flex" justifyContent="center" gap={3}>
+            <Button variant="contained" onClick={onSave} disabled={saving} sx={{ minWidth: 120 }}>
+              {saving ? "Saving..." : "Save"}
             </Button>
-            <Button
-              variant="outlined"
-              size="large"
-              onClick={handleEditToggle}
-              sx={{ minWidth: 120 }}
-            >
+            <Button variant="outlined" onClick={() => { setTemp(user); setEdit(false); }} disabled={saving} sx={{ minWidth: 120 }}>
               Cancel
             </Button>
           </Box>
         </>
       )}
+
+      <Snackbar open={snack.open} autoHideDuration={3000}
+        onClose={() => setSnack((s) => ({ ...s, open: false }))}>
+        <Alert severity={snack.sev} sx={{ width: "100%" }}>{snack.msg}</Alert>
+      </Snackbar>
     </Paper>
   );
-};
-
-export default Profile;
+}
