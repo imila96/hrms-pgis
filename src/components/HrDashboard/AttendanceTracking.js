@@ -1,3 +1,4 @@
+// src/components/HRDashboard/AttendanceTracking.js
 import React, { useState, useEffect } from "react";
 import {
   Box,
@@ -38,7 +39,9 @@ const AttendanceTracking = () => {
 
   const fetchEmployees = async () => {
     try {
-      const response = await axiosInstance.get("/hr/employees");
+      const response = await axiosInstance.get(
+        "http://localhost:8080/hr/employees"
+      );
       setEmployees(response.data);
     } catch (error) {
       console.error("Error fetching employees:", error);
@@ -49,7 +52,7 @@ const AttendanceTracking = () => {
     setLoading(true);
     try {
       const response = await axiosInstance.get(
-        `/attendance/${selectedEmployee}`,
+        `http://localhost:8080/attendance/${selectedEmployee}`,
         {
           params: { month: selectedMonth },
         }
@@ -91,7 +94,7 @@ const AttendanceTracking = () => {
   return (
     <Box sx={{ p: 3 }}>
       <Typography variant="h5" gutterBottom>
-        Attendance Tracking (HR View)
+        Attendance Tracking
       </Typography>
 
       {/* Filters Section */}
@@ -109,10 +112,7 @@ const AttendanceTracking = () => {
                 <MenuItem key={emp.id} value={emp.id}>
                   <Grid container alignItems="center" spacing={1}>
                     <Grid item>
-                      <Avatar alt={emp.fullName} src={emp.avatarUrl} />
-                    </Grid>
-                    <Grid item>
-                      {emp.fullName} ({emp.staffID})
+                      {emp.name} ({emp.id})
                     </Grid>
                   </Grid>
                 </MenuItem>

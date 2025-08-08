@@ -14,7 +14,6 @@ axiosInstance.interceptors.request.use(
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
-    console.log('AUTH HDR ->', config.headers.Authorization);
     return config;
   },
   (error) => Promise.reject(error)

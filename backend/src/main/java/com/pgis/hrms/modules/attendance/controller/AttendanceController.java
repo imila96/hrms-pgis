@@ -48,7 +48,7 @@ public class AttendanceController {
 
     /* ---- admin view for any employee ---- */
     @GetMapping("/{empId}")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('HR','ADMIN','DIRECTOR')")
     public List<DailyAttendanceDto> viewEmployee(@PathVariable Integer empId,
                                                  @RequestParam @DateTimeFormat(pattern="yyyy-MM") YearMonth month) {
         return svc.summary(empId, month);
