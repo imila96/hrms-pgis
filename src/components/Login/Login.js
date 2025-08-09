@@ -69,7 +69,6 @@ const Login = () => {
         localStorage.setItem("rememberMe", "false");
       }
 
-      
       // Redirect by role
       if (roles.includes("ROLE_ADMIN")) {
         navigate("/admin/profile");
@@ -165,7 +164,7 @@ const Login = () => {
             }}
           />
 
-          <Typography
+          {/* <Typography
             variant="caption"
             color="text.secondary"
             display="block"
@@ -174,7 +173,7 @@ const Login = () => {
           >
             Password must contain at least 8 characters with uppercase,
             lowercase, numbers, and special characters
-          </Typography>
+          </Typography> */}
 
           <FormControlLabel
             control={
@@ -211,17 +210,6 @@ const Login = () => {
           >
             Forgot Password?
           </Link>
-
-          <Typography variant="body2" color="text.secondary">
-            Don't have an account?{" "}
-            <Link
-              underline="hover"
-              sx={{ cursor: "pointer" }}
-              onClick={() => navigate("/register")}
-            >
-              Register
-            </Link>
-          </Typography>
         </form>
       </Box>
     </Box>
