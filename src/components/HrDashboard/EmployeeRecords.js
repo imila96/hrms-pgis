@@ -1,5 +1,3 @@
-// Need to fix employee save backend call
-
 import React, { useState, useEffect } from "react";
 import {
   Box,
@@ -35,10 +33,17 @@ const EmployeeRecords = () => {
     hireDate: "",
     address: "",
   });
+
   const [snackbar, setSnackbar] = useState({
     open: false,
     message: "",
     severity: "info",
+  });
+
+  const [confirmDialog, setConfirmDialog] = useState({
+    open: false,
+    empId: null,
+    empName: "",
   });
 
   useEffect(() => {
@@ -47,9 +52,7 @@ const EmployeeRecords = () => {
 
   const fetchEmployees = async () => {
     try {
-      const response = await axiosInstance.get(
-        "http://localhost:8080/hr/employees"
-      );
+      const response = await axiosInstance.get("/hr/employees");
       setEmployees(response.data);
     } catch (error) {
       console.error("Error fetching employees:", error);
@@ -107,16 +110,10 @@ const EmployeeRecords = () => {
 
     try {
       if (editEmp) {
-        await axiosInstance.put(
-          `http://localhost:8080/hr/employees/${editEmp.id}`,
-          formData
-        );
+        await axiosInstance.put(`/hr/employees/${editEmp.id}`, formData);
         showSnackbar("Employee updated successfully", "success");
       } else {
-        await axiosInstance.post(
-          "http://localhost:8080/hr/employees",
-          formData
-        );
+        await axiosInstance.post("/hr/employees", formData);
         showSnackbar("Employee added successfully", "success");
       }
       fetchEmployees();
@@ -127,17 +124,26 @@ const EmployeeRecords = () => {
     }
   };
 
-  const handleDelete = async (id) => {
-    if (window.confirm("Are you sure you want to delete this employee?")) {
-      try {
-        await axiosInstance.delete(`http://localhost:8080/hr/employees/${id}`);
-        showSnackbar("Employee deleted successfully", "success");
-        fetchEmployees();
-      } catch (error) {
-        console.error("Error deleting employee:", error);
-        showSnackbar("Failed to delete employee", "error");
-      }
+  const openDeleteConfirm = (id, name) => {
+    setConfirmDialog({ open: true, empId: id, empName: name });
+  };
+
+  const handleDeleteConfirmed = async () => {
+    const { empId } = confirmDialog;
+    try {
+      await axiosInstance.delete(`/hr/employees/${empId}`);
+      showSnackbar("Employee deleted successfully", "success");
+      fetchEmployees();
+    } catch (error) {
+      console.error("Error deleting employee:", error);
+      showSnackbar("Failed to delete employee", "error");
+    } finally {
+      setConfirmDialog({ open: false, empId: null, empName: "" });
     }
+  };
+
+  const handleDeleteCancel = () => {
+    setConfirmDialog({ open: false, empId: null, empName: "" });
   };
 
   return (
@@ -208,7 +214,7 @@ const EmployeeRecords = () => {
                     </IconButton>
                     <IconButton
                       color="error"
-                      onClick={() => handleDelete(emp.id)}
+                      onClick={() => openDeleteConfirm(emp.id, emp.name)}
                     >
                       <Delete />
                     </IconButton>
@@ -220,6 +226,7 @@ const EmployeeRecords = () => {
         </Table>
       </Paper>
 
+      {/* Add / Edit Dialog */}
       <Dialog open={dialogOpen} onClose={closeDialog} fullWidth maxWidth="sm">
         <DialogTitle>
           {editEmp ? "Edit Employee" : "Add New Employee"}
@@ -289,6 +296,31 @@ const EmployeeRecords = () => {
         </DialogActions>
       </Dialog>
 
+      {/* Delete Confirmation Dialog */}
+      <Dialog
+        open={confirmDialog.open}
+        onClose={handleDeleteCancel}
+        maxWidth="xs"
+        fullWidth
+      >
+        <DialogTitle>Confirm Delete</DialogTitle>
+        <DialogContent>
+          Are you sure you want to delete{" "}
+          <strong>{confirmDialog.empName}</strong>?
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleDeleteCancel}>Cancel</Button>
+          <Button
+            variant="contained"
+            color="error"
+            onClick={handleDeleteConfirmed}
+          >
+            Delete
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Snackbar */}
       <Snackbar
         open={snackbar.open}
         autoHideDuration={3000}
