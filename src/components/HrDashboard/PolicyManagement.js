@@ -35,7 +35,7 @@ const PolicyManagement = () => {
 
   const fetchPolicies = async () => {
     try {
-      const res = await axiosInstance.get("http://localhost:8080/policies");
+      const res = await axiosInstance.get("/policies");
       setPolicies(res.data);
     } catch (err) {
       console.error("Failed to fetch policies", err);
@@ -44,9 +44,7 @@ const PolicyManagement = () => {
 
   const fetchPolicyDetails = async (id) => {
     try {
-      const res = await axiosInstance.get(
-        `http://localhost:8080/policies/${id}`
-      );
+      const res = await axiosInstance.get(`/policies/${id}`);
       return res.data;
     } catch (err) {
       console.error("Failed to fetch policy details", err);
