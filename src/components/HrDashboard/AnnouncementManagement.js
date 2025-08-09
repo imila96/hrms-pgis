@@ -40,7 +40,9 @@ const AnnouncementManagement = () => {
 
   const fetchAnnouncements = async () => {
     try {
-      const res = await axiosInstance.get("/announcements");
+      const res = await axiosInstance.get(
+        "http://localhost:8080/announcements"
+      );
       setAnnouncements(res.data);
     } catch (err) {
       console.error("Failed to fetch announcements", err);
