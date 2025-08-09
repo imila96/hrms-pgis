@@ -24,7 +24,7 @@ const STATUS_COLOR = {
 
 export default function LeaveManagement() {
   const [pending, setPending] = useState([]);
-  const [decided, setDecided] = useState([]); // ⬅️ new: keep recently decided (this session)
+  const [decided, setDecided] = useState([]);
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState("");
 
@@ -32,8 +32,7 @@ export default function LeaveManagement() {
     try {
       setLoading(true);
       setErr("");
-      const { data } = await api.get("/leave/pending"); // HR/ADMIN only
-      // expected: [{id, employee, type, start, end, status, reason}]
+      const { data } = await api.get("/leave/pending");
       setPending(data || []);
     } catch (e) {
       console.error(e);
@@ -55,7 +54,6 @@ export default function LeaveManagement() {
     try {
       await api.patch(`/leave/${id}`, null, { params: { approve } });
 
-      // move row from "pending" to "decided" with updated status
       setPending((prev) => {
         const found = prev.find((r) => r.id === id);
         if (!found) return prev;
@@ -73,26 +71,46 @@ export default function LeaveManagement() {
     <Table>
       <TableHead>
         <TableRow>
-          <TableCell><strong>Employee</strong></TableCell>
-          <TableCell><strong>Type</strong></TableCell>
-          <TableCell><strong>Start</strong></TableCell>
-          <TableCell><strong>End</strong></TableCell>
-          <TableCell><strong>Reason</strong></TableCell>
-          <TableCell><strong>Status</strong></TableCell>
-          {editable && <TableCell><strong>Actions</strong></TableCell>}
+          <TableCell>
+            <strong>Employee</strong>
+          </TableCell>
+          <TableCell>
+            <strong>Type</strong>
+          </TableCell>
+          <TableCell>
+            <strong>Start</strong>
+          </TableCell>
+          <TableCell>
+            <strong>End</strong>
+          </TableCell>
+          <TableCell>
+            <strong>Reason</strong>
+          </TableCell>
+          <TableCell>
+            <strong>Status</strong>
+          </TableCell>
+          {editable && (
+            <TableCell>
+              <strong>Actions</strong>
+            </TableCell>
+          )}
         </TableRow>
       </TableHead>
       <TableBody>
         {loading && rows === pending && (
           <TableRow>
-            <TableCell colSpan={editable ? 7 : 6} align="center">Loading…</TableCell>
+            <TableCell colSpan={editable ? 7 : 6} align="center">
+              Loading…
+            </TableCell>
           </TableRow>
         )}
 
         {!loading && rows.length === 0 && (
           <TableRow>
             <TableCell colSpan={editable ? 7 : 6} align="center">
-              {editable ? "No pending requests." : "No recent decisions in this session."}
+              {editable
+                ? "No pending requests."
+                : "No recent decisions in this session."}
             </TableCell>
           </TableRow>
         )}
@@ -105,12 +123,22 @@ export default function LeaveManagement() {
               <TableCell>{r.start}</TableCell>
               <TableCell>{r.end}</TableCell>
               <TableCell title={r.reason || "—"}>
-                <Box sx={{ maxWidth: 300, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                <Box
+                  sx={{
+                    maxWidth: 300,
+                    whiteSpace: "nowrap",
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
+                  }}
+                >
                   {r.reason || "—"}
                 </Box>
               </TableCell>
               <TableCell>
-                <Chip label={r.status} color={STATUS_COLOR[r.status] || "default"} />
+                <Chip
+                  label={r.status}
+                  color={STATUS_COLOR[r.status] || "default"}
+                />
               </TableCell>
 
               {editable && (
@@ -151,9 +179,16 @@ export default function LeaveManagement() {
   return (
     <Stack spacing={4}>
       <Paper sx={{ p: 3 }}>
-        <Stack direction="row" justifyContent="space-between" alignItems="center" mb={2}>
+        <Stack
+          direction="row"
+          justifyContent="space-between"
+          alignItems="center"
+          mb={2}
+        >
           <Typography variant="h5">Leave Management & Approvals</Typography>
-          <Button onClick={load} size="small">Refresh</Button>
+          {/* <Button onClick={load} size="small">
+            Refresh
+          </Button> */}
         </Stack>
 
         {err && (
@@ -167,15 +202,22 @@ export default function LeaveManagement() {
       </Paper>
 
       {/* Recently decided (this session) */}
-      <Paper sx={{ p: 3 }}>
-        <Stack direction="row" justifyContent="space-between" alignItems="center" mb={2}>
-          <Typography variant="h6">Recently Decided (this session)</Typography>
+      {/* <Paper sx={{ p: 3 }}>
+        <Stack
+          direction="row"
+          justifyContent="space-between"
+          alignItems="center"
+          mb={2}
+        >
+          <Typography variant="h6">Leave History</Typography>
           {decided.length > 0 && (
-            <Button size="small" onClick={() => setDecided([])}>Clear</Button>
+            <Button size="small" onClick={() => setDecided([])}>
+              Clear
+            </Button>
           )}
         </Stack>
         {renderTable(decided, false)}
-      </Paper>
+      </Paper> */}
     </Stack>
   );
 }
