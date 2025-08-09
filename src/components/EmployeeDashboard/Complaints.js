@@ -1,110 +1,112 @@
 // src/components/EmployeeDashboard/Complaints.js
-import React, { useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import {
-  Paper,
-  Typography,
-  List,
-  ListItem,
-  ListItemText,
-  Button,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  TextField,
-  DialogActions,
-  Snackbar,
-  Alert,
+  Paper, Typography, List, ListItem, ListItemText,
+  Button, Dialog, DialogTitle, DialogContent, TextField,
+  DialogActions, Snackbar, Alert, Stack, Chip, MenuItem, Select, FormControl, InputLabel
 } from "@mui/material";
+import axiosInstance from "../../AxiosInstance";
 
-const Complaints = () => {
-  const [complaints, setComplaints] = useState([
-    { id: 1, title: "Computer not working", description: "My computer frequently crashes.", status: "Open" },
-    { id: 2, title: "Network issue", description: "Wi-Fi is slow in my area.", status: "Resolved" },
-  ]);
+const statusChip = (s) => (
+  <Chip label={s === "RESOLVED" ? "Resolved" : "Pending"} size="small"
+        color={s === "RESOLVED" ? "success" : "warning"} />
+);
 
+export default function Complaints() {
+  const [issues, setIssues] = useState([]);
+  const [statusFilter, setStatusFilter] = useState("ALL");
   const [open, setOpen] = useState(false);
-  const [newComplaint, setNewComplaint] = useState({ title: "", description: "" });
-  const [alertOpen, setAlertOpen] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [newIssue, setNewIssue] = useState({ title: "", description: "" });
+  const [snack, setSnack] = useState({ open: false, msg: "", sev: "success" });
 
-  const handleOpen = () => setOpen(true);
-  const handleClose = () => setOpen(false);
-
-  const handleChange = (e) => {
-    setNewComplaint({ ...newComplaint, [e.target.name]: e.target.value });
+  const load = async () => {
+    try {
+      const params = statusFilter === "ALL" ? {} : { status: statusFilter };
+      const { data } = await axiosInstance.get("/issues/my", { params });
+      setIssues(data || []);
+    } catch (e) {
+      setSnack({ open: true, msg: `Failed to load: ${e.response?.status || e.message}`, sev: "error" });
+    }
   };
 
-  const handleSubmit = () => {
-    if (newComplaint.title && newComplaint.description) {
-      setComplaints([...complaints, { id: complaints.length + 1, ...newComplaint, status: "Open" }]);
-      setNewComplaint({ title: "", description: "" });
+  useEffect(() => { load(); /* on mount & filter change */ }, [statusFilter]);
+
+  const canSave = useMemo(
+    () => newIssue.title.trim().length > 0 && newIssue.description.trim().length > 0,
+    [newIssue]
+  );
+
+  const onSubmit = async () => {
+    if (!canSave) return;
+    setSaving(true);
+    try {
+      await axiosInstance.post("/issues", newIssue);
       setOpen(false);
-      setAlertOpen(true);
+      setNewIssue({ title: "", description: "" });
+      setSnack({ open: true, msg: "Complaint submitted.", sev: "success" });
+      await load();
+    } catch (e) {
+      setSnack({ open: true, msg: `Submit failed: ${e.response?.status || e.message}`, sev: "error" });
+    } finally {
+      setSaving(false);
     }
   };
 
   return (
-    <Paper sx={{ p: 3, maxWidth: 800 }}>
-      <Typography variant="h6" gutterBottom>
-        Complaints / Technical Issues
-      </Typography>
-      <Button variant="contained" color="primary" onClick={handleOpen} sx={{ mb: 2 }}>
-        Submit New Complaint
-      </Button>
+    <Paper sx={{ p: 3 }}>
+      <Stack direction="row" justifyContent="space-between" alignItems="center" mb={2}>
+        <Typography variant="h5">Complaints / Technical Issues</Typography>
+        <Stack direction="row" spacing={2} alignItems="center">
+          <FormControl size="small" sx={{ minWidth: 160 }}>
+            <InputLabel id="issue-filter">Status</InputLabel>
+            <Select labelId="issue-filter" label="Status" value={statusFilter}
+                    onChange={(e) => setStatusFilter(e.target.value)}>
+              <MenuItem value="ALL">All</MenuItem>
+              <MenuItem value="PENDING">Pending</MenuItem>
+              <MenuItem value="RESOLVED">Resolved</MenuItem>
+            </Select>
+          </FormControl>
+          <Button variant="contained" onClick={() => setOpen(true)}>Submit New Complaint</Button>
+        </Stack>
+      </Stack>
 
       <List>
-        {complaints.map(({ id, title, description, status }) => (
-          <ListItem key={id} divider>
+        {issues.map((it) => (
+          <ListItem key={it.id} divider
+                    sx={{ backgroundColor: it.status === "RESOLVED" ? "#eaf7ea" : "#fff8e6", borderRadius: 1, mb: 1 }}>
             <ListItemText
-              primary={`${title} (${status})`}
-              secondary={description}
+              primary={<Stack direction="row" spacing={1} alignItems="center">
+                <Typography fontWeight={600}>{it.title}</Typography>{statusChip(it.status)}
+              </Stack>}
+              secondary={it.description}
             />
           </ListItem>
         ))}
+        {issues.length === 0 && <Typography color="text.secondary" sx={{ mt: 2 }}>No issues.</Typography>}
       </List>
 
-      {/* Complaint Submission Dialog */}
-      <Dialog open={open} onClose={handleClose}>
+      {/* Submit dialog */}
+      <Dialog open={open} onClose={() => setOpen(false)} fullWidth maxWidth="sm">
         <DialogTitle>Submit Complaint</DialogTitle>
-        <DialogContent>
-          <TextField
-            label="Title"
-            name="title"
-            value={newComplaint.title}
-            onChange={handleChange}
-            fullWidth
-            margin="normal"
-          />
-          <TextField
-            label="Description"
-            name="description"
-            value={newComplaint.description}
-            onChange={handleChange}
-            fullWidth
-            multiline
-            rows={4}
-            margin="normal"
-          />
+        <DialogContent sx={{ pt: 2 }}>
+          <TextField fullWidth label="Title" name="title" value={newIssue.title}
+                     onChange={(e) => setNewIssue({ ...newIssue, title: e.target.value })} sx={{ mb: 2 }} />
+          <TextField fullWidth label="Description" name="description" value={newIssue.description}
+                     onChange={(e) => setNewIssue({ ...newIssue, description: e.target.value })}
+                     multiline rows={4} />
         </DialogContent>
         <DialogActions>
-          <Button onClick={handleClose}>Cancel</Button>
-          <Button
-            onClick={handleSubmit}
-            variant="contained"
-            disabled={!newComplaint.title || !newComplaint.description}
-          >
-            Submit
-          </Button>
+          <Button onClick={() => setOpen(false)}>Cancel</Button>
+          <Button disabled={!canSave || saving} variant="contained" onClick={onSubmit}>Submit</Button>
         </DialogActions>
       </Dialog>
 
-      {/* Success Snackbar */}
-      <Snackbar open={alertOpen} autoHideDuration={4000} onClose={() => setAlertOpen(false)}>
-        <Alert onClose={() => setAlertOpen(false)} severity="success" sx={{ width: "100%" }}>
-          Complaint submitted successfully!
+      <Snackbar open={snack.open} autoHideDuration={3500} onClose={() => setSnack({ ...snack, open: false })}>
+        <Alert onClose={() => setSnack({ ...snack, open: false })} severity={snack.sev} sx={{ width: "100%" }}>
+          {snack.msg}
         </Alert>
       </Snackbar>
     </Paper>
   );
-};
-
-export default Complaints;
+}
