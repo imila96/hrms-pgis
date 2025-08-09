@@ -50,6 +50,8 @@ public class SecurityConfig {
                         // Admin – Issues
                         .requestMatchers(HttpMethod.GET,   "/issues").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.PATCH, "/issues/*/resolve").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.GET, "/announcements/public").permitAll()
+
 
                         // everything else
                         .anyRequest().authenticated()
