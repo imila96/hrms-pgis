@@ -25,6 +25,7 @@ const Login = () => {
   const [rememberMe, setRememberMe] = useState(false);
   const [error, setError] = useState("");
 
+  // hydrate "remember me"
   useEffect(() => {
     const savedEmail = localStorage.getItem("rememberedEmail");
     const savedPassword = localStorage.getItem("rememberedPassword");
@@ -44,21 +45,44 @@ const Login = () => {
     e.preventDefault();
 
     try {
-      const response = await axios.post("http://localhost:8080/auth/login", {
+      const { data } = await axios.post("http://localhost:8080/auth/login", {
         email: form.email,
         password: form.password,
       });
 
-      const { accessToken, roles } = response.data;
+      const accessToken = data.accessToken || data.token;
+      const rawRoles = Array.isArray(data.roles) ? data.roles : [];
 
-      // Store accessToken locally
-      localStorage.setItem("token", accessToken);
-      const role = roles[0].toLowerCase().replace("role_", "");
-      setUser({ role });
-      localStorage.setItem("role", role);
+      // Normalize backend roles like ["ROLE_ADMIN","ROLE_EMPLOYEE"] -> ["admin","employee"]
+      let roles = rawRoles.map((r) => r.toLowerCase().replace("role_", ""));
+
+      // Ensure elevated roles can also switch to employee view
+      if (
+        roles.some((r) => ["admin", "hr", "director"].includes(r)) &&
+        !roles.includes("employee")
+      ) {
+        roles = [...roles, "employee"];
+      }
+
+      // Choose default active role (priority: admin > hr > director > employee)
+      const priority = ["admin", "hr", "director", "employee"];
+      const activeRole =
+        priority.find((r) => roles.includes(r)) || roles[0] || "employee";
+
+      // Persist session
+      if (accessToken) localStorage.setItem("token", accessToken);
+      localStorage.setItem("email", form.email);
+      localStorage.setItem("roles", JSON.stringify(roles));
+      localStorage.setItem("activeRole", activeRole);
+      // keep legacy single "role" for any leftover checks
+      localStorage.setItem("role", activeRole);
+
+      // Update context
+      setUser({ email: form.email, roles, activeRole });
 
       setError("");
 
+      // Remember-me persistence
       if (rememberMe) {
         localStorage.setItem("rememberedEmail", form.email);
         localStorage.setItem("rememberedPassword", form.password);
@@ -69,18 +93,14 @@ const Login = () => {
         localStorage.setItem("rememberMe", "false");
       }
 
-      // Redirect by role
-      if (roles.includes("ROLE_ADMIN")) {
-        navigate("/admin/profile");
-      } else if (roles.includes("ROLE_HR")) {
-        navigate("/hr/profile");
-      } else if (roles.includes("ROLE_EMPLOYEE")) {
-        navigate("/employee/profile");
-      } else if (roles.includes("ROLE_DIRECTOR")) {
-        navigate("/director/profile");
-      } else {
-        setError("Unknown role. Please contact admin.");
-      }
+      // Redirect based on active role
+      const home = {
+        admin: "/admin/profile",
+        hr: "/hr/profile",
+        director: "/director/profile",
+        employee: "/employee/profile",
+      };
+      navigate(home[activeRole] || "/");
     } catch (err) {
       console.error(err);
       if (err.response?.status === 401) {
@@ -163,17 +183,6 @@ const Login = () => {
               ),
             }}
           />
-
-          {/* <Typography
-            variant="caption"
-            color="text.secondary"
-            display="block"
-            align="left"
-            mb={2}
-          >
-            Password must contain at least 8 characters with uppercase,
-            lowercase, numbers, and special characters
-          </Typography> */}
 
           <FormControlLabel
             control={

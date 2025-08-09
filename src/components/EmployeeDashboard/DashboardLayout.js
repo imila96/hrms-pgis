@@ -1,3 +1,4 @@
+// src/components/EmployeeDashboard/DashboardLayout.js
 import React, { useState, useContext } from "react";
 import { Outlet, NavLink, useNavigate } from "react-router-dom";
 import {
@@ -41,7 +42,7 @@ const menuItems = [
 ];
 
 const DashboardLayout = () => {
-  const { logout, user } = useAuth(); // assuming user object exists
+  const { logout, user, setActiveRole } = useAuth();
   const navigate = useNavigate();
   const theme = useTheme();
   const colorMode = useContext(ColorModeContext);
@@ -75,12 +76,25 @@ const DashboardLayout = () => {
     return (parts[0][0] + parts[1][0]).toUpperCase();
   };
 
+  const goToRoleHome = (r) => {
+    const map = {
+      admin: "/admin/profile",
+      hr: "/hr/profile",
+      director: "/director/profile",
+      employee: "/employee/profile",
+    };
+    return map[r] || "/";
+  };
+
+  const switchTo = (role) => {
+    setActiveRole(role);
+    handleMenuClose();
+    setTimeout(() => navigate(goToRoleHome(role)), 0);
+  };
+
   return (
     <Box sx={{ display: "flex" }}>
-      <AppBar
-        position="fixed"
-        sx={{ zIndex: (theme) => theme.zIndex.drawer + 1 }}
-      >
+      <AppBar position="fixed" sx={{ zIndex: (theme) => theme.zIndex.drawer + 1 }}>
         <Toolbar sx={{ display: "flex", justifyContent: "space-between" }}>
           <Typography variant="h6" noWrap>
             Employee Dashboard
@@ -90,11 +104,7 @@ const DashboardLayout = () => {
           <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
             {/* Theme Switch */}
             <IconButton color="inherit" onClick={colorMode.toggleColorMode}>
-              {theme.palette.mode === "dark" ? (
-                <Brightness7 />
-              ) : (
-                <Brightness4 />
-              )}
+              {theme.palette.mode === "dark" ? <Brightness7 /> : <Brightness4 />}
             </IconButton>
 
             {/* Notifications */}
@@ -105,7 +115,7 @@ const DashboardLayout = () => {
             </IconButton>
 
             {/* Profile */}
-            <Tooltip title="Profile">
+            <Tooltip title="Account">
               <IconButton color="inherit" onClick={handleMenuOpen}>
                 {user?.photoURL ? (
                   <Avatar src={user.photoURL} />
@@ -124,6 +134,19 @@ const DashboardLayout = () => {
             >
               <MenuItem onClick={handleProfile}>Profile</MenuItem>
               <MenuItem onClick={handleSettings}>Settings</MenuItem>
+
+              {/* Role switcher */}
+              <MenuItem disabled>
+                Active: {(user?.activeRole || "").toUpperCase()}
+              </MenuItem>
+              {user?.roles
+                ?.filter((r) => r !== user?.activeRole)
+                .map((r) => (
+                  <MenuItem key={r} onClick={() => switchTo(r)}>
+                    Switch to {r.charAt(0).toUpperCase() + r.slice(1)} view
+                  </MenuItem>
+                ))}
+
               <MenuItem onClick={handleLogout}>Logout</MenuItem>
             </Menu>
           </Box>

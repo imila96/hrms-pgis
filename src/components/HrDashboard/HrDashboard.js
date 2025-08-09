@@ -51,7 +51,7 @@ const tabItems = [
 ];
 
 const HrDashboard = () => {
-  const { logout, user } = useAuth();
+  const { logout, user, setActiveRole } = useAuth();
   const navigate = useNavigate();
   const theme = useTheme();
   const colorMode = useContext(ColorModeContext);
@@ -80,12 +80,25 @@ const HrDashboard = () => {
     return (parts[0][0] + parts[1][0]).toUpperCase();
   };
 
+  const goToRoleHome = (r) => {
+    const map = {
+      admin: "/admin/profile",
+      hr: "/hr/profile",
+      director: "/director/profile",
+      employee: "/employee/profile",
+    };
+    return map[r] || "/";
+  };
+
+  const switchTo = (role) => {
+    setActiveRole(role);
+    handleMenuClose();
+    setTimeout(() => navigate(goToRoleHome(role)), 0);
+  };
+
   return (
     <Box sx={{ display: "flex" }}>
-      <AppBar
-        position="fixed"
-        sx={{ zIndex: (theme) => theme.zIndex.drawer + 1 }}
-      >
+      <AppBar position="fixed" sx={{ zIndex: (theme) => theme.zIndex.drawer + 1 }}>
         <Toolbar sx={{ display: "flex", justifyContent: "space-between" }}>
           <Typography variant="h6" noWrap>
             HR Dashboard
@@ -94,11 +107,7 @@ const HrDashboard = () => {
           <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
             {/* Theme Toggle */}
             <IconButton color="inherit" onClick={colorMode.toggleColorMode}>
-              {theme.palette.mode === "dark" ? (
-                <Brightness7 />
-              ) : (
-                <Brightness4 />
-              )}
+              {theme.palette.mode === "dark" ? <Brightness7 /> : <Brightness4 />}
             </IconButton>
 
             {/* Notifications */}
@@ -131,6 +140,19 @@ const HrDashboard = () => {
               transformOrigin={{ vertical: "top", horizontal: "right" }}
             >
               <MenuItem onClick={handleProfile}>Profile</MenuItem>
+
+              {/* Role switcher */}
+              <MenuItem disabled>
+                Active: {(user?.activeRole || "").toUpperCase()}
+              </MenuItem>
+              {user?.roles
+                ?.filter((r) => r !== user?.activeRole)
+                .map((r) => (
+                  <MenuItem key={r} onClick={() => switchTo(r)}>
+                    Switch to {r.charAt(0).toUpperCase() + r.slice(1)} view
+                  </MenuItem>
+                ))}
+
               <MenuItem onClick={handleLogout}>Logout</MenuItem>
             </Menu>
           </Box>

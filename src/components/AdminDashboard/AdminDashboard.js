@@ -48,7 +48,7 @@ const tabItems = [
 ];
 
 const AdminDashboard = () => {
-  const { logout, user } = useAuth();
+  const { logout, user, setActiveRole } = useAuth();
   const navigate = useNavigate();
   const theme = useTheme();
 
@@ -76,13 +76,29 @@ const AdminDashboard = () => {
     return (parts[0][0] + parts[1][0]).toUpperCase();
   };
 
+  const goToRoleHome = (r) => {
+    const map = {
+      admin: "/admin/profile",
+      hr: "/hr/profile",
+      director: "/director/profile",
+      employee: "/employee/profile",
+    };
+    return map[r] || "/";
+  };
+
+  const switchTo = (role) => {
+    setActiveRole(role);
+    handleMenuClose();
+    // Defer so guards see the updated role/localStorage
+    setTimeout(() => navigate(goToRoleHome(role)), 0);
+  };
+
   // Toggle system-wide theme by updating localStorage config
   const toggleTheme = () => {
     const key = "system_config";
     const cfg = JSON.parse(localStorage.getItem(key) || "{}");
     const current = cfg.themeMode || "light";
-    // If current is "system", flip relative to *effective* theme now
-    const effectiveNow = theme.palette.mode; // "light" | "dark"
+    const effectiveNow = theme.palette.mode;
     const next =
       current === "system"
         ? effectiveNow === "dark"
@@ -94,7 +110,9 @@ const AdminDashboard = () => {
 
     const updated = { ...cfg, themeMode: next };
     localStorage.setItem(key, JSON.stringify(updated));
-    window.dispatchEvent(new CustomEvent("system-config-change", { detail: updated }));
+    window.dispatchEvent(
+      new CustomEvent("system-config-change", { detail: updated })
+    );
   };
 
   return (
@@ -120,13 +138,15 @@ const AdminDashboard = () => {
             </IconButton>
 
             {/* Profile */}
-            <Tooltip title="Profile">
+            <Tooltip title="Account">
               <IconButton color="inherit" onClick={handleMenuOpen}>
                 {user?.photoURL ? (
                   <Avatar src={user.photoURL} />
                 ) : (
                   <Avatar>
-                    {getInitials(user?.name || user?.email) || <AccountCircleIcon />}
+                    {getInitials(user?.name || user?.email) || (
+                      <AccountCircleIcon />
+                    )}
                   </Avatar>
                 )}
               </IconButton>
@@ -140,6 +160,19 @@ const AdminDashboard = () => {
               transformOrigin={{ vertical: "top", horizontal: "right" }}
             >
               <MenuItem onClick={handleProfile}>Profile</MenuItem>
+
+              {/* Role switcher */}
+              <MenuItem disabled>
+                Active: {(user?.activeRole || "").toUpperCase()}
+              </MenuItem>
+              {user?.roles
+                ?.filter((r) => r !== user?.activeRole)
+                .map((r) => (
+                  <MenuItem key={r} onClick={() => switchTo(r)}>
+                    Switch to {r.charAt(0).toUpperCase() + r.slice(1)} view
+                  </MenuItem>
+                ))}
+
               <MenuItem onClick={handleLogout}>Logout</MenuItem>
             </Menu>
           </Box>

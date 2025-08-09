@@ -14,7 +14,7 @@ import ForgetPassword from "./components/ForgetPassword/ForgetPassword";
 import AdminDashboard from "./components/AdminDashboard/AdminDashboard";
 import HrDashboard from "./components/HrDashboard/HrDashboard";
 
-// HR subpages (you kept these imports; fine to keep even if HrDashboard handles its own routes)
+// HR subpages
 import EmployeeRecords from "./components/HrDashboard/EmployeeRecords";
 import LeaveManagement from "./components/HrDashboard/LeaveManagement";
 import AttendanceTracking from "./components/HrDashboard/AttendanceTracking";
@@ -38,29 +38,32 @@ import { AuthProvider, useAuth } from "./context/AuthContext";
 
 const ProtectedRoute = ({ children }) => {
   const { user } = useAuth();
-  return user ? children : <Navigate to="/" replace />;
+  const token = localStorage.getItem("token");
+  return user || token ? children : <Navigate to="/" replace />;
 };
 
 const AdminRoute = ({ children }) => {
   const { user } = useAuth();
-  return user && user.role === "admin" ? children : <Navigate to="/" replace />;
+  const active = user?.activeRole || localStorage.getItem("activeRole");
+  return active === "admin" ? children : <Navigate to="/" replace />;
 };
 
 const HrRoute = ({ children }) => {
   const { user } = useAuth();
-  return user && user.role === "hr" ? children : <Navigate to="/" replace />;
+  const active = user?.activeRole || localStorage.getItem("activeRole");
+  return active === "hr" ? children : <Navigate to="/" replace />;
 };
 
 const EmployeeRoute = ({ children }) => {
   const { user } = useAuth();
-  return user && user.role === "employee" ? children : <Navigate to="/" replace />;
+  const active = user?.activeRole || localStorage.getItem("activeRole");
+  return active === "employee" ? children : <Navigate to="/" replace />;
 };
 
 const DirectorRoute = ({ children }) => {
   const { user } = useAuth();
-  return user && (user.role === "director" || user.roles?.includes("director"))
-    ? children
-    : <Navigate to="/" replace />;
+  const active = user?.activeRole || localStorage.getItem("activeRole");
+  return active === "director" ? children : <Navigate to="/" replace />;
 };
 
 /* ---------------- App ---------------- */
@@ -85,7 +88,7 @@ function App() {
             }
           />
 
-          {/* HR (your HrDashboard already defines its own internal <Routes/>) */}
+          {/* HR */}
           <Route
             path="/hr/*"
             element={
@@ -94,8 +97,6 @@ function App() {
               </HrRoute>
             }
           >
-            {/* If HrDashboard did NOT render its own routes, these would apply.
-                Keeping them is harmless, but they won't render unless HrDashboard uses <Outlet/>. */}
             <Route path="records" element={<EmployeeRecords />} />
             <Route path="leave-management" element={<LeaveManagement />} />
             <Route path="attendance-tracking" element={<AttendanceTracking />} />

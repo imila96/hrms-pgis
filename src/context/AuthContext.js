@@ -9,7 +9,6 @@ import React, {
 
 const AuthContext = createContext(null);
 
-/** ---- Read session timeout from System Config (localStorage) ----------- */
 const CFG_KEY = "system_config";
 const CFG_DEFAULTS = { sessionTimeoutMinutes: 30 };
 
@@ -21,65 +20,76 @@ function loadConfig() {
     return CFG_DEFAULTS;
   }
 }
-/** ---------------------------------------------------------------------- */
 
 export const AuthProvider = ({ children }) => {
-  // 1) Hydrate from localStorage (unchanged)
+  // ---- HYDRATE from localStorage: token, email, roles[], activeRole ----
   const [user, setUser] = useState(() => {
     const token = localStorage.getItem("token");
-    const role = localStorage.getItem("role");
-    const email = localStorage.getItem("email");
-    if (!token || !role || !email) return null;
-    return { email, role };
-  });
+    if (!token) return null;
 
-  // 2) Login (unchanged - hardcoded roles)
-  const login = ({ email, password }) => {
-    let role = null;
+    const email = localStorage.getItem("email") || null;
 
-    if (email === "admin@workhub.com" && password === "Admin@123") {
-      role = "system-admin";
-    } else if (email === "hr@workhub.com" && password === "Hr@123") {
-      role = "hr";
-    } else if (email === "user@workhub.com" && password === "User@123") {
-      role = "employee";
+    // read roles with legacy fallback
+    let roles = [];
+    try {
+      roles = JSON.parse(localStorage.getItem("roles") || "[]");
+    } catch {
+      roles = [];
+    }
+    if (!roles.length) {
+      const legacyRole = localStorage.getItem("role");
+      if (legacyRole) roles = [legacyRole];
     }
 
-    if (!role) return null; // login failed
+    // upgrade: if admin/hr/director then also include "employee"
+    if (
+      roles.some((r) => ["admin", "hr", "director"].includes(r)) &&
+      !roles.includes("employee")
+    ) {
+      roles = [...roles, "employee"];
+      localStorage.setItem("roles", JSON.stringify(roles));
+    }
 
-    localStorage.setItem("token", "dummy-token");
-    localStorage.setItem("role", role);
-    localStorage.setItem("email", email);
+    const activeRole = localStorage.getItem("activeRole") || roles[0] || null;
 
-    setUser({ email, role });
-    return role;
-  };
+    return token ? { email, roles, activeRole } : null;
+  });
 
-  // 3) Logout (unchanged), wrapped in useCallback so effects can depend on it safely
-  const logout = useCallback(() => {
-    setUser(null);
-    localStorage.removeItem("token");
-    localStorage.removeItem("role");
-    localStorage.removeItem("email");
+  // ---- Switch active role (keeps same token) ----
+  const setActiveRole = useCallback((role) => {
+    setUser((prev) => {
+      if (!prev?.roles?.includes(role)) return prev;
+      localStorage.setItem("activeRole", role);
+      // keep legacy "role" key in sync if anything else reads it
+      localStorage.setItem("role", role);
+      return { ...prev, activeRole: role };
+    });
   }, []);
 
-  // 4) Auto-logout after inactivity, driven by SystemConfig.sessionTimeoutMinutes
-  useEffect(() => {
-    if (!user) return; // only track when logged in
+  const hasRole = useCallback(
+    (role) => !!user?.roles?.includes(role),
+    [user?.roles]
+  );
 
+  // ---- Logout ----
+  const logout = useCallback(() => {
+    setUser(null);
+    ["token", "email", "role", "roles", "activeRole"].forEach((k) =>
+      localStorage.removeItem(k)
+    );
+  }, []);
+
+  // ---- Inactivity auto-logout ----
+  useEffect(() => {
+    if (!user) return;
     let cfg = loadConfig();
     let timer;
 
     const resetTimer = () => {
       clearTimeout(timer);
-      // protect against bad/empty values
       const mins = Math.max(1, Number(cfg.sessionTimeoutMinutes) || 30);
-      timer = setTimeout(() => {
-        logout();
-      }, mins * 60 * 1000);
+      timer = setTimeout(() => logout(), mins * 60 * 1000);
     };
-
-    // Update config when SystemConfig page saves (custom event) or another tab changes it
     const onCfgChange = () => {
       cfg = loadConfig();
       resetTimer();
@@ -88,25 +98,32 @@ export const AuthProvider = ({ children }) => {
       if (e.key === CFG_KEY) onCfgChange();
     };
 
-    // User activity resets the timer
-    const activityEvents = ["click", "keydown", "mousemove", "scroll", "touchstart"];
+    const activityEvents = [
+      "click",
+      "keydown",
+      "mousemove",
+      "scroll",
+      "touchstart",
+    ];
     activityEvents.forEach((ev) => window.addEventListener(ev, resetTimer));
     window.addEventListener("system-config-change", onCfgChange);
     window.addEventListener("storage", onStorage);
 
-    // start timer immediately
     resetTimer();
-
     return () => {
       clearTimeout(timer);
-      activityEvents.forEach((ev) => window.removeEventListener(ev, resetTimer));
+      activityEvents.forEach((ev) =>
+        window.removeEventListener(ev, resetTimer)
+      );
       window.removeEventListener("system-config-change", onCfgChange);
       window.removeEventListener("storage", onStorage);
     };
   }, [user, logout]);
 
   return (
-    <AuthContext.Provider value={{ user, setUser, login, logout }}>
+    <AuthContext.Provider
+      value={{ user, setUser, logout, setActiveRole, hasRole }}
+    >
       {children}
     </AuthContext.Provider>
   );
