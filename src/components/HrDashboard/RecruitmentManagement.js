@@ -47,9 +47,7 @@ const RecruitmentManagement = () => {
 
   const fetchJobOpenings = async () => {
     try {
-      const response = await axiosInstance.get(
-        "http://localhost:8080/hr/recruitment/openings"
-      );
+      const response = await axiosInstance.get("/hr/recruitment/openings");
       setJobOpening(response.data);
     } catch (error) {
       console.error("Error fetching job openings", error);
@@ -60,7 +58,6 @@ const RecruitmentManagement = () => {
   };
 
   const fetchApplications = async () => {
-    // fetch applications from backend
     setApplications([
       {
         id: 1,
