@@ -1,12 +1,14 @@
+// src/index.js
 import React from "react";
 import ReactDOM from "react-dom/client";
 import App from "./App";
-import CssBaseline from "@mui/material/CssBaseline";
+import AppThemeProvider from "./AppThemeProvider";
 
 const root = ReactDOM.createRoot(document.getElementById("root"));
 root.render(
   <React.StrictMode>
-    <CssBaseline /> {/* Normalize CSS */}
-    <App />
+    <AppThemeProvider>
+      <App />
+    </AppThemeProvider>
   </React.StrictMode>
 );

@@ -1,6 +1,7 @@
 package com.pgis.hrms.modules.attendance.repository;
 
 import com.pgis.hrms.modules.attendance.model.AttendanceEvent;
+import com.pgis.hrms.modules.attendance.model.AttendanceEventType;
 import org.springframework.data.jpa.repository.*;
 import org.springframework.data.repository.query.Param;
 import java.time.*;
@@ -8,6 +9,15 @@ import java.util.*;
 
 public interface AttendanceEventRepository
         extends JpaRepository<AttendanceEvent, Integer> {
+
+
+
+    boolean existsByEmployee_EmployeeIdAndEventDateAndEventType(
+            Integer employeeId, LocalDate date, AttendanceEventType type);
+
+    Optional<AttendanceEvent> findTopByEmployee_EmployeeIdAndEventDateOrderByTimestampDesc(
+            Integer employeeId, LocalDate date);
+
 
     /**
      * Native summary for a single employee over a date range (inclusive).

@@ -1,3 +1,4 @@
+// src/components/EmployeeDashboard/Attendance.js
 import React, { useState, useEffect } from "react";
 import {
   Box,
@@ -11,9 +12,45 @@ import {
   TextField,
   Grid,
   CircularProgress,
+  Button,
+  Stack,
+  Snackbar,
+  Alert,
 } from "@mui/material";
 import axiosInstance from "../../AxiosInstance";
 import dayjs from "dayjs";
+
+/** ---- Minimal config helper (localStorage-based) ----------------------- */
+const CFG_STORAGE_KEY = "system_config";
+const CFG_DEFAULTS = {
+  allowManualAttendance: true,
+  siteTitle: "HR Portal",
+  timezone: "Asia/Colombo",
+  workdayStart: "09:00",
+  workdayEnd: "18:00",
+  sessionTimeoutMinutes: 30,
+};
+const loadConfig = () => {
+  try {
+    const raw = localStorage.getItem(CFG_STORAGE_KEY) || "{}";
+    return { ...CFG_DEFAULTS, ...JSON.parse(raw) };
+  } catch {
+    return CFG_DEFAULTS;
+  }
+};
+const onConfigChange = (handler) => {
+  const fn = () => handler(loadConfig());
+  // fired by SystemConfig save()
+  window.addEventListener("system-config-change", fn);
+  // cross-tab change
+  const storageFn = (e) => e.key === CFG_STORAGE_KEY && fn();
+  window.addEventListener("storage", storageFn);
+  return () => {
+    window.removeEventListener("system-config-change", fn);
+    window.removeEventListener("storage", storageFn);
+  };
+};
+/** ---------------------------------------------------------------------- */
 
 const Attendance = () => {
   const [attendanceRecords, setAttendanceRecords] = useState([]);
@@ -21,9 +58,53 @@ const Attendance = () => {
   const [loading, setLoading] = useState(false);
   const [summary, setSummary] = useState(null);
 
+  // admin config
+  const [cfg, setCfg] = useState(loadConfig());
+
+  // punch/state UI
+  const [punching, setPunching] = useState(false);
+  const [snack, setSnack] = useState({ open: false, msg: "", sev: "success" });
+
+  const [state, setState] = useState({
+    checkedIn: false,
+    onBreak: false,
+    canCheckIn: true,
+    canBreakOut: false,
+    canBreakIn: false,
+    canCheckOut: false,
+  });
+
   useEffect(() => {
     fetchAttendanceData();
   }, [selectedMonth]);
+
+  useEffect(() => {
+    fetchState();
+    const id = setInterval(fetchState, 60000); // keep buttons fresh
+    const onVis = () => {
+      if (!document.hidden) fetchState();
+    };
+    document.addEventListener("visibilitychange", onVis);
+    return () => {
+      clearInterval(id);
+      document.removeEventListener("visibilitychange", onVis);
+    };
+  }, []);
+
+  // listen to admin config changes (Allow Manual Attendance)
+  useEffect(() => {
+    const off = onConfigChange(setCfg);
+    return off;
+  }, []);
+
+  const fetchState = async () => {
+    try {
+      const res = await axiosInstance.get("/attendance/me/state");
+      setState(res.data);
+    } catch (e) {
+      console.error("Failed to fetch attendance state:", e);
+    }
+  };
 
   const fetchAttendanceData = async () => {
     setLoading(true);
@@ -56,14 +137,30 @@ const Attendance = () => {
     });
   };
 
-  const formatTime = (datetime) => {
-    if (!datetime) return "-";
-    return dayjs(datetime).format("hh:mm A");
+  const punch = async (type) => {
+    try {
+      setPunching(true);
+      await axiosInstance.post("/attendance/punch", null, { params: { type } });
+      setSnack({
+        open: true,
+        msg: `${type.replaceAll("_", " ")} done`,
+        sev: "success",
+      });
+      await Promise.all([fetchAttendanceData(), fetchState()]);
+    } catch (error) {
+      const msg = error?.response?.data?.message || "Punch failed";
+      setSnack({ open: true, msg, sev: "error" });
+      console.error("Punch error:", error);
+    } finally {
+      setPunching(false);
+    }
   };
 
-  const formatDate = (date) => {
-    return dayjs(date).format("MMM D, YYYY");
-  };
+  const handleSnackClose = () => setSnack((s) => ({ ...s, open: false }));
+
+  const formatTime = (datetime) =>
+    !datetime ? "-" : dayjs(datetime).format("hh:mm A");
+  const formatDate = (date) => dayjs(date).format("MMM D, YYYY");
 
   return (
     <Box sx={{ p: 3 }}>
@@ -72,7 +169,7 @@ const Attendance = () => {
       </Typography>
 
       {/* Month Selector */}
-      <Paper sx={{ p: 2, mb: 3 }}>
+      <Paper sx={{ p: 2, mb: 2 }}>
         <Grid container spacing={2}>
           <Grid item xs={12} md={6}>
             <TextField
@@ -87,13 +184,58 @@ const Attendance = () => {
         </Grid>
       </Paper>
 
+      {/* Punch Actions (respect admin config) */}
+      {cfg.allowManualAttendance ? (
+        <Paper sx={{ p: 2, mb: 3 }}>
+          <Stack direction="row" spacing={1}>
+            <Button
+              disabled={punching || !state.canCheckIn}
+              variant="contained"
+              onClick={() => punch("CHECK_IN")}
+            >
+              Check In
+            </Button>
+
+            <Button
+              disabled={punching || !state.canBreakOut}
+              variant="outlined"
+              onClick={() => punch("BREAK_OUT")}
+            >
+              Break Out
+            </Button>
+
+            <Button
+              disabled={punching || !state.canBreakIn}
+              variant="outlined"
+              onClick={() => punch("BREAK_IN")}
+            >
+              Break In
+            </Button>
+
+            <Button
+              disabled={punching || !state.canCheckOut}
+              variant="contained"
+              color="secondary"
+              onClick={() => punch("CHECK_OUT")}
+            >
+              Check Out
+            </Button>
+          </Stack>
+        </Paper>
+      ) : (
+        <Paper sx={{ p: 2, mb: 3 }}>
+          <Alert severity="info" variant="outlined">
+            Manual punches are disabled by admin.
+          </Alert>
+        </Paper>
+      )}
+
       {loading ? (
         <Box display="flex" justifyContent="center" mt={5}>
           <CircularProgress />
         </Box>
       ) : (
         <>
-          {/* Summary Panel */}
           {summary && (
             <Paper sx={{ p: 2, mb: 3 }}>
               <Typography variant="subtitle1">Monthly Summary</Typography>
@@ -105,18 +247,15 @@ const Attendance = () => {
                   Absent Days: {summary.absentDays}
                 </Grid>
                 <Grid item xs={12} sm={3}>
-                  Total Paid Hours: {(summary.totalPaidMinutes / 60).toFixed(1)}{" "}
-                  hrs
+                  Total Paid Hours: {(summary.totalPaidMinutes / 60).toFixed(1)} hrs
                 </Grid>
                 <Grid item xs={12} sm={3}>
-                  Avg Daily Hours: {(summary.avgWorkingMinutes / 60).toFixed(1)}{" "}
-                  hrs
+                  Avg Daily Hours: {(summary.avgWorkingMinutes / 60).toFixed(1)} hrs
                 </Grid>
               </Grid>
             </Paper>
           )}
 
-          {/* Attendance Table */}
           <Paper>
             <Table>
               <TableHead>
@@ -143,6 +282,12 @@ const Attendance = () => {
           </Paper>
         </>
       )}
+
+      <Snackbar open={snack.open} autoHideDuration={3000} onClose={handleSnackClose}>
+        <Alert onClose={handleSnackClose} severity={snack.sev} variant="filled" sx={{ width: "100%" }}>
+          {snack.msg}
+        </Alert>
+      </Snackbar>
     </Box>
   );
 };

@@ -1,5 +1,6 @@
 package com.pgis.hrms.modules.attendance.controller;
 
+import com.pgis.hrms.modules.attendance.dto.AttendanceStateDto;
 import com.pgis.hrms.modules.attendance.dto.DailyAttendanceDto;
 import com.pgis.hrms.modules.attendance.model.AttendanceEventType;
 import com.pgis.hrms.core.auth.repository.UserRepository;
@@ -52,5 +53,12 @@ public class AttendanceController {
     public List<DailyAttendanceDto> viewEmployee(@PathVariable Integer empId,
                                                  @RequestParam @DateTimeFormat(pattern="yyyy-MM") YearMonth month) {
         return svc.summary(empId, month);
+    }
+
+    @GetMapping("/me/state")
+    @PreAuthorize("hasRole('EMPLOYEE')")
+    public AttendanceStateDto myState(@AuthenticationPrincipal UserDetails ud) {
+        Integer empId = currentEmployeeId(ud.getUsername());
+        return svc.stateForToday(empId);
     }
 }

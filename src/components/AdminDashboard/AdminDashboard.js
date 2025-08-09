@@ -1,5 +1,5 @@
 // src/components/AdminDashboard/AdminDashboard.js
-import React, { useState, useContext } from "react";
+import React, { useState } from "react";
 import {
   Box,
   Drawer,
@@ -35,9 +35,6 @@ import Analytics from "./Analytics/Analytics";
 import UserManagement from "./UserManagement/UserManagement";
 import Profile from "./Profile/Profile";
 
-// Optional: create this context to handle theme toggle globally
-const ColorModeContext = React.createContext({ toggleColorMode: () => {} });
-
 const drawerWidth = 240;
 
 const tabItems = [
@@ -54,7 +51,6 @@ const AdminDashboard = () => {
   const { logout, user } = useAuth();
   const navigate = useNavigate();
   const theme = useTheme();
-  const colorMode = useContext(ColorModeContext);
 
   const [anchorEl, setAnchorEl] = useState(null);
   const open = Boolean(anchorEl);
@@ -80,9 +76,30 @@ const AdminDashboard = () => {
     return (parts[0][0] + parts[1][0]).toUpperCase();
   };
 
+  // Toggle system-wide theme by updating localStorage config
+  const toggleTheme = () => {
+    const key = "system_config";
+    const cfg = JSON.parse(localStorage.getItem(key) || "{}");
+    const current = cfg.themeMode || "light";
+    // If current is "system", flip relative to *effective* theme now
+    const effectiveNow = theme.palette.mode; // "light" | "dark"
+    const next =
+      current === "system"
+        ? effectiveNow === "dark"
+          ? "light"
+          : "dark"
+        : current === "dark"
+        ? "light"
+        : "dark";
+
+    const updated = { ...cfg, themeMode: next };
+    localStorage.setItem(key, JSON.stringify(updated));
+    window.dispatchEvent(new CustomEvent("system-config-change", { detail: updated }));
+  };
+
   return (
     <Box sx={{ display: "flex" }}>
-      <AppBar position="fixed" sx={{ zIndex: (theme) => theme.zIndex.drawer + 1 }}>
+      <AppBar position="fixed" sx={{ zIndex: (t) => t.zIndex.drawer + 1 }}>
         <Toolbar sx={{ display: "flex", justifyContent: "space-between" }}>
           <Typography variant="h6" noWrap>
             Admin Dashboard
@@ -90,8 +107,8 @@ const AdminDashboard = () => {
 
           {/* Right side: Theme toggle, notifications, profile */}
           <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-            {/* Theme Switch */}
-            <IconButton color="inherit" onClick={colorMode.toggleColorMode}>
+            {/* Theme Switch (system-wide) */}
+            <IconButton color="inherit" onClick={toggleTheme}>
               {theme.palette.mode === "dark" ? <Brightness7 /> : <Brightness4 />}
             </IconButton>
 
