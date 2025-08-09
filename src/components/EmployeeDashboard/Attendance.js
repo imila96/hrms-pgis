@@ -52,6 +52,43 @@ const onConfigChange = (handler) => {
 };
 /** ---------------------------------------------------------------------- */
 
+/** Format minutes -> hours with a chosen number of decimals (default 4). */
+const formatHours = (minutes, dp = 4) =>
+  (Number(minutes || 0) / 60).toFixed(dp);
+
+/** Compute a display-paid-minutes with ceil + min 1.
+ *  Falls back to backend paidMinutes when it’s already >= 1, or when timestamps are missing.
+ */
+function computeDisplayPaidMinutes(rec) {
+  const backend = Number(rec.paidMinutes || 0);
+  const breakMin = Number(rec.breakMinutes || 0);
+
+  // If backend already reports >= 1 minute, just use it.
+  if (backend >= 1) return backend;
+
+  // Need both times to compute
+  if (!rec.firstIn || !rec.lastOut) return backend;
+
+  // Ceil to minutes to credit short sessions
+  const diffMinCeil = Math.ceil(
+    dayjs(rec.lastOut).diff(dayjs(rec.firstIn), "minute", true) // fractional minutes
+  );
+
+  // Subtract break and clamp to >= 1 if the session exists
+  const adjusted = Math.max(1, diffMinCeil - breakMin);
+
+  // Never negative
+  return Math.max(0, adjusted);
+}
+
+/** Normalize a list of records with displayPaidMinutes */
+function normalizeRecords(records) {
+  return (records || []).map((r) => ({
+    ...r,
+    displayPaidMinutes: computeDisplayPaidMinutes(r),
+  }));
+}
+
 const Attendance = () => {
   const [attendanceRecords, setAttendanceRecords] = useState([]);
   const [selectedMonth, setSelectedMonth] = useState(dayjs().format("YYYY-MM"));
@@ -109,11 +146,13 @@ const Attendance = () => {
   const fetchAttendanceData = async () => {
     setLoading(true);
     try {
-      const response = await axiosInstance.get("/attendance/me", {
+      const { data } = await axiosInstance.get("/attendance/me", {
         params: { month: selectedMonth },
       });
-      setAttendanceRecords(response.data);
-      calculateSummary(response.data);
+
+      const normalized = normalizeRecords(data);
+      setAttendanceRecords(normalized);
+      calculateSummary(normalized);
     } catch (error) {
       console.error("Error fetching attendance data:", error);
     } finally {
@@ -122,9 +161,13 @@ const Attendance = () => {
   };
 
   const calculateSummary = (records) => {
-    const presentDays = records.filter((r) => r.paidMinutes > 0).length;
+    // Use displayPaidMinutes so short sessions count as 1 minute
+    const presentDays = records.filter((r) => r.displayPaidMinutes > 0).length;
     const absentDays = records.filter((r) => !r.firstIn && !r.lastOut).length;
-    const totalPaidMinutes = records.reduce((sum, r) => sum + r.paidMinutes, 0);
+    const totalPaidMinutes = records.reduce(
+      (sum, r) => sum + (r.displayPaidMinutes || 0),
+      0
+    );
     const avgWorkingMinutes = presentDays
       ? Math.round(totalPaidMinutes / presentDays)
       : 0;
@@ -247,10 +290,10 @@ const Attendance = () => {
                   Absent Days: {summary.absentDays}
                 </Grid>
                 <Grid item xs={12} sm={3}>
-                  Total Paid Hours: {(summary.totalPaidMinutes / 60).toFixed(1)} hrs
+                  Total Paid Hours: {formatHours(summary.totalPaidMinutes, 4)} hrs
                 </Grid>
                 <Grid item xs={12} sm={3}>
-                  Avg Daily Hours: {(summary.avgWorkingMinutes / 60).toFixed(1)} hrs
+                  Avg Daily Hours: {formatHours(summary.avgWorkingMinutes, 4)} hrs
                 </Grid>
               </Grid>
             </Paper>
@@ -274,7 +317,7 @@ const Attendance = () => {
                     <TableCell>{formatTime(rec.firstIn)}</TableCell>
                     <TableCell>{formatTime(rec.lastOut)}</TableCell>
                     <TableCell>{rec.breakMinutes}</TableCell>
-                    <TableCell>{rec.paidMinutes}</TableCell>
+                    <TableCell>{rec.displayPaidMinutes}</TableCell>
                   </TableRow>
                 ))}
               </TableBody>
@@ -283,8 +326,17 @@ const Attendance = () => {
         </>
       )}
 
-      <Snackbar open={snack.open} autoHideDuration={3000} onClose={handleSnackClose}>
-        <Alert onClose={handleSnackClose} severity={snack.sev} variant="filled" sx={{ width: "100%" }}>
+      <Snackbar
+        open={snack.open}
+        autoHideDuration={3000}
+        onClose={handleSnackClose}
+      >
+        <Alert
+          onClose={handleSnackClose}
+          severity={snack.sev}
+          variant="filled"
+          sx={{ width: "100%" }}
+        >
           {snack.msg}
         </Alert>
       </Snackbar>
