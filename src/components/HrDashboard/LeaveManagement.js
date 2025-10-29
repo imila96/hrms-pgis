@@ -13,7 +13,7 @@ import {
   Chip,
   Stack,
 } from "@mui/material";
-import api from "../../AxiosInstance";
+import axiosInstance from "../../AxiosInstance";
 
 const STATUS_COLOR = {
   PENDING: "warning",
@@ -28,11 +28,11 @@ export default function LeaveManagement() {
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState("");
 
-  const load = async () => {
+  const fetchPendingLeaves = async () => {
     try {
       setLoading(true);
       setErr("");
-      const { data } = await api.get("/leave/pending");
+      const { data } = await axiosInstance.get("/leave/pending");
       setPending(data || []);
     } catch (e) {
       console.error(e);
@@ -47,12 +47,12 @@ export default function LeaveManagement() {
   };
 
   useEffect(() => {
-    load();
+    fetchPendingLeaves();
   }, []);
 
   const decide = async (id, approve) => {
     try {
-      await api.patch(`/leave/${id}`, null, { params: { approve } });
+      await axiosInstance.patch(`/leave/${id}`, null, { params: { approve } });
 
       setPending((prev) => {
         const found = prev.find((r) => r.id === id);

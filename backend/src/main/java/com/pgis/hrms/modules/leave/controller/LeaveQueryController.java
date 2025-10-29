@@ -31,7 +31,7 @@ class LeaveQueryController {
                         app.getStartDate(),
                         app.getEndDate(),
                         app.getStatus(),
-                        app.getReason()              // <-- include it here
+                        app.getReason()
                 ))
                 .toList();
     }

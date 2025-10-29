@@ -96,7 +96,7 @@ const Login = () => {
       // Redirect based on active role
       const home = {
         admin: "/admin/profile",
-        hr: "/hr/profile",
+        hr: "/hr",
         director: "/director/profile",
         employee: "/employee/profile",
       };
