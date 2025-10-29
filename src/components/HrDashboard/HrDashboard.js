@@ -251,8 +251,9 @@ import LeaveManagement from "./LeaveManagement";
 import AttendanceTracking from "./AttendanceTracking";
 import RecruitmentManagement from "./RecruitmentManagement";
 import PolicyManagement from "./PolicyManagement";
-import Profile from "./Profile";
 import AnnouncementManagement from "./AnnouncementManagement";
+import Profile from "../Profile/Profile";
+// import Profile from "../HrDashboard/Profile";
 
 // Theme context
 const ColorModeContext = React.createContext({ toggleColorMode: () => {} });
@@ -332,7 +333,7 @@ const HrDashboard = () => {
         main: "#F3797E",
       },
       background: {
-        default: "#F5F7FF",
+        default: "#acaeb8ff",
       },
     },
     typography: {
@@ -343,7 +344,12 @@ const HrDashboard = () => {
   return (
     <ThemeProvider theme={customTheme}>
       <Box
-        sx={{ display: "flex", flexDirection: "column", minHeight: "100vh" }}
+        sx={{
+          display: "flex",
+          flexDirection: "column",
+          minHeight: "100vh",
+          backgroundColor: "#f0f1f5ff",
+        }}
       >
         {/* Header AppBar */}
         <AppBar
@@ -478,7 +484,10 @@ const HrDashboard = () => {
         </AppBar>
 
         {/* Main content */}
-        <Box component="main" sx={{ flexGrow: 1, p: 3, mt: 10 }}>
+        <Box
+          component="main"
+          sx={{ flexGrow: 1, p: 3, mt: 10, backgroundColor: "#f0f1f5ff" }}
+        >
           <Routes>
             {/* Dashboard Home */}
             <Route
