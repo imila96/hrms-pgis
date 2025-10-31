@@ -16,7 +16,26 @@ import {
   Stack,
   Snackbar,
   Alert,
+  TableContainer,
+  Toolbar,
+  Tooltip,
+  Chip,
+  Divider,
+  LinearProgress,
+  Skeleton,
+  IconButton,
 } from "@mui/material";
+import {
+  Login as LoginIcon,
+  Logout as LogoutIcon,
+  Coffee as CoffeeIcon,
+  CoffeeOutlined as CoffeeOutlinedIcon,
+  CalendarMonth as CalendarMonthIcon,
+  AccessTime as AccessTimeIcon,
+  TrendingUp as TrendingUpIcon,
+  Summarize as SummarizeIcon,
+  Autorenew as AutorenewIcon,
+} from "@mui/icons-material";
 import axiosInstance from "../../AxiosInstance";
 import dayjs from "dayjs";
 
@@ -88,6 +107,46 @@ function normalizeRecords(records) {
     displayPaidMinutes: computeDisplayPaidMinutes(r),
   }));
 }
+
+const StatCard = ({ icon, label, value, help }) => (
+  <Paper
+    elevation={0}
+    sx={{
+      p: 2,
+      borderRadius: 3,
+      height: "100%",
+      bgcolor: (t) => (t.palette.mode === "light" ? "#f8fafc" : "#0b1220"),
+      border: (t) => `1px solid ${t.palette.divider}`,
+    }}
+  >
+    <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 1 }}>
+      <Box
+        sx={{
+          width: 36,
+          height: 36,
+          borderRadius: 2,
+          display: "grid",
+          placeItems: "center",
+          bgcolor: (t) => (t.palette.mode === "light" ? "#eef2ff" : "#111827"),
+          border: (t) => `1px solid ${t.palette.divider}`,
+        }}
+      >
+        {icon}
+      </Box>
+      <Typography variant="overline" color="text.secondary">
+        {label}
+      </Typography>
+    </Stack>
+    <Typography variant="h6" sx={{ fontWeight: 700 }}>
+      {value}
+    </Typography>
+    {help && (
+      <Typography variant="caption" color="text.secondary">
+        {help}
+      </Typography>
+    )}
+  </Paper>
+);
 
 const Attendance = () => {
   const [attendanceRecords, setAttendanceRecords] = useState([]);
@@ -206,125 +265,243 @@ const Attendance = () => {
   const formatDate = (date) => dayjs(date).format("MMM D, YYYY");
 
   return (
-    <Box sx={{ p: 3 }}>
-      <Typography variant="h5" gutterBottom>
-        My Attendance
-      </Typography>
+    <Box sx={{ p: { xs: 2, md: 3 } }}>
+      {/* Page header */}
+      <Paper
+        elevation={0}
+        sx={{
+          mb: 3,
+          p: 3,
+          borderRadius: 3,
+          background: (t) =>
+            t.palette.mode === "light"
+              ? "linear-gradient(135deg, #f5f7ff 0%, #f0fbff 50%, #f9f9ff 100%)"
+              : "linear-gradient(135deg, #0a0f1f 0%, #0a1426 50%, #0a0f1f 100%)",
+          border: (t) => `1px solid ${t.palette.divider}`,
+        }}
+      >
+        <Stack direction={{ xs: "column", md: "row" }} spacing={2} alignItems={{ md: "center" }} justifyContent="space-between">
+          <Box>
+            <Typography variant="h5" sx={{ fontWeight: 800 }} gutterBottom>
+              My Attendance
+            </Typography>
+            <Typography variant="body2" color="text.secondary">
+              {cfg.siteTitle} · Timezone: {cfg.timezone}
+            </Typography>
+          </Box>
 
-      {/* Month Selector */}
-      <Paper sx={{ p: 2, mb: 2 }}>
-        <Grid container spacing={2}>
-          <Grid item xs={12} md={6}>
+          {/* Month Selector + Refresh */}
+          <Toolbar disableGutters sx={{ gap: 1 }}>
             <TextField
               label="Select Month"
               type="month"
               value={selectedMonth}
               onChange={(e) => setSelectedMonth(e.target.value)}
-              fullWidth
               InputLabelProps={{ shrink: true }}
+              size="small"
             />
-          </Grid>
-        </Grid>
+            <Tooltip title="Refresh">
+              <span>
+                <IconButton onClick={fetchAttendanceData} disabled={loading}>
+                  <AutorenewIcon />
+                </IconButton>
+              </span>
+            </Tooltip>
+          </Toolbar>
+        </Stack>
       </Paper>
 
       {/* Punch Actions (respect admin config) */}
       {cfg.allowManualAttendance ? (
-        <Paper sx={{ p: 2, mb: 3 }}>
-          <Stack direction="row" spacing={1}>
-            <Button
-              disabled={punching || !state.canCheckIn}
-              variant="contained"
-              onClick={() => punch("CHECK_IN")}
-            >
-              Check In
-            </Button>
+        <Paper sx={{ p: 2, mb: 3, borderRadius: 3 }} variant="outlined">
+          <Stack direction={{ xs: "column", sm: "row" }} spacing={1}>
+            <Tooltip title="Check In">
+              <span>
+                <Button
+                  disabled={punching || !state.canCheckIn}
+                  variant="contained"
+                  startIcon={<LoginIcon />}
+                  onClick={() => punch("CHECK_IN")}
+                >
+                  Check In
+                </Button>
+              </span>
+            </Tooltip>
 
-            <Button
-              disabled={punching || !state.canBreakOut}
-              variant="outlined"
-              onClick={() => punch("BREAK_OUT")}
-            >
-              Break Out
-            </Button>
+            <Tooltip title="Start Break">
+              <span>
+                <Button
+                  disabled={punching || !state.canBreakOut}
+                  variant="outlined"
+                  startIcon={<CoffeeIcon />}
+                  onClick={() => punch("BREAK_OUT")}
+                >
+                  Break Out
+                </Button>
+              </span>
+            </Tooltip>
 
-            <Button
-              disabled={punching || !state.canBreakIn}
-              variant="outlined"
-              onClick={() => punch("BREAK_IN")}
-            >
-              Break In
-            </Button>
+            <Tooltip title="End Break">
+              <span>
+                <Button
+                  disabled={punching || !state.canBreakIn}
+                  variant="outlined"
+                  startIcon={<CoffeeOutlinedIcon />}
+                  onClick={() => punch("BREAK_IN")}
+                >
+                  Break In
+                </Button>
+              </span>
+            </Tooltip>
 
-            <Button
-              disabled={punching || !state.canCheckOut}
-              variant="contained"
-              color="secondary"
-              onClick={() => punch("CHECK_OUT")}
-            >
-              Check Out
-            </Button>
+            <Tooltip title="Check Out">
+              <span>
+                <Button
+                  disabled={punching || !state.canCheckOut}
+                  variant="contained"
+                  color="secondary"
+                  startIcon={<LogoutIcon />}
+                  onClick={() => punch("CHECK_OUT")}
+                >
+                  Check Out
+                </Button>
+              </span>
+            </Tooltip>
           </Stack>
         </Paper>
       ) : (
-        <Paper sx={{ p: 2, mb: 3 }}>
+        <Paper sx={{ p: 2, mb: 3, borderRadius: 3 }} variant="outlined">
           <Alert severity="info" variant="outlined">
             Manual punches are disabled by admin.
           </Alert>
         </Paper>
       )}
 
-      {loading ? (
-        <Box display="flex" justifyContent="center" mt={5}>
-          <CircularProgress />
-        </Box>
-      ) : (
-        <>
-          {summary && (
-            <Paper sx={{ p: 2, mb: 3 }}>
-              <Typography variant="subtitle1">Monthly Summary</Typography>
-              <Grid container spacing={2}>
-                <Grid item xs={12} sm={3}>
-                  Present Days: {summary.presentDays}
-                </Grid>
-                <Grid item xs={12} sm={3}>
-                  Absent Days: {summary.absentDays}
-                </Grid>
-                <Grid item xs={12} sm={3}>
-                  Total Paid Hours: {formatHours(summary.totalPaidMinutes, 4)} hrs
-                </Grid>
-                <Grid item xs={12} sm={3}>
-                  Avg Daily Hours: {formatHours(summary.avgWorkingMinutes, 4)} hrs
-                </Grid>
-              </Grid>
-            </Paper>
-          )}
+      {/* Summary */}
+      {summary && (
+        <Paper sx={{ p: 2, mb: 3, borderRadius: 3 }} elevation={0}>
+          <Grid container spacing={2}>
+            <Grid item xs={12} md={3}>
+              <StatCard
+                icon={<CalendarMonthIcon fontSize="small" />}
+                label="Present Days"
+                value={summary.presentDays}
+                help="Days with recorded work"
+              />
+            </Grid>
+            <Grid item xs={12} md={3}>
+              <StatCard
+                icon={<SummarizeIcon fontSize="small" />}
+                label="Absent Days"
+                value={summary.absentDays}
+                help="No in/out records"
+              />
+            </Grid>
+            <Grid item xs={12} md={3}>
+              <StatCard
+                icon={<AccessTimeIcon fontSize="small" />}
+                label="Total Paid Hours"
+                value={`${formatHours(summary.totalPaidMinutes, 2)} hrs`}
+                help={`${summary.totalPaidMinutes} mins credited`}
+              />
+            </Grid>
+            <Grid item xs={12} md={3}>
+              <StatCard
+                icon={<TrendingUpIcon fontSize="small" />}
+                label="Avg Daily Hours"
+                value={`${formatHours(summary.avgWorkingMinutes, 2)} hrs`}
+                help={`${summary.avgWorkingMinutes} mins/day`}
+              />
+            </Grid>
+          </Grid>
+        </Paper>
+      )}
 
-          <Paper>
-            <Table>
+      {/* Loading state indicator */}
+      {loading && (
+        <Box sx={{ mb: 1 }}>
+          <LinearProgress />
+        </Box>
+      )}
+
+      {/* Records Table */}
+      <Paper sx={{ borderRadius: 3 }} variant="outlined">
+        {loading ? (
+          <Box sx={{ p: 2 }}>
+            <Skeleton variant="rounded" height={40} sx={{ mb: 1 }} />
+            <Skeleton variant="rounded" height={40} sx={{ mb: 1 }} />
+            <Skeleton variant="rounded" height={40} sx={{ mb: 1 }} />
+            <Skeleton variant="rounded" height={40} />
+          </Box>
+        ) : (
+          <TableContainer sx={{ maxHeight: 520 }}>
+            <Table size="small" stickyHeader>
               <TableHead>
                 <TableRow>
-                  <TableCell>Date</TableCell>
-                  <TableCell>First In</TableCell>
-                  <TableCell>Last Out</TableCell>
-                  <TableCell>Break (min)</TableCell>
-                  <TableCell>Paid (min)</TableCell>
+                  <TableCell sx={{ fontWeight: 700 }}>Date</TableCell>
+                  <TableCell sx={{ fontWeight: 700 }}>First In</TableCell>
+                  <TableCell sx={{ fontWeight: 700 }}>Last Out</TableCell>
+                  <TableCell sx={{ fontWeight: 700 }}>Break (min)</TableCell>
+                  <TableCell sx={{ fontWeight: 700 }}>Paid (min)</TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>
-                {attendanceRecords.map((rec) => (
-                  <TableRow key={rec.workDate}>
-                    <TableCell>{formatDate(rec.workDate)}</TableCell>
-                    <TableCell>{formatTime(rec.firstIn)}</TableCell>
-                    <TableCell>{formatTime(rec.lastOut)}</TableCell>
-                    <TableCell>{rec.breakMinutes}</TableCell>
-                    <TableCell>{rec.displayPaidMinutes}</TableCell>
+                {attendanceRecords.map((rec) => {
+                  const isAbsent = !rec.firstIn && !rec.lastOut;
+                  const paid = rec.displayPaidMinutes || 0;
+                  return (
+                    <TableRow
+                      key={rec.workDate}
+                      hover
+                      sx={{
+                        "&:nth-of-type(odd)": {
+                          bgcolor: (t) =>
+                            t.palette.mode === "light" ? "#fafafa" : "#0c1222",
+                        },
+                        opacity: isAbsent ? 0.7 : 1,
+                      }}
+                    >
+                      <TableCell>{formatDate(rec.workDate)}</TableCell>
+                      <TableCell>{formatTime(rec.firstIn)}</TableCell>
+                      <TableCell>{formatTime(rec.lastOut)}</TableCell>
+                      <TableCell>
+                        <Chip
+                          size="small"
+                          label={rec.breakMinutes}
+                          variant="outlined"
+                        />
+                      </TableCell>
+                      <TableCell>
+                        {paid > 0 ? (
+                          <Chip
+                            size="small"
+                            color={paid >= 480 ? "success" : paid >= 240 ? "warning" : "default"}
+                            label={paid}
+                          />
+                        ) : (
+                          <Chip size="small" color="error" variant="outlined" label={paid} />
+                        )}
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
+
+                {attendanceRecords.length === 0 && (
+                  <TableRow>
+                    <TableCell colSpan={5}>
+                      <Box sx={{ py: 6, textAlign: "center" }}>
+                        <Typography variant="body2" color="text.secondary">
+                          No records for this month.
+                        </Typography>
+                      </Box>
+                    </TableCell>
                   </TableRow>
-                ))}
+                )}
               </TableBody>
             </Table>
-          </Paper>
-        </>
-      )}
+          </TableContainer>
+        )}
+      </Paper>
 
       <Snackbar
         open={snack.open}

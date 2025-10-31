@@ -31,7 +31,7 @@ public class LeaveController {
 
     /* ---- apply (employee) ---- */
     @PostMapping
-    @PreAuthorize("hasAnyRole('HR','ADMIN','DIRECTOR')")
+    @PreAuthorize("hasAnyRole('HR','ADMIN','DIRECTOR','EMPLOYEE')")
     public void apply(@AuthenticationPrincipal UserDetails ud,
                       @RequestBody ApplyLeaveRequest req) {     // <-- only JSON now
         svc.apply(currentEmpId(ud.getUsername()), req, null);   // file param is null
@@ -40,7 +40,7 @@ public class LeaveController {
 
     /* ---- my balances ---- */
     @GetMapping("/balance")
-    @PreAuthorize("hasAnyRole('HR','ADMIN','DIRECTOR')")
+    @PreAuthorize("hasAnyRole('HR','ADMIN','DIRECTOR','EMPLOYEE')")
     public List<LeaveBalanceDto> myBalances(@AuthenticationPrincipal UserDetails ud,
                                             @RequestParam(defaultValue="#{T(java.time.Year).now().value}") int year) {
         return svc.balances(currentEmpId(ud.getUsername()), year);
@@ -56,7 +56,7 @@ public class LeaveController {
     }
 
     @GetMapping("/my")
-    @PreAuthorize("hasAnyRole('HR','ADMIN','DIRECTOR')")
+    @PreAuthorize("hasAnyRole('HR','ADMIN','DIRECTOR','EMPLOYEE')")
     public List<MyLeaveDto> myLeaves(@AuthenticationPrincipal UserDetails ud) {
         int empId = currentEmpId(ud.getUsername());
         return appRepo.findByEmployeeEmployeeIdOrderByRequestedAtDesc(empId)

@@ -19,7 +19,7 @@ public class IssueController {
 
     // EMPLOYEE: create
     @PostMapping
-    @PreAuthorize("hasAnyRole('HR','ADMIN','DIRECTOR')")
+    @PreAuthorize("hasAnyRole('HR','ADMIN','DIRECTOR','EMPLOYEE')")
     public IssueRes create(Authentication auth, @RequestBody IssueCreateReq req) {
         var username = auth.getName(); // or cast your UserPrincipal to get ID
         Long userId = null;
@@ -28,7 +28,7 @@ public class IssueController {
 
     // EMPLOYEE: list own
     @GetMapping("/my")
-    @PreAuthorize("hasAnyRole('HR','ADMIN','DIRECTOR')")
+    @PreAuthorize("hasAnyRole('HR','ADMIN','DIRECTOR','EMPLOYEE')")
     public List<IssueRes> my(Authentication auth, @RequestParam(required = false) Status status) {
         return service.my(auth.getName(), status);
     }

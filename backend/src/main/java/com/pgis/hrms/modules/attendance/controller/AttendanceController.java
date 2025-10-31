@@ -31,7 +31,7 @@ public class AttendanceController {
 
     /* ---- clock‑in / clock‑out / break events ---- */
     @PostMapping("/punch")
-    @PreAuthorize("hasAnyRole('HR','ADMIN','DIRECTOR')")
+    @PreAuthorize("hasAnyRole('HR','ADMIN','DIRECTOR','EMPLOYEE')")
     public void punch(@AuthenticationPrincipal UserDetails ud,
                       @RequestParam AttendanceEventType type) {
         Integer empId = currentEmployeeId(ud.getUsername());
@@ -40,7 +40,7 @@ public class AttendanceController {
 
     /* ---- month view for self ---- */
     @GetMapping("/me")
-    @PreAuthorize("hasAnyRole('HR','ADMIN','DIRECTOR')")
+    @PreAuthorize("hasAnyRole('HR','ADMIN','DIRECTOR','EMPLOYEE')")
     public List<DailyAttendanceDto> myMonth(@AuthenticationPrincipal UserDetails ud,
                                             @RequestParam @DateTimeFormat(pattern="yyyy-MM") YearMonth month) {
         Integer empId = currentEmployeeId(ud.getUsername());
@@ -56,7 +56,7 @@ public class AttendanceController {
     }
 
     @GetMapping("/me/state")
-    @PreAuthorize("hasAnyRole('HR','ADMIN','DIRECTOR')")
+    @PreAuthorize("hasAnyRole('HR','ADMIN','DIRECTOR','EMPLOYEE')")
     public AttendanceStateDto myState(@AuthenticationPrincipal UserDetails ud) {
         Integer empId = currentEmployeeId(ud.getUsername());
         return svc.stateForToday(empId);
