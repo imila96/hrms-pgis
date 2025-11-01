@@ -10,6 +10,7 @@ import {
 import Login from "./components/Login/Login";
 import Register from "./components/Register/Register";
 import ForgetPassword from "./components/ForgetPassword/ForgetPassword";
+import Logout from "./components/Logout/Logout";
 
 import AdminDashboard from "./components/AdminDashboard/AdminDashboard";
 import HrDashboard from "./components/HrDashboard/HrDashboard";
@@ -33,6 +34,7 @@ import Reports from "./components/EmployeeDashboard/Reports";
 import DirectorDashboard from "./components/DirectorDashboard/DirectorDashboard";
 
 import { AuthProvider, useAuth } from "./context/AuthContext";
+import TokenExpirationMonitor from "./components/common/TokenExpirationMonitor";
 
 /* ---------------- Guards ---------------- */
 
@@ -72,11 +74,13 @@ function App() {
   return (
     <AuthProvider>
       <Router>
+        <TokenExpirationMonitor />
         <Routes>
           {/* public */}
           <Route path="/" element={<Login />} />
           <Route path="/register" element={<Register />} />
           <Route path="/forgot-password" element={<ForgetPassword />} />
+          <Route path="/logout" element={<Logout />} />
 
           {/* admin */}
           <Route

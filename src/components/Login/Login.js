@@ -48,10 +48,23 @@ const Login = () => {
       const { data } = await axios.post("http://localhost:8080/auth/login", {
         email: form.email,
         password: form.password,
+        rememberMe: rememberMe,
       });
 
-      const accessToken = data.accessToken || data.token;
+      // Store access token and refresh token
+      const accessToken = data.accessToken;
+      const refreshToken = data.refreshToken;
       const rawRoles = Array.isArray(data.roles) ? data.roles : [];
+
+      // Store tokens
+      if (accessToken) localStorage.setItem("token", accessToken);
+      if (refreshToken) localStorage.setItem("refreshToken", refreshToken);
+      
+      // Store token expiration time
+      if (data.accessTokenExpiresIn) {
+        const expiresAt = Date.now() + data.accessTokenExpiresIn;
+        localStorage.setItem("tokenExpiresAt", expiresAt);
+      }
 
       // Normalize backend roles like ["ROLE_ADMIN","ROLE_EMPLOYEE"] -> ["admin","employee"]
       let roles = rawRoles.map((r) => r.toLowerCase().replace("role_", ""));
@@ -70,27 +83,26 @@ const Login = () => {
         priority.find((r) => roles.includes(r)) || roles[0] || "employee";
 
       // Persist session
-      if (accessToken) localStorage.setItem("token", accessToken);
       localStorage.setItem("email", form.email);
       localStorage.setItem("roles", JSON.stringify(roles));
       localStorage.setItem("activeRole", activeRole);
       // keep legacy single "role" for any leftover checks
       localStorage.setItem("role", activeRole);
 
+      // Store remember me preference
+      localStorage.setItem("rememberMe", rememberMe ? "true" : "false");
+
       // Update context
       setUser({ email: form.email, roles, activeRole });
 
       setError("");
 
-      // Remember-me persistence
+      // Remember-me persistence for form (optional - for convenience)
       if (rememberMe) {
         localStorage.setItem("rememberedEmail", form.email);
-        localStorage.setItem("rememberedPassword", form.password);
-        localStorage.setItem("rememberMe", "true");
       } else {
         localStorage.removeItem("rememberedEmail");
         localStorage.removeItem("rememberedPassword");
-        localStorage.setItem("rememberMe", "false");
       }
 
       // Redirect based on active role

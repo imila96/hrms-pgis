@@ -6,6 +6,7 @@ import React, {
   useEffect,
   useCallback,
 } from "react";
+import axios from "axios";
 
 const AuthContext = createContext(null);
 
@@ -72,9 +73,21 @@ export const AuthProvider = ({ children }) => {
   );
 
   // ---- Logout ----
-  const logout = useCallback(() => {
+  const logout = useCallback(async () => {
+    const refreshToken = localStorage.getItem("refreshToken");
+    
+    // Call backend to revoke refresh token if it exists
+    if (refreshToken) {
+      try {
+        await axios.post("http://localhost:8080/auth/logout", { refreshToken });
+      } catch (error) {
+        console.error("Logout error:", error);
+        // Continue with local logout even if backend call fails
+      }
+    }
+
     setUser(null);
-    ["token", "email", "role", "roles", "activeRole"].forEach((k) =>
+    ["token", "refreshToken", "email", "role", "roles", "activeRole", "tokenExpiresAt", "rememberMe"].forEach((k) =>
       localStorage.removeItem(k)
     );
   }, []);
