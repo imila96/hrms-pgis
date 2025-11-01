@@ -43,17 +43,41 @@ public class SecurityConfig {
                         // CORS preflight
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
 
-                        // Employee – Issues
-                        .requestMatchers(HttpMethod.GET,  "/issues/my").hasRole("EMPLOYEE")
-                        .requestMatchers(HttpMethod.POST, "/issues").hasRole("EMPLOYEE")
-
-                        // Admin – Issues
-                        .requestMatchers(HttpMethod.GET,   "/issues").hasRole("ADMIN")
-                        .requestMatchers(HttpMethod.PATCH, "/issues/*/resolve").hasRole("ADMIN")
+                        // Public announcements
                         .requestMatchers(HttpMethod.GET, "/announcements/public").permitAll()
 
+                        // Admin – Issues (admins can resolve)
+                        .requestMatchers(HttpMethod.GET,   "/issues").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.PATCH, "/issues/*/resolve").hasRole("ADMIN")
 
-                        // everything else
+                        // Employee – Issues (ADMIN, HR, DIRECTOR also have access as they can view employee features)
+                        .requestMatchers(HttpMethod.GET,  "/issues/my").hasAnyRole("EMPLOYEE", "ADMIN", "HR", "DIRECTOR")
+                        .requestMatchers(HttpMethod.POST, "/issues").hasAnyRole("EMPLOYEE", "ADMIN", "HR", "DIRECTOR")
+
+                        // Attendance - Employee features (all roles can access)
+                        .requestMatchers("/attendance/me", "/attendance/me/state").hasAnyRole("EMPLOYEE", "ADMIN", "HR", "DIRECTOR")
+                        .requestMatchers(HttpMethod.POST, "/attendance/punch").hasAnyRole("EMPLOYEE", "ADMIN", "HR", "DIRECTOR")
+
+                        // Leave - Employee features (all roles can access)
+                        .requestMatchers("/leave/my", "/leave/balance").hasAnyRole("EMPLOYEE", "ADMIN", "HR", "DIRECTOR")
+                        .requestMatchers(HttpMethod.POST, "/leave").hasAnyRole("EMPLOYEE", "ADMIN", "HR", "DIRECTOR")
+
+                        // Profile - Everyone can access their own profile
+                        .requestMatchers("/profile/me", "/hr/employees/me").authenticated()
+
+                        // Policies - Employee view (all roles can read)
+                        .requestMatchers(HttpMethod.GET, "/policies/**").authenticated()
+                        .requestMatchers(HttpMethod.POST, "/policies").hasAnyRole("HR", "ADMIN")
+                        .requestMatchers(HttpMethod.PUT, "/policies/**").hasAnyRole("HR", "ADMIN")
+                        .requestMatchers(HttpMethod.PATCH, "/policies/*/approve").hasRole("DIRECTOR")
+
+                        // HR specific endpoints
+                        .requestMatchers("/hr/**").hasAnyRole("HR", "ADMIN")
+
+                        // Admin specific endpoints
+                        .requestMatchers("/admin/**").hasRole("ADMIN")
+
+                        // everything else requires authentication
                         .anyRequest().authenticated()
                 )
                 .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
