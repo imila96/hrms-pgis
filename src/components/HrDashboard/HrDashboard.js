@@ -253,6 +253,7 @@ import RecruitmentManagement from "./RecruitmentManagement";
 import PolicyManagement from "./PolicyManagement";
 import AnnouncementManagement from "./AnnouncementManagement";
 import Profile from "../Profile/Profile";
+import ComplaintManagement from "./ComplaintManagement";
 // import Profile from "../HrDashboard/Profile";
 
 // Theme context
@@ -265,6 +266,7 @@ const tabItems = [
   { label: "Recruitment", path: "/hr/recruitment" },
   { label: "Policies", path: "/hr/policies" },
   { label: "Announcements", path: "/hr/announcements" },
+  { label: "Complaints", path: "/hr/complaints" },
 ];
 
 const HrDashboard = () => {
@@ -761,6 +763,7 @@ const HrDashboard = () => {
             <Route path="recruitment" element={<RecruitmentManagement />} />
             <Route path="policies" element={<PolicyManagement />} />
             <Route path="announcements" element={<AnnouncementManagement />} />
+            <Route path="complaints" element={<ComplaintManagement />} />
           </Routes>
         </Box>
       </Box>
