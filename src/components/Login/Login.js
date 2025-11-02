@@ -794,21 +794,17 @@ const Login = () => {
               }}
             >
               <Box
+                component="img"
+                src={require("../../assets/pgis-logo.png")}
+                alt="PGIS Logo"
                 sx={{
-                  width: 80,
-                  height: 80,
-                  borderRadius: "50%",
-                  background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
+                  width: 160,
+                  height: 160,
+                  objectFit: "contain",
                   mb: 2,
-                  boxShadow: "0 8px 16px rgba(102, 126, 234, 0.4)",
                   animation: "scaleIn 0.8s ease-out 0.3s both",
                 }}
-              >
-                <Business sx={{ fontSize: 40, color: "white" }} />
-              </Box>
+              />
             
             <Typography
               variant="h4"
