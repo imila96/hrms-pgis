@@ -259,7 +259,6 @@ import Profile from "../Profile/Profile";
 const ColorModeContext = React.createContext({ toggleColorMode: () => {} });
 
 const tabItems = [
-  { label: "Profile", path: "/hr/profile" },
   { label: "Employee Records", path: "/hr/records" },
   { label: "Leave", path: "/hr/leave" },
   { label: "Attendance", path: "/hr/attendance" },

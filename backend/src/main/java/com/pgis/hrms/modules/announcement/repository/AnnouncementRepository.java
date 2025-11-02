@@ -8,6 +8,7 @@ import org.springframework.data.repository.query.Param;
 import java.util.*;
 
 public interface AnnouncementRepository extends JpaRepository<Announcement,Integer> {
+
     List<Announcement> findByStatusOrderByPublishedDateDesc(AnnouncementStatus status);
 
     @Query("""
@@ -16,4 +17,5 @@ public interface AnnouncementRepository extends JpaRepository<Announcement,Integ
        ORDER BY a.createdDate DESC
        """)
     List<Announcement> search(@Param("status") AnnouncementStatus status);
+
 }
