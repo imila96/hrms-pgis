@@ -23,7 +23,8 @@ public class User {
 
     private LocalDateTime passwordChangedAt;
 
-    @OneToOne(mappedBy = "user", fetch = FetchType.LAZY)
+    @OneToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "employee_id", referencedColumnName = "employeeId")
     private com.pgis.hrms.core.employee.entity.Employee employee;
 
     @ManyToMany(fetch = FetchType.EAGER)

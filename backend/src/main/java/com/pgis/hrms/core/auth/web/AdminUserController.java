@@ -61,7 +61,7 @@ public class AdminUserController {
         return toSummary(u);
     }
 
-    /* -------------- SET ROLES + ENSURE EMPLOYEE -------------- */
+    /* -------------- SET ROLES + LINK TO EMPLOYEE -------------- */
     @PutMapping("/{id}/roles")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     @Transactional
@@ -73,29 +73,43 @@ public class AdminUserController {
         for (String code : r.roles()) {
             u.getRoles().add(roleRepo.findByCode(code).orElseThrow());
         }
-        userRepo.save(u);
 
-        // ensure an employee row exists for app roles
-        Set<String> trigger = Set.of("ADMIN", "HR", "EMPLOYEE");
-        if (!Collections.disjoint(r.roles(), trigger) && empRepo.findById(u.getUserId()).isEmpty()) {
-            Employee e = new Employee();
-            e.setUser(u); // @MapsId copies PK from u.getUserId()
-            e.setName(Optional.ofNullable(r.name()).orElse(u.getEmail()));
-            e.setEmail(Optional.ofNullable(r.empEmail()).orElse(u.getEmail()));
-            e.setJobTitle(Optional.ofNullable(r.jobTitle()).orElse("Staff"));
-            e.setHireDate(Optional.ofNullable(r.hireDate()).orElse(LocalDate.now()));
-            e.setContact(r.contact());
-            e.setAddress(r.address());
-            empRepo.save(e);
+        // Link to existing employee if employeeId is provided
+        if (r.employeeId() != null) {
+            Employee existingEmp = empRepo.findById(r.employeeId())
+                    .orElseThrow(() -> new RuntimeException("Employee not found"));
+            u.setEmployee(existingEmp);
+        } else {
+            // Only create new employee if explicitly requested and no employeeId provided
+            Set<String> trigger = Set.of("ADMIN", "HR", "EMPLOYEE");
+            if (!Collections.disjoint(r.roles(), trigger) && u.getEmployee() == null) {
+                Employee e = new Employee();
+                e.setName(Optional.ofNullable(r.name()).orElse(u.getEmail()));
+                e.setEmail(Optional.ofNullable(r.empEmail()).orElse(u.getEmail()));
+                e.setJobTitle(Optional.ofNullable(r.jobTitle()).orElse("Staff"));
+                e.setHireDate(Optional.ofNullable(r.hireDate()).orElse(LocalDate.now()));
+                e.setContact(r.contact());
+                e.setAddress(r.address());
+                e = empRepo.save(e);
+                u.setEmployee(e);
+            }
         }
+        
+        userRepo.save(u);
     }
 
     /* ------------------------- DELETE ------------------------ */
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
+    @Transactional
     public void delete(@PathVariable Integer id) {
-        empRepo.findById(id).ifPresent(empRepo::delete); // due to FK
-        userRepo.deleteById(id);
+        User u = userRepo.findById(id).orElse(null);
+        if (u != null) {
+            // Remove the link from user to employee (don't delete the employee record)
+            u.setEmployee(null);
+            userRepo.save(u);
+            userRepo.deleteById(id);
+        }
     }
 
     /* -------------------- PASSWORD ASSIGN -------------------- */
@@ -115,10 +129,64 @@ public class AdminUserController {
         return userRepo.findPendingUsersWithEmployee();
     }
 
+    /* --------- PENDING EMPLOYEES (Employees without user accounts) --- */
+    @GetMapping("/pending-employees")
+    public List<com.pgis.hrms.core.employee.dto.PendingEmployeeDto> pendingEmployees() {
+        return empRepo.findEmployeesWithoutUsers().stream()
+                .map(e -> new com.pgis.hrms.core.employee.dto.PendingEmployeeDto(
+                    e.getEmployeeId(),
+                    e.getEmail(),
+                    e.getName(),
+                    e.getJobTitle(),
+                    e.getContact()
+                ))
+                .toList();
+    }
+
+    /* --------- CREATE USER FOR EXISTING EMPLOYEE --- */
+    @PostMapping("/create-user-for-employee")
+    @ResponseStatus(HttpStatus.CREATED)
+    @Transactional
+    public UserSummary createUserForEmployee(@RequestBody @Valid CreateUserForEmployeeRequest r) {
+        // Check if employee exists
+        Employee emp = empRepo.findById(r.employeeId())
+                .orElseThrow(() -> new RuntimeException("Employee not found"));
+        
+        // Check if user already exists with this email
+        if (userRepo.findByEmail(r.email()).isPresent()) {
+            throw new RuntimeException("User with this email already exists");
+        }
+
+        // Create user
+        User u = new User();
+        u.setEmail(r.email());
+        u.setPassword(encoder.encode(r.password()));
+        u.setAdminPasswordAssigned(true);
+        u.setPasswordChangedAt(java.time.LocalDateTime.now());
+        u.setEmployee(emp); // Link to existing employee
+        
+        // Assign default role if provided
+        if (r.role() != null && !r.role().isEmpty()) {
+            Role role = roleRepo.findByCode(r.role())
+                    .orElseThrow(() -> new RuntimeException("Role not found: " + r.role()));
+            u.getRoles().add(role);
+        }
+        
+        userRepo.save(u);
+        return toSummary(u);
+    }
+
     /* ------------------------- DTOs -------------------------- */
     public record CreateUserRequest(@Email String email, @Size(min = 6) String password) {}
+    public record CreateUserForEmployeeRequest(
+            Integer employeeId,
+            @Email String email,
+            @Size(min = 6) String password,
+            String role  // Optional: default role to assign (e.g., "EMPLOYEE")
+    ) {}
     public record SetRolesRequest(
             @NotEmpty Set<String> roles,
+            Integer employeeId, // NEW: link to existing employee
             String name, String contact, String jobTitle, LocalDate hireDate, String address,
             String empEmail
     ) {}

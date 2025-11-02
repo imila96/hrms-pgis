@@ -17,9 +17,12 @@ public class ProfileService {
 
     /* ---------- helpers ---------- */
     private static EmployeeProfileDto toDto(Employee e) {
+        if (e == null) {
+            throw new RuntimeException("No employee profile linked to this user");
+        }
         return new EmployeeProfileDto(
                 e.getEmployeeId(),
-                e.getUser().getEmail(),
+                e.getEmail(),
                 e.getName(),
                 e.getContact(),
                 e.getAddress(),
@@ -52,15 +55,22 @@ public class ProfileService {
     @Transactional
     public EmployeeProfileDto adminUpdate(Integer id, EmployeeAdminUpdateRequest in) {
         var emp  = empRepo.findById(id).orElseThrow();
-        var user = emp.getUser();
+        // Find the user linked to this employee
+        var user = userRepo.findAll().stream()
+                .filter(u -> u.getEmployee() != null && u.getEmployee().getEmployeeId().equals(id))
+                .findFirst()
+                .orElse(null);
 
         if (in.name()      != null) emp.setName(in.name());
         if (in.contact()   != null) emp.setContact(in.contact());
         if (in.address()   != null) emp.setAddress(in.address());
         if (in.jobTitle()  != null) emp.setJobTitle(in.jobTitle());
         if (in.hireDate()  != null) emp.setHireDate(in.hireDate());
-        if (in.active()    != null) user.setActive(in.active());
-        if (in.verified()  != null) user.setVerified(in.verified());
+        
+        if (user != null) {
+            if (in.active()    != null) user.setActive(in.active());
+            if (in.verified()  != null) user.setVerified(in.verified());
+        }
 
         return toDto(emp);
     }

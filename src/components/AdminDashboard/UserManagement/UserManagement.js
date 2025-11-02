@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import {
   Box, Typography, Table, TableHead, TableRow, TableCell, TableBody,
   IconButton, Button, Paper, Dialog, DialogTitle, DialogContent,
-  DialogActions, TextField, Select, MenuItem, FormControl, InputLabel, Chip, Stack
+  DialogActions, TextField, Select, MenuItem, FormControl, InputLabel, Chip
 } from "@mui/material";
 import { Delete, Edit } from "@mui/icons-material";
 import api from "../../../AxiosInstance";
@@ -14,14 +14,15 @@ export default function UserManagement() {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  // pending password table
-  const [pending, setPending] = useState([]);
+  // pending employees (no user accounts yet)
+  const [pendingEmployees, setPendingEmployees] = useState([]);
   const [pendingLoading, setPendingLoading] = useState(true);
 
-  // assign password dialog (row-action)
+  // assign password dialog (for creating user from employee)
   const [pwdOpen, setPwdOpen] = useState(false);
-  const [pwdTarget, setPwdTarget] = useState(null); // {id,email,name,jobTitle}
+  const [pwdTarget, setPwdTarget] = useState(null); // {employeeId, email, name, jobTitle}
   const [initialPassword, setInitialPassword] = useState("");
+  const [userEmail, setUserEmail] = useState(""); // Email for the user account
 
   // assign role dialog
   const [openRole, setOpenRole] = useState(false);
@@ -44,8 +45,8 @@ export default function UserManagement() {
   const loadPending = async () => {
     setPendingLoading(true);
     try {
-      const { data } = await api.get("/admin/users/pending-password");
-      setPending(data);
+      const { data } = await api.get("/admin/users/pending-employees");
+      setPendingEmployees(data);
     } finally {
       setPendingLoading(false);
     }
@@ -56,28 +57,40 @@ export default function UserManagement() {
     loadPending();
   }, []);
 
-  /* ---------------- Assign initial password ---------------- */
-  const openPwdDialog = (row) => {
-    setPwdTarget(row);
+  /* ---------------- Create user for employee ---------------- */
+  const openPwdDialog = (emp) => {
+    setPwdTarget(emp);
+    setUserEmail(emp.email || ""); // Pre-fill with employee email
     setInitialPassword("");
     setPwdOpen(true);
   };
 
-  const assignInitialPassword = async () => {
-    if (!pwdTarget?.id) return;
+  const createUserForEmployee = async () => {
+    if (!pwdTarget?.employeeId) return;
+    if (!userEmail || !userEmail.includes('@')) {
+      alert("Please enter a valid email address.");
+      return;
+    }
     if (!initialPassword || initialPassword.length < 6) {
       alert("Password must be at least 6 characters.");
       return;
     }
     try {
-      await api.put(`/admin/users/${pwdTarget.id}/password`, { password: initialPassword });
+      await api.post("/admin/users/create-user-for-employee", {
+        employeeId: pwdTarget.employeeId,
+        email: userEmail,
+        password: initialPassword,
+        role: "EMPLOYEE" // Default role
+      });
       setPwdOpen(false);
       setPwdTarget(null);
       setInitialPassword("");
+      setUserEmail("");
       await Promise.all([loadUsers(), loadPending()]);
+      alert("User account created successfully!");
     } catch (e) {
       console.error(e);
-      alert("Failed to assign password.");
+      alert(e.response?.data?.message || "Failed to create user account.");
     }
   };
 
@@ -168,32 +181,38 @@ export default function UserManagement() {
         </Table>
       </Paper>
 
-      {/* ===== Table 2: Pending Employee Accounts (need password set by Admin) ===== */}
-      <Typography variant="h6" mb={1}>Pending Employee Accounts (Need Password)</Typography>
+      {/* ===== Table 2: Pending Employee Accounts (employees without users) ===== */}
+      <Typography variant="h6" mb={1}>Pending Employee Accounts (Need User Creation)</Typography>
       <Paper>
         <Table>
           <TableHead>
             <TableRow>
-              <TableCell><strong>Email</strong></TableCell>
+              <TableCell><strong>Employee ID</strong></TableCell>
               <TableCell><strong>Name</strong></TableCell>
+              <TableCell><strong>Email</strong></TableCell>
               <TableCell><strong>Position</strong></TableCell>
+              <TableCell><strong>Contact</strong></TableCell>
               <TableCell align="right"><strong>Action</strong></TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
             {pendingLoading && (
-              <TableRow><TableCell colSpan={4} align="center">Loading…</TableCell></TableRow>
+              <TableRow><TableCell colSpan={6} align="center">Loading…</TableCell></TableRow>
             )}
-            {!pendingLoading && pending.length === 0 && (
-              <TableRow><TableCell colSpan={4} align="center">No pending employees.</TableCell></TableRow>
+            {!pendingLoading && pendingEmployees.length === 0 && (
+              <TableRow><TableCell colSpan={6} align="center">No pending employees.</TableCell></TableRow>
             )}
-            {!pendingLoading && pending.map(p => (
-              <TableRow key={p.id}>
-                <TableCell>{p.email}</TableCell>
-                <TableCell>{p.name || p.empName || "-"}</TableCell>
-                <TableCell>{p.jobTitle || "-"}</TableCell>
+            {!pendingLoading && pendingEmployees.map(emp => (
+              <TableRow key={emp.employeeId}>
+                <TableCell>{emp.employeeId}</TableCell>
+                <TableCell>{emp.name || "-"}</TableCell>
+                <TableCell>{emp.email || "-"}</TableCell>
+                <TableCell>{emp.jobTitle || "-"}</TableCell>
+                <TableCell>{emp.contact || "-"}</TableCell>
                 <TableCell align="right">
-                  <Button variant="contained" onClick={() => openPwdDialog(p)}>Add User</Button>
+                  <Button variant="contained" color="primary" onClick={() => openPwdDialog(emp)}>
+                    Create User Account
+                  </Button>
                 </TableCell>
               </TableRow>
             ))}
@@ -201,35 +220,44 @@ export default function UserManagement() {
         </Table>
       </Paper>
 
-      {/* ===== Assign Password Dialog ===== */}
-      <Dialog open={pwdOpen} onClose={() => setPwdOpen(false)}>
-        <DialogTitle>Assign Initial Password</DialogTitle>
-        <DialogContent sx={{ minWidth: 360 }}>
-          <TextField
-            label="Email"
-            value={pwdTarget?.email || ""}
-            fullWidth
-            margin="dense"
-            InputProps={{ readOnly: true }}
-          />
-          <TextField
-            label="Initial Password"
-            type="password"
-            fullWidth
-            margin="dense"
-            value={initialPassword}
-            onChange={e => setInitialPassword(e.target.value)}
-            helperText="At least 6 characters"
-          />
+      {/* ===== Create User Dialog ===== */}
+      <Dialog open={pwdOpen} onClose={() => setPwdOpen(false)} maxWidth="sm" fullWidth>
+        <DialogTitle>Create User Account for Employee</DialogTitle>
+        <DialogContent>
+          <Box sx={{ mt: 1 }}>
+            <Typography variant="body2" color="text.secondary" gutterBottom>
+              Employee: <strong>{pwdTarget?.name}</strong> ({pwdTarget?.jobTitle})
+            </Typography>
+            <TextField
+              label="User Email"
+              type="email"
+              fullWidth
+              margin="normal"
+              value={userEmail}
+              onChange={e => setUserEmail(e.target.value)}
+              helperText="Email address for login"
+              required
+            />
+            <TextField
+              label="Initial Password"
+              type="password"
+              fullWidth
+              margin="normal"
+              value={initialPassword}
+              onChange={e => setInitialPassword(e.target.value)}
+              helperText="At least 6 characters"
+              required
+            />
+          </Box>
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setPwdOpen(false)}>Cancel</Button>
           <Button
             variant="contained"
-            onClick={assignInitialPassword}
-            disabled={!initialPassword || initialPassword.length < 6}
+            onClick={createUserForEmployee}
+            disabled={!userEmail || !initialPassword || initialPassword.length < 6}
           >
-            Assign
+            Create User
           </Button>
         </DialogActions>
       </Dialog>

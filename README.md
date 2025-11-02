@@ -1,5 +1,7 @@
 # Getting Started with Create React App
 
+> **⚠️ IMPORTANT FOR NEW DEVELOPERS**: If you're setting up this project for the first time or pulling recent changes from the `FrontendTest` branch, you **MUST** run the database migration script first! See [SETUP_FOR_TEAMMATES.md](./SETUP_FOR_TEAMMATES.md) for detailed instructions.
+
 This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
 
 ## Available Scripts
