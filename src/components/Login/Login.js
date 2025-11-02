@@ -29,6 +29,7 @@ import { useAuth } from "../../context/AuthContext";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import { keyframes } from "@mui/material/styles";
+import pgisLogo from "../../assets/pgis-logo.png";
 import BusinessAvatar from "./BusinessAvatar";
 
 // Keyframes for animations
@@ -795,7 +796,7 @@ const Login = () => {
             >
               <Box
                 component="img"
-                src={require("../../assets/pgis-logo.png")}
+                src={pgisLogo}
                 alt="PGIS Logo"
                 sx={{
                   width: 160,
