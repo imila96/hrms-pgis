@@ -348,12 +348,12 @@ const Login = () => {
               <Box
                 sx={{
                   position: "relative",
-                  width: 140,
-                  height: 160,
-                  background: "linear-gradient(135deg, #ffffff 0%, #f0f0f0 100%)",
-                  borderRadius: "70px 70px 20px 20px",
-                  boxShadow: "0 10px 40px rgba(0,0,0,0.2)",
-                  border: "4px solid #1e40af",
+                  width: 160,
+                  height: 180,
+                  background: "linear-gradient(135deg, #ffffff 0%, #f8fafc 100%)",
+                  borderRadius: "80px 80px 25px 25px",
+                  boxShadow: "0 15px 50px rgba(30, 64, 175, 0.25), 0 5px 15px rgba(0,0,0,0.1)",
+                  border: "5px solid #1e40af",
                   display: "flex",
                   flexDirection: "column",
                   alignItems: "center",
@@ -361,38 +361,57 @@ const Login = () => {
                   animation: `${breathe} 4s ease-in-out infinite`,
                   mb: 3,
                   zIndex: 2,
+                  "&::before": {
+                    content: '""',
+                    position: "absolute",
+                    top: -3,
+                    left: -3,
+                    right: -3,
+                    bottom: -3,
+                    borderRadius: "80px 80px 25px 25px",
+                    background: "linear-gradient(135deg, rgba(59, 130, 246, 0.3), rgba(30, 64, 175, 0.2))",
+                    zIndex: -1,
+                    filter: "blur(8px)",
+                  }
                 }}
               >
                 {/* University Logo/Text */}
                 <Box
                   sx={{
-                    fontSize: 48,
-                    fontWeight: "bold",
-                    background: "linear-gradient(135deg, #1e40af 0%, #3b82f6 100%)",
+                    fontSize: 56,
+                    fontWeight: "900",
+                    background: "linear-gradient(135deg, #1e40af 0%, #3b82f6 50%, #60a5fa 100%)",
                     backgroundClip: "text",
                     WebkitBackgroundClip: "text",
                     WebkitTextFillColor: "transparent",
                     mb: 1,
+                    letterSpacing: "2px",
+                    textShadow: "0 2px 10px rgba(30, 64, 175, 0.3)",
+                    fontFamily: "'Arial Black', sans-serif",
                   }}
                 >
-                  UP
+                  UOP
                 </Box>
                 <Box
                   sx={{
-                    fontSize: 12,
-                    fontWeight: "600",
+                    fontSize: 13,
+                    fontWeight: "700",
                     color: "#1e40af",
                     textAlign: "center",
                     px: 2,
+                    letterSpacing: "0.5px",
                   }}
                 >
                   University of Peradeniya
                 </Box>
                 <Box
                   sx={{
-                    fontSize: 10,
+                    fontSize: 11,
+                    fontWeight: "600",
                     color: "#64748b",
                     textAlign: "center",
+                    mt: 0.5,
+                    letterSpacing: "1px",
                   }}
                 >
                   PGIS
@@ -582,7 +601,7 @@ const Login = () => {
               <Box
                 sx={{
                   position: "absolute",
-                  bottom: 20,
+                  bottom: -25,
                   textAlign: "center",
                   width: "100%",
                 }}
@@ -592,8 +611,9 @@ const Login = () => {
                   sx={{
                     fontWeight: "bold",
                     color: "rgba(255,255,255,0.95)",
-                    textShadow: "0 2px 10px rgba(0,0,0,0.3)",
+                    textShadow: "0 3px 15px rgba(0,0,0,0.4)",
                     mb: 0.5,
+                    fontSize: "1.4rem",
                   }}
                 >
                   PGIS Portal
@@ -601,8 +621,9 @@ const Login = () => {
                 <Typography
                   variant="body2"
                   sx={{
-                    color: "rgba(255,255,255,0.85)",
-                    textShadow: "0 1px 5px rgba(0,0,0,0.3)",
+                    color: "rgba(255,255,255,0.9)",
+                    textShadow: "0 2px 8px rgba(0,0,0,0.4)",
+                    fontSize: "0.9rem",
                   }}
                 >
                   Post Graduate Institute of Science
