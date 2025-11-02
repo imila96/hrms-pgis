@@ -41,7 +41,7 @@ const BusinessAvatar = ({
   // Eye tracking - follows mouse movement
   useEffect(() => {
     if (!shouldCoverEyes && !eyesClosed) {
-      const maxMove = 8; // Maximum eye movement in pixels
+      const maxMove = 15; // Maximum eye movement in pixels - increased for better visibility
       const centerX = window.innerWidth / 2;
       const centerY = window.innerHeight / 2;
       
@@ -332,7 +332,7 @@ const BusinessAvatar = ({
                     borderRadius: "50%",
                     position: "relative",
                     transform: `translate(${eyePosition.x}px, ${eyePosition.y}px)`,
-                    transition: "transform 0.2s ease",
+                    transition: "transform 0.15s ease-out",
                     boxShadow: "0 2px 4px rgba(0,0,0,0.3)",
                   }}
                 >
@@ -385,7 +385,7 @@ const BusinessAvatar = ({
                     borderRadius: "50%",
                     position: "relative",
                     transform: `translate(${eyePosition.x}px, ${eyePosition.y}px)`,
-                    transition: "transform 0.2s ease",
+                    transition: "transform 0.15s ease-out",
                     boxShadow: "0 2px 4px rgba(0,0,0,0.3)",
                   }}
                 >

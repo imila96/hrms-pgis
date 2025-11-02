@@ -28,7 +28,29 @@ import {
 import { useAuth } from "../../context/AuthContext";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
+import { keyframes } from "@mui/material/styles";
 import BusinessAvatar from "./BusinessAvatar";
+
+// Keyframes for animations
+const pulse = keyframes`
+  0%, 100% { 
+    transform: scale(1);
+    opacity: 0.8;
+  }
+  50% { 
+    transform: scale(1.2);
+    opacity: 1;
+  }
+`;
+
+const breathe = keyframes`
+  0%, 100% { 
+    transform: scale(1) translateY(0);
+  }
+  50% { 
+    transform: scale(1.05) translateY(-5px);
+  }
+`;
 
 const Login = () => {
   const { setUser } = useAuth();
@@ -297,22 +319,296 @@ const Login = () => {
           px: 2,
         }}
       >
-        {/* Business Character Avatar - Left Side */}
+        {/* University Animation Section - Left Side */}
         <Fade in={showContent} timeout={1500}>
           <Box
             sx={{
-              display: { xs: "none", md: "block" }, // Hide on mobile, show on desktop
-              flexShrink: 0,
+              display: { xs: "none", md: "flex" },
+              flexDirection: "column",
+              alignItems: "center",
+              justifyContent: "center",
+              width: 400,
+              height: 500,
+              position: "relative",
             }}
           >
-            <BusinessAvatar
-              focusedField={focusedField}
-              isError={!!error}
-              isSuccess={isSuccess}
-              isLoading={loading}
-              mousePosition={mousePosition}
-              hasPassword={form.password.length > 0}
-            />
+            {/* University Building Animation */}
+            <Box
+              sx={{
+                position: "relative",
+                width: "100%",
+                height: "100%",
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+            >
+              {/* University Emblem/Shield */}
+              <Box
+                sx={{
+                  position: "relative",
+                  width: 140,
+                  height: 160,
+                  background: "linear-gradient(135deg, #ffffff 0%, #f0f0f0 100%)",
+                  borderRadius: "70px 70px 20px 20px",
+                  boxShadow: "0 10px 40px rgba(0,0,0,0.2)",
+                  border: "4px solid #1e40af",
+                  display: "flex",
+                  flexDirection: "column",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  animation: `${breathe} 4s ease-in-out infinite`,
+                  mb: 3,
+                  zIndex: 2,
+                }}
+              >
+                {/* University Logo/Text */}
+                <Box
+                  sx={{
+                    fontSize: 48,
+                    fontWeight: "bold",
+                    background: "linear-gradient(135deg, #1e40af 0%, #3b82f6 100%)",
+                    backgroundClip: "text",
+                    WebkitBackgroundClip: "text",
+                    WebkitTextFillColor: "transparent",
+                    mb: 1,
+                  }}
+                >
+                  UP
+                </Box>
+                <Box
+                  sx={{
+                    fontSize: 12,
+                    fontWeight: "600",
+                    color: "#1e40af",
+                    textAlign: "center",
+                    px: 2,
+                  }}
+                >
+                  University of Peradeniya
+                </Box>
+                <Box
+                  sx={{
+                    fontSize: 10,
+                    color: "#64748b",
+                    textAlign: "center",
+                  }}
+                >
+                  PGIS
+                </Box>
+              </Box>
+
+              {/* Animated Building Structure */}
+              <Box
+                sx={{
+                  position: "relative",
+                  width: 280,
+                  height: 200,
+                  display: "flex",
+                  alignItems: "flex-end",
+                  justifyContent: "center",
+                  gap: 1,
+                }}
+              >
+                {/* Main Building */}
+                <Box
+                  sx={{
+                    width: 120,
+                    height: 160,
+                    background: "linear-gradient(180deg, rgba(255,255,255,0.9) 0%, rgba(255,255,255,0.7) 100%)",
+                    borderRadius: "8px 8px 0 0",
+                    backdropFilter: "blur(10px)",
+                    border: "2px solid rgba(255,255,255,0.3)",
+                    position: "relative",
+                    boxShadow: "0 8px 32px rgba(0,0,0,0.1)",
+                    animation: `${pulse} 3s ease-in-out infinite`,
+                  }}
+                >
+                  {/* Windows Grid */}
+                  {[0, 1, 2, 3].map((row) => (
+                    <Box key={row} sx={{ display: "flex", gap: 1, p: 1, justifyContent: "center" }}>
+                      {[0, 1, 2].map((col) => (
+                        <Box
+                          key={col}
+                          sx={{
+                            width: 24,
+                            height: 24,
+                            background: "linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%)",
+                            borderRadius: "4px",
+                            animation: `windowGlow ${1 + (row * 0.3 + col * 0.2)}s ease-in-out infinite`,
+                            animationDelay: `${(row * 0.2 + col * 0.3)}s`,
+                            "@keyframes windowGlow": {
+                              "0%, 100%": {
+                                opacity: 0.3,
+                                boxShadow: "0 0 5px rgba(251, 191, 36, 0.5)",
+                              },
+                              "50%": {
+                                opacity: 1,
+                                boxShadow: "0 0 20px rgba(251, 191, 36, 0.8)",
+                              },
+                            },
+                          }}
+                        />
+                      ))}
+                    </Box>
+                  ))}
+                  
+                  {/* Roof/Top */}
+                  <Box
+                    sx={{
+                      position: "absolute",
+                      top: -20,
+                      left: "50%",
+                      transform: "translateX(-50%)",
+                      width: 0,
+                      height: 0,
+                      borderLeft: "70px solid transparent",
+                      borderRight: "70px solid transparent",
+                      borderBottom: "25px solid rgba(255,255,255,0.9)",
+                      filter: "drop-shadow(0 -4px 8px rgba(0,0,0,0.1))",
+                    }}
+                  />
+                </Box>
+
+                {/* Left Wing */}
+                <Box
+                  sx={{
+                    width: 70,
+                    height: 120,
+                    background: "linear-gradient(180deg, rgba(255,255,255,0.8) 0%, rgba(255,255,255,0.6) 100%)",
+                    borderRadius: "6px 6px 0 0",
+                    backdropFilter: "blur(10px)",
+                    border: "2px solid rgba(255,255,255,0.3)",
+                    animation: `${pulse} 3s ease-in-out infinite 0.3s`,
+                  }}
+                >
+                  {/* Windows */}
+                  {[0, 1, 2].map((row) => (
+                    <Box key={row} sx={{ display: "flex", gap: 0.5, p: 0.8, justifyContent: "center" }}>
+                      {[0, 1].map((col) => (
+                        <Box
+                          key={col}
+                          sx={{
+                            width: 20,
+                            height: 20,
+                            background: "linear-gradient(135deg, #60a5fa 0%, #3b82f6 100%)",
+                            borderRadius: "3px",
+                            opacity: 0.6,
+                            animation: `windowGlow ${1.2 + (row * 0.2 + col * 0.3)}s ease-in-out infinite`,
+                            animationDelay: `${(row * 0.3 + col * 0.2)}s`,
+                          }}
+                        />
+                      ))}
+                    </Box>
+                  ))}
+                </Box>
+
+                {/* Right Wing */}
+                <Box
+                  sx={{
+                    width: 70,
+                    height: 120,
+                    background: "linear-gradient(180deg, rgba(255,255,255,0.8) 0%, rgba(255,255,255,0.6) 100%)",
+                    borderRadius: "6px 6px 0 0",
+                    backdropFilter: "blur(10px)",
+                    border: "2px solid rgba(255,255,255,0.3)",
+                    animation: `${pulse} 3s ease-in-out infinite 0.3s`,
+                  }}
+                >
+                  {/* Windows */}
+                  {[0, 1, 2].map((row) => (
+                    <Box key={row} sx={{ display: "flex", gap: 0.5, p: 0.8, justifyContent: "center" }}>
+                      {[0, 1].map((col) => (
+                        <Box
+                          key={col}
+                          sx={{
+                            width: 20,
+                            height: 20,
+                            background: "linear-gradient(135deg, #60a5fa 0%, #3b82f6 100%)",
+                            borderRadius: "3px",
+                            opacity: 0.6,
+                            animation: `windowGlow ${1.2 + (row * 0.2 + col * 0.3)}s ease-in-out infinite`,
+                            animationDelay: `${(row * 0.3 + col * 0.2)}s`,
+                          }}
+                        />
+                      ))}
+                    </Box>
+                  ))}
+                </Box>
+              </Box>
+
+              {/* Floating Elements - Books/Knowledge Symbols */}
+              {[0, 1, 2, 3, 4].map((i) => (
+                <Box
+                  key={i}
+                  sx={{
+                    position: "absolute",
+                    width: 30,
+                    height: 35,
+                    background: "linear-gradient(135deg, rgba(255,255,255,0.9) 0%, rgba(255,255,255,0.7) 100%)",
+                    borderRadius: "4px",
+                    border: "2px solid rgba(59, 130, 246, 0.5)",
+                    top: `${20 + i * 15}%`,
+                    left: `${10 + Math.sin(i * 1.2) * 80}%`,
+                    animation: `float ${4 + i * 0.5}s ease-in-out infinite`,
+                    animationDelay: `${i * 0.3}s`,
+                    boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
+                    "&::after": {
+                      content: '""',
+                      position: "absolute",
+                      top: "50%",
+                      left: "50%",
+                      transform: "translate(-50%, -50%)",
+                      width: "60%",
+                      height: "2px",
+                      background: "#3b82f6",
+                    },
+                    "@keyframes float": {
+                      "0%, 100%": {
+                        transform: "translateY(0) rotate(0deg)",
+                        opacity: 0.7,
+                      },
+                      "50%": {
+                        transform: "translateY(-20px) rotate(5deg)",
+                        opacity: 1,
+                      },
+                    },
+                  }}
+                />
+              ))}
+
+              {/* Title Text */}
+              <Box
+                sx={{
+                  position: "absolute",
+                  bottom: 20,
+                  textAlign: "center",
+                  width: "100%",
+                }}
+              >
+                <Typography
+                  variant="h5"
+                  sx={{
+                    fontWeight: "bold",
+                    color: "rgba(255,255,255,0.95)",
+                    textShadow: "0 2px 10px rgba(0,0,0,0.3)",
+                    mb: 0.5,
+                  }}
+                >
+                  PGIS Portal
+                </Typography>
+                <Typography
+                  variant="body2"
+                  sx={{
+                    color: "rgba(255,255,255,0.85)",
+                    textShadow: "0 1px 5px rgba(0,0,0,0.3)",
+                  }}
+                >
+                  Post Graduate Institute of Science
+                </Typography>
+              </Box>
+            </Box>
           </Box>
         </Fade>
 
@@ -333,6 +629,140 @@ const Login = () => {
               animation: "scaleIn 0.5s ease-out",
             }}
           >
+            {/* Loading Overlay */}
+            {loading && (
+              <Zoom in={loading}>
+                <Box
+                  sx={{
+                    position: "absolute",
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    bottom: 0,
+                    background: "rgba(255, 255, 255, 0.95)",
+                    backdropFilter: "blur(10px)",
+                    borderRadius: 4,
+                    display: "flex",
+                    flexDirection: "column",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    zIndex: 1000,
+                    gap: 3,
+                  }}
+                >
+                  {/* Animated Spinner */}
+                  <Box
+                    sx={{
+                      position: "relative",
+                      width: 80,
+                      height: 80,
+                    }}
+                  >
+                    {/* Outer Ring */}
+                    <Box
+                      sx={{
+                        position: "absolute",
+                        width: "100%",
+                        height: "100%",
+                        border: "4px solid rgba(102, 126, 234, 0.2)",
+                        borderTop: "4px solid #667eea",
+                        borderRadius: "50%",
+                        animation: "spin 1s linear infinite",
+                        "@keyframes spin": {
+                          "0%": { transform: "rotate(0deg)" },
+                          "100%": { transform: "rotate(360deg)" },
+                        },
+                      }}
+                    />
+                    {/* Inner Ring */}
+                    <Box
+                      sx={{
+                        position: "absolute",
+                        top: "50%",
+                        left: "50%",
+                        transform: "translate(-50%, -50%)",
+                        width: 60,
+                        height: 60,
+                        border: "3px solid rgba(118, 75, 162, 0.2)",
+                        borderBottom: "3px solid #764ba2",
+                        borderRadius: "50%",
+                        animation: "spinReverse 0.8s linear infinite",
+                        "@keyframes spinReverse": {
+                          "0%": { transform: "translate(-50%, -50%) rotate(0deg)" },
+                          "100%": { transform: "translate(-50%, -50%) rotate(-360deg)" },
+                        },
+                      }}
+                    />
+                    {/* Center Dot */}
+                    <Box
+                      sx={{
+                        position: "absolute",
+                        top: "50%",
+                        left: "50%",
+                        transform: "translate(-50%, -50%)",
+                        width: 12,
+                        height: 12,
+                        background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
+                        borderRadius: "50%",
+                        animation: "pulse 1.5s ease-in-out infinite",
+                        "@keyframes pulse": {
+                          "0%, 100%": { transform: "translate(-50%, -50%) scale(1)", opacity: 1 },
+                          "50%": { transform: "translate(-50%, -50%) scale(1.5)", opacity: 0.5 },
+                        },
+                      }}
+                    />
+                  </Box>
+                  
+                  {/* Loading Text */}
+                  <Box sx={{ textAlign: "center" }}>
+                    <Typography
+                      variant="h6"
+                      sx={{
+                        background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
+                        backgroundClip: "text",
+                        WebkitBackgroundClip: "text",
+                        WebkitTextFillColor: "transparent",
+                        fontWeight: "bold",
+                        mb: 1,
+                      }}
+                    >
+                      Signing In...
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary">
+                      Please wait while we verify your credentials
+                    </Typography>
+                  </Box>
+
+                  {/* Animated Dots */}
+                  <Box sx={{ display: "flex", gap: 1 }}>
+                    {[0, 1, 2].map((i) => (
+                      <Box
+                        key={i}
+                        sx={{
+                          width: 8,
+                          height: 8,
+                          borderRadius: "50%",
+                          background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
+                          animation: "bounce 1.4s ease-in-out infinite",
+                          animationDelay: `${i * 0.2}s`,
+                          "@keyframes bounce": {
+                            "0%, 80%, 100%": { 
+                              transform: "scale(0.8) translateY(0)",
+                              opacity: 0.5,
+                            },
+                            "40%": { 
+                              transform: "scale(1.2) translateY(-10px)",
+                              opacity: 1,
+                            },
+                          },
+                        }}
+                      />
+                    ))}
+                  </Box>
+                </Box>
+              </Zoom>
+            )}
+
             {/* Logo/Icon Section */}
             <Box
               sx={{
@@ -635,6 +1065,25 @@ const Login = () => {
           </Box>
         </Paper>
       </Fade>
+
+        {/* Business Character Avatar - Right Side */}
+        <Fade in={showContent} timeout={1500}>
+          <Box
+            sx={{
+              display: { xs: "none", md: "block" }, // Hide on mobile, show on desktop
+              flexShrink: 0,
+            }}
+          >
+            <BusinessAvatar
+              focusedField={focusedField}
+              isError={!!error}
+              isSuccess={isSuccess}
+              isLoading={loading}
+              mousePosition={mousePosition}
+              hasPassword={form.password.length > 0}
+            />
+          </Box>
+        </Fade>
       </Box>
 
       {/* Pulse Animation */}
