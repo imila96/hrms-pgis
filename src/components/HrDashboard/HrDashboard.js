@@ -253,6 +253,7 @@ import RecruitmentManagement from "./RecruitmentManagement";
 import PolicyManagement from "./PolicyManagement";
 import AnnouncementManagement from "./AnnouncementManagement";
 import Profile from "../Profile/Profile";
+import CreateEditProfile from "../Profile/CreateEditProfile";
 // import Profile from "../HrDashboard/Profile";
 
 // Theme context
@@ -757,6 +758,8 @@ const HrDashboard = () => {
             />
             <Route path="profile" element={<Profile />} />
             <Route path="records" element={<EmployeeRecords />} />
+            <Route path="records/newEmployee" element={<CreateEditProfile />} />
+            <Route path="records/edit/:id" element={<CreateEditProfile />} />
             <Route path="leave" element={<LeaveManagement />} />
             <Route path="attendance" element={<AttendanceTracking />} />
             <Route path="recruitment" element={<RecruitmentManagement />} />
