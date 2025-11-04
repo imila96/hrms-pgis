@@ -12,7 +12,7 @@ public interface UserRepository extends JpaRepository<User,Integer> {
 
     Optional<User> findByEmail(String email);
     @Query("""
-      select new com.pgis.hrms.core.auth.dto.PendingUserDto(u.userId, u.email, e.name, e.jobTitle)
+      select new com.pgis.hrms.core.auth.dto.PendingUserDto(u.userId, u.email, e.name, e.nicNo)
       from User u join u.employee e
       where u.adminPasswordAssigned = false
     """)

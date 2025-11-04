@@ -17,12 +17,19 @@ public class Employee {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer employeeId;
 
-    private String  name;
-    private String  contact;
-    private String  address;
-    private String  jobTitle;
-    private LocalDate hireDate;
+    private String name;
     private String email;
-    @Column(nullable = true)
-    private String department;
+    
+    // New SSE-specific fields
+    private String gender;
+    private LocalDate dateOfBirth;
+    private String nationality;
+    private String nicNo;
+    private String maritalStatus;
+    private String religion;
+    private String bloodGroup;
+    
+    @Lob
+    @Column(length = 255)
+    private String profileImage;
 }

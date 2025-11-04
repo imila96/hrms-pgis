@@ -7,8 +7,12 @@ public record EmployeeProfileDto(
         Integer id,
         String email,
         String name,
-        String contact,
-        String address,
-        String jobTitle,
-        LocalDate hireDate
+        String gender,
+        LocalDate dateOfBirth,
+        String nationality,
+        String nicNo,
+        String maritalStatus,
+        String religion,
+        String bloodGroup,
+        String profileImage
 ) {}

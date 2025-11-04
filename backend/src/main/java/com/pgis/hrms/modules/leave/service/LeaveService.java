@@ -39,11 +39,8 @@ public class LeaveService {
         int days = workingDays(in.startDate(), in.endDate());
         int year = in.startDate().getYear();
 
-        // probation accrual rule for ANNUAL leave
-        if (in.type() == LeaveType.ANNUAL && isOnProbation(emp)) {
-            int earned = probationDaysEarned(emp.getHireDate(), in.startDate());
-            ensureBalanceRow(emp, LeaveType.ANNUAL, year, earned);
-        }
+        // Note: Probation accrual rule removed as hireDate is no longer in Employee entity
+        // If probation tracking is needed, consider adding it to a separate employment history table
 
         // ensure balance exists (creates if missing with default entitlement)
         var bal = ensureBalanceRow(emp, in.type(), year, defaultEntitlement(in.type()));
@@ -150,6 +147,10 @@ public class LeaveService {
         };
     }
 
+    // Note: Probation-related methods commented out as hireDate is no longer in Employee entity
+    // If probation tracking is needed, consider adding it to a separate employment history table
+    
+    /*
     private boolean isOnProbation(Employee e) {
         return Period.between(e.getHireDate(), LocalDate.now()).getMonths() < 6; // 6‑month probation
     }
@@ -158,6 +159,7 @@ public class LeaveService {
         long months = ChronoUnit.MONTHS.between(hireDate.withDayOfMonth(1), asOf.withDayOfMonth(1));
         return (int) (months * 0.5);  // ½ day per month
     }
+    */
 
     private int workingDays(LocalDate from, LocalDate to) {
         int days = 0;

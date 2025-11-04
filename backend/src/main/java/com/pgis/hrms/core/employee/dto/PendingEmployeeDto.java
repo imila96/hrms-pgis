@@ -4,6 +4,5 @@ public record PendingEmployeeDto(
     Integer employeeId,
     String email,
     String name,
-    String jobTitle,
-    String contact
+    String nicNo
 ) {}

@@ -51,11 +51,15 @@ public class EmployeeServiceImpl implements EmployeeService {
                 .orElseThrow(() -> new RuntimeException("Employee not found"));
 
         existing.setName(dto.getName());
-        existing.setContact(dto.getContact());
-        existing.setJobTitle(dto.getJobTitle());
-        existing.setHireDate(dto.getHireDate());
-        existing.setAddress(dto.getAddress());
         existing.setEmail(dto.getEmail());
+        existing.setGender(dto.getGender());
+        existing.setDateOfBirth(dto.getDateOfBirth());
+        existing.setNationality(dto.getNationality());
+        existing.setNicNo(dto.getNicNo());
+        existing.setMaritalStatus(dto.getMaritalStatus());
+        existing.setReligion(dto.getReligion());
+        existing.setBloodGroup(dto.getBloodGroup());
+        existing.setProfileImage(dto.getProfileImage());
 
         Employee updated = employeeRepository.save(existing);
         return employeeMapper.toDto(updated);

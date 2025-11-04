@@ -18,7 +18,6 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
-import java.time.LocalDate;
 import java.util.*;
 
 @RestController
@@ -86,10 +85,6 @@ public class AdminUserController {
                 Employee e = new Employee();
                 e.setName(Optional.ofNullable(r.name()).orElse(u.getEmail()));
                 e.setEmail(Optional.ofNullable(r.empEmail()).orElse(u.getEmail()));
-                e.setJobTitle(Optional.ofNullable(r.jobTitle()).orElse("Staff"));
-                e.setHireDate(Optional.ofNullable(r.hireDate()).orElse(LocalDate.now()));
-                e.setContact(r.contact());
-                e.setAddress(r.address());
                 e = empRepo.save(e);
                 u.setEmployee(e);
             }
@@ -137,8 +132,7 @@ public class AdminUserController {
                     e.getEmployeeId(),
                     e.getEmail(),
                     e.getName(),
-                    e.getJobTitle(),
-                    e.getContact()
+                    e.getNicNo()
                 ))
                 .toList();
     }
@@ -187,7 +181,7 @@ public class AdminUserController {
     public record SetRolesRequest(
             @NotEmpty Set<String> roles,
             Integer employeeId, // NEW: link to existing employee
-            String name, String contact, String jobTitle, LocalDate hireDate, String address,
+            String name,
             String empEmail
     ) {}
     public record SetPasswordRequest(@Size(min = 6) String password) {}

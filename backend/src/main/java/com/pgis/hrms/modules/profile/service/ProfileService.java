@@ -24,10 +24,14 @@ public class ProfileService {
                 e.getEmployeeId(),
                 e.getEmail(),
                 e.getName(),
-                e.getContact(),
-                e.getAddress(),
-                e.getJobTitle(),
-                e.getHireDate());
+                e.getGender(),
+                e.getDateOfBirth(),
+                e.getNationality(),
+                e.getNicNo(),
+                e.getMaritalStatus(),
+                e.getReligion(),
+                e.getBloodGroup(),
+                e.getProfileImage());
     }
 
     /* ---------- employee self-service ---------- */
@@ -40,8 +44,13 @@ public class ProfileService {
     @Transactional
     public EmployeeProfileDto updateMyProfile(String email, ProfileUpdateRequest in) {
         var emp = userRepo.findByEmail(email).orElseThrow().getEmployee();
-        emp.setContact(in.contact());
-        emp.setAddress(in.address());
+        if (in.gender() != null) emp.setGender(in.gender());
+        if (in.dateOfBirth() != null) emp.setDateOfBirth(in.dateOfBirth());
+        if (in.nationality() != null) emp.setNationality(in.nationality());
+        if (in.maritalStatus() != null) emp.setMaritalStatus(in.maritalStatus());
+        if (in.religion() != null) emp.setReligion(in.religion());
+        if (in.bloodGroup() != null) emp.setBloodGroup(in.bloodGroup());
+        if (in.profileImage() != null) emp.setProfileImage(in.profileImage());
         // save not required due to transactional dirty-checking
         return toDto(emp);
     }
@@ -61,11 +70,15 @@ public class ProfileService {
                 .findFirst()
                 .orElse(null);
 
-        if (in.name()      != null) emp.setName(in.name());
-        if (in.contact()   != null) emp.setContact(in.contact());
-        if (in.address()   != null) emp.setAddress(in.address());
-        if (in.jobTitle()  != null) emp.setJobTitle(in.jobTitle());
-        if (in.hireDate()  != null) emp.setHireDate(in.hireDate());
+        if (in.name() != null) emp.setName(in.name());
+        if (in.gender() != null) emp.setGender(in.gender());
+        if (in.dateOfBirth() != null) emp.setDateOfBirth(in.dateOfBirth());
+        if (in.nationality() != null) emp.setNationality(in.nationality());
+        if (in.nicNo() != null) emp.setNicNo(in.nicNo());
+        if (in.maritalStatus() != null) emp.setMaritalStatus(in.maritalStatus());
+        if (in.religion() != null) emp.setReligion(in.religion());
+        if (in.bloodGroup() != null) emp.setBloodGroup(in.bloodGroup());
+        if (in.profileImage() != null) emp.setProfileImage(in.profileImage());
         
         if (user != null) {
             if (in.active()    != null) user.setActive(in.active());

@@ -13,11 +13,15 @@ public class EmployeeMapper {
         return EmployeeDto.builder()
                 .id(e.getEmployeeId())
                 .name(e.getName())
-                .contact(e.getContact())
-                .jobTitle(e.getJobTitle())
-                .hireDate(e.getHireDate())
-                .address(e.getAddress())
                 .email(e.getEmail())
+                .gender(e.getGender())
+                .dateOfBirth(e.getDateOfBirth())
+                .nationality(e.getNationality())
+                .nicNo(e.getNicNo())
+                .maritalStatus(e.getMaritalStatus())
+                .religion(e.getReligion())
+                .bloodGroup(e.getBloodGroup())
+                .profileImage(e.getProfileImage())
                 .build();
     }
 
@@ -27,11 +31,15 @@ public class EmployeeMapper {
         return Employee.builder()
                 .employeeId(dto.getId())
                 .name(dto.getName())
-                .contact(dto.getContact())
-                .jobTitle(dto.getJobTitle())
-                .hireDate(dto.getHireDate())
-                .address(dto.getAddress())
                 .email(dto.getEmail())
+                .gender(dto.getGender())
+                .dateOfBirth(dto.getDateOfBirth())
+                .nationality(dto.getNationality())
+                .nicNo(dto.getNicNo())
+                .maritalStatus(dto.getMaritalStatus())
+                .religion(dto.getReligion())
+                .bloodGroup(dto.getBloodGroup())
+                .profileImage(dto.getProfileImage())
                 .build();
     }
 }
