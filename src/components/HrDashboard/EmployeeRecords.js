@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback, useMemo } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   Box,
   Typography,
@@ -27,17 +28,8 @@ import { Edit, Delete, Done, Close } from "@mui/icons-material";
 import axiosInstance from "../../AxiosInstance";
 
 const EmployeeRecords = () => {
+  const navigate = useNavigate();
   const [employees, setEmployees] = useState([]);
-  const [dialogOpen, setDialogOpen] = useState(false);
-  const [editEmp, setEditEmp] = useState(null);
-  const [formData, setFormData] = useState({
-    name: "",
-    email: "",
-    contact: "",
-    jobTitle: "",
-    hireDate: "",
-    address: "",
-  });
 
   const [snackbar, setSnackbar] = useState({
     open: false,
@@ -98,61 +90,9 @@ const EmployeeRecords = () => {
     setSnackbar({ ...snackbar, open: false });
   };
 
-  const openDialog = (emp = null) => {
-    setEditEmp(emp);
-    setFormData(
-      emp
-        ? { ...emp }
-        : {
-            name: "",
-            email: "",
-            contact: "",
-            jobTitle: "",
-            hireDate: "",
-            address: "",
-          }
-    );
-    setDialogOpen(true);
-  };
-
-  const closeDialog = () => {
-    setDialogOpen(false);
-    setEditEmp(null);
-    setFormData({
-      name: "",
-      email: "",
-      contact: "",
-      jobTitle: "",
-      hireDate: "",
-      address: "",
-    });
-  };
-
-  const handleChange = (e) => {
-    setFormData((prev) => ({ ...prev, [e.target.name]: e.target.value }));
-  };
-
-  const handleSave = async () => {
-    if (!formData.name || !formData.email || !formData.jobTitle) {
-      showSnackbar("Please fill all required fields", "warning");
-      return;
-    }
-
-    try {
-      if (editEmp) {
-        await axiosInstance.put(`/hr/employees/${editEmp.id}`, formData);
-        showSnackbar("Employee updated successfully", "success");
-      } else {
-        await axiosInstance.post("/hr/employees", formData);
-        showSnackbar("Employee added successfully", "success");
-      }
-      fetchEmployees();
-      closeDialog();
-    } catch (error) {
-      console.error("Error saving employee:", error);
-      showSnackbar("Failed to save employee", "error");
-    }
-  };
+  // navigation handlers for add/edit (use route-based form)
+  const handleAdd = () => navigate("/hr/records/newEmployee");
+  const handleEdit = (emp) => navigate(`/hr/records/edit/${emp.id}`);
 
   const openDeleteConfirm = (id, name) => {
     setConfirmDialog({ open: true, empId: id, empName: name });
@@ -303,7 +243,7 @@ const EmployeeRecords = () => {
         Employee Table
       </Typography>
 
-      <Button variant="contained" onClick={() => openDialog()} sx={{ mb: 2 }}>
+      <Button variant="contained" onClick={handleAdd} sx={{ mb: 2 }}>
         Add New Employee
       </Button>
 
@@ -413,7 +353,7 @@ const EmployeeRecords = () => {
                     {emp.address}
                   </TableCell>
                   <TableCell>
-                    <IconButton color="primary" onClick={() => openDialog(emp)}>
+                    <IconButton color="primary" onClick={() => handleEdit(emp)}>
                       <Edit />
                     </IconButton>
                     <IconButton
@@ -516,75 +456,7 @@ const EmployeeRecords = () => {
         </Table>
       </Paper>
 
-      {/* Add / Edit Dialog */}
-      <Dialog open={dialogOpen} onClose={closeDialog} fullWidth maxWidth="sm">
-        <DialogTitle>
-          {editEmp ? "Edit Employee" : "Add New Employee"}
-        </DialogTitle>
-        <DialogContent>
-          <TextField
-            label="Name"
-            name="name"
-            fullWidth
-            margin="normal"
-            value={formData.name}
-            onChange={handleChange}
-            required
-          />
-          <TextField
-            label="Email"
-            name="email"
-            fullWidth
-            margin="normal"
-            value={formData.email}
-            onChange={handleChange}
-            required
-          />
-          <TextField
-            label="Contact"
-            name="contact"
-            fullWidth
-            margin="normal"
-            value={formData.contact}
-            onChange={handleChange}
-          />
-          <TextField
-            label="Position"
-            name="jobTitle"
-            fullWidth
-            margin="normal"
-            value={formData.jobTitle}
-            onChange={handleChange}
-            required
-          />
-          <TextField
-            label="Hire Date"
-            name="hireDate"
-            type="date"
-            fullWidth
-            margin="normal"
-            value={formData.hireDate}
-            onChange={handleChange}
-            InputLabelProps={{ shrink: true }}
-          />
-          <TextField
-            label="Address"
-            name="address"
-            fullWidth
-            margin="normal"
-            value={formData.address}
-            onChange={handleChange}
-            multiline
-            rows={3}
-          />
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={closeDialog}>Cancel</Button>
-          <Button variant="contained" onClick={handleSave}>
-            {editEmp ? "Save Changes" : "Add Employee"}
-          </Button>
-        </DialogActions>
-      </Dialog>
+      {/* Add/Edit dialog removed — using route-based CreateEditProfile page */}
 
       {/* Delete Confirmation Dialog */}
       <Dialog

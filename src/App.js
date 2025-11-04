@@ -20,6 +20,7 @@ import LeaveManagement from "./components/HrDashboard/LeaveManagement";
 import AttendanceTracking from "./components/HrDashboard/AttendanceTracking";
 import RecruitmentManagement from "./components/HrDashboard/RecruitmentManagement";
 import PolicyManagement from "./components/HrDashboard/PolicyManagement";
+import CreateEditProfile from "./components/Profile/CreateEditProfile";
 
 import EmployeeDashboardLayout from "./components/EmployeeDashboard/DashboardLayout";
 import Profile from "./components/EmployeeDashboard/Profile";
@@ -98,8 +99,13 @@ function App() {
             }
           >
             <Route path="records" element={<EmployeeRecords />} />
+            <Route path="records/newEmployee" element={<CreateEditProfile />} />
+            <Route path="records/edit/:id" element={<CreateEditProfile />} />
             <Route path="leave-management" element={<LeaveManagement />} />
-            <Route path="attendance-tracking" element={<AttendanceTracking />} />
+            <Route
+              path="attendance-tracking"
+              element={<AttendanceTracking />}
+            />
             <Route path="recruitment" element={<RecruitmentManagement />} />
             <Route path="policies" element={<PolicyManagement />} />
             <Route path="" element={<Navigate to="records" replace />} />
