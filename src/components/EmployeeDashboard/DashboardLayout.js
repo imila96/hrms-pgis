@@ -185,22 +185,7 @@ const DashboardLayout = () => {
               >
                 Employee Dashboard
               </Typography>
-              {!isMobile && (
-                <Badge
-                  badgeContent="Employee"
-                  sx={{
-                    "& .MuiBadge-badge": {
-                      bgcolor: "#7978E9",
-                      color: "#fff",
-                      fontWeight: 600,
-                      fontSize: "0.7rem",
-                      px: 1.5,
-                      py: 0.5,
-                      borderRadius: 2,
-                    },
-                  }}
-                />
-              )}
+              
             </Box>
 
             {/* Center: Compact Navigation (Desktop only) */}
