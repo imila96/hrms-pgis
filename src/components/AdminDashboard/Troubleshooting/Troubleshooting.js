@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Box,
   Typography,
@@ -15,107 +15,100 @@ import {
   MenuItem,
   InputAdornment,
   Pagination,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  Button,
+  Paper,
 } from "@mui/material";
 import DoneIcon from "@mui/icons-material/Done";
 import SearchIcon from "@mui/icons-material/Search";
+import axiosInstance from "../../../AxiosInstance";
 
 const Troubleshooting = () => {
-  const [issues, setIssues] = useState([
-    {
-      id: 1,
-      description: "Login page throws 500 error occasionally.",
-      submittedAt: "2025-07-25 10:20 AM",
-      level: "Critical",
-      resolved: false,
-    },
-    {
-      id: 2,
-      description: "Password reset email not sent.",
-      submittedAt: "2025-07-26 02:45 PM",
-      level: "Warning",
-      resolved: false,
-    },
-    {
-      id: 3,
-      description: "User profile picture upload fails.",
-      submittedAt: "2025-07-27 09:15 AM",
-      level: "Info",
-      resolved: true,
-    },
-
-    {
-      id: 4,
-      description: "Server response delay on dashboard.",
-      submittedAt: "2025-07-28 11:30 AM",
-      level: "Warning",
-      resolved: false,
-    },
-
-    {
-      id: 5,
-      description: "Notifications not appearing for new messages.",
-      submittedAt: "2025-07-29 09:50 AM",
-      level: "Info",
-      resolved: false,
-    },
-
-    {
-      id: 6,
-      description: "Server response delay on dashboard.",
-      submittedAt: "2025-07-28 11:30 AM",
-      level: "Warning",
-      resolved: false,
-    },
-
-    {
-      id: 7,
-      description: "Notifications not appearing for new messages.",
-      submittedAt: "2025-07-29 09:50 AM",
-      level: "Info",
-      resolved: false,
-    },
-  ]);
+  const [issues, setIssues] = useState([]);
+  const [, setLoading] = useState(true);
 
   // --- States ---
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("All");
-
   const [page, setPage] = useState(1);
+  const [selected, setSelected] = useState(null);
+  const [resolveDialog, setResolveDialog] = useState(false);
+  const [remarkText, setRemarkText] = useState("");
   const itemsPerPage = 5;
 
-  const markResolved = (id) => {
-    const updated = issues.map((issue) =>
-      issue.id === id ? { ...issue, resolved: true } : issue
-    );
-    setIssues(updated);
+  // Fetch technical issues from backend
+  useEffect(() => {
+    const fetchIssues = async () => {
+      try {
+        setLoading(true);
+        const res = await axiosInstance.get("/issues/technical");
+        if (Array.isArray(res.data)) {
+          setIssues(res.data);
+        }
+      } catch (e) {
+        console.error("Failed to fetch technical issues:", e);
+        alert("Failed to load technical issues. Please try again.");
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchIssues();
+  }, []);
+
+  const markResolved = (issue) => {
+    setSelected(issue);
+    setRemarkText("");
+    setResolveDialog(true);
+  };
+
+  const handleResolve = async () => {
+    if (!selected || !remarkText.trim()) {
+      alert("Please provide a remark to resolve the issue.");
+      return;
+    }
+
+    try {
+      const res = await axiosInstance.patch(`/issues/${selected.id}/resolve`, {
+        remark: remarkText.trim()
+      });
+      
+      // Update local state
+      setIssues((prev) =>
+        prev.map((issue) => (issue.id === selected.id ? res.data : issue))
+      );
+      
+      setResolveDialog(false);
+      setSelected(null);
+      setRemarkText("");
+    } catch (e) {
+      console.error("Failed to resolve issue:", e);
+      alert("Failed to resolve issue. Please try again.");
+    }
   };
 
   // Add this **after filtering** inside the component
   const filteredIssues = issues.filter((issue) => {
     const matchesSearch =
-      issue.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      issue.submittedAt.toLowerCase().includes(searchQuery.toLowerCase());
+      issue.title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      issue.description?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      issue.submittedBy?.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesStatus =
       statusFilter === "All" ||
-      (statusFilter === "Resolved" && issue.resolved) ||
-      (statusFilter === "Pending" && !issue.resolved);
+      (statusFilter === "Resolved" && issue.status === "RESOLVED") ||
+      (statusFilter === "Pending" && issue.status === "PENDING");
 
     return matchesSearch && matchesStatus;
   });
 
-  // Pagination logic
   const startIndex = (page - 1) * itemsPerPage;
   const paginatedIssues = filteredIssues.slice(
     startIndex,
     startIndex + itemsPerPage
   );
   const totalPages = Math.ceil(filteredIssues.length / itemsPerPage);
-
-  // --- Count summaries ---
-  const totalAll = issues.length;
-  const totalCritical = issues.filter((i) => i.level === "Critical").length;
-  const totalWarning = issues.filter((i) => i.level === "Warning").length;
-  const totalInfo = issues.filter((i) => i.level === "Info").length;
 
   return (
     <Box>
@@ -176,13 +169,13 @@ const Troubleshooting = () => {
         {/* Right side: Status counts */}
         <Stack direction="row" spacing={1}>
           <Chip
-            label={`Pending: ${issues.filter((i) => !i.resolved).length}`}
+            label={`Pending: ${issues.filter((i) => i.status === "PENDING").length}`}
             color="warning"
             variant="outlined"
             size="small"
           />
           <Chip
-            label={`Resolved: ${issues.filter((i) => i.resolved).length}`}
+            label={`Resolved: ${issues.filter((i) => i.status === "RESOLVED").length}`}
             color="success"
             variant="outlined"
             size="small"
@@ -201,14 +194,14 @@ const Troubleshooting = () => {
           <ListItem
             key={issue.id}
             secondaryAction={
-              !issue.resolved && (
-                <IconButton edge="end" onClick={() => markResolved(issue.id)}>
+              issue.status !== "RESOLVED" && (
+                <IconButton edge="end" onClick={() => markResolved(issue)}>
                   <DoneIcon />
                 </IconButton>
               )
             }
             sx={{
-              backgroundColor: issue.resolved ? "#e0f7e9" : "#fff3e0",
+              backgroundColor: issue.status === "RESOLVED" ? "#e0f7e9" : "#fff3e0",
               mb: 1,
               borderRadius: 2,
               boxShadow: 1,
@@ -217,31 +210,32 @@ const Troubleshooting = () => {
             <ListItemText
               primary={
                 <>
-                  {issue.description}
-                  <Chip
-                    label={issue.level}
-                    color={
-                      issue.level === "Critical"
-                        ? "error"
-                        : issue.level === "Warning"
-                        ? "warning"
-                        : "info"
-                    }
-                    size="small"
-                    sx={{ ml: 1 }}
-                  />
+                  <Typography variant="body1" fontWeight={600}>
+                    {issue.title}
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    {issue.description}
+                  </Typography>
                 </>
               }
               secondary={
-                <Stack direction="row" spacing={2}>
+                <Stack direction="row" spacing={2} mt={1}>
                   <Typography variant="caption">
-                    Submitted at: {issue.submittedAt}
+                    Submitted by: {issue.submittedBy || "N/A"}
+                  </Typography>
+                  <Typography variant="caption">
+                    At: {issue.createdAt ? new Date(issue.createdAt).toLocaleString() : "N/A"}
                   </Typography>
                   <Chip
-                    label={issue.resolved ? "Resolved" : "Pending"}
-                    color={issue.resolved ? "success" : "warning"}
+                    label={issue.status === "RESOLVED" ? "Resolved" : "Pending"}
+                    color={issue.status === "RESOLVED" ? "success" : "warning"}
                     size="small"
                   />
+                  {issue.updatedBy && (
+                    <Typography variant="caption" color="success.main">
+                      Resolved by: {issue.updatedBy}
+                    </Typography>
+                  )}
                 </Stack>
               }
             />
@@ -257,6 +251,58 @@ const Troubleshooting = () => {
           shape="rounded"
         />
       </Box>
+
+      {/* Resolve Dialog */}
+      <Dialog 
+        open={resolveDialog} 
+        onClose={() => setResolveDialog(false)}
+        maxWidth="sm"
+        fullWidth
+      >
+        <DialogTitle>Resolve Technical Issue</DialogTitle>
+        <DialogContent dividers>
+          {selected && (
+            <Box>
+              <Typography variant="subtitle2" gutterBottom>
+                Issue:
+              </Typography>
+              <Paper variant="outlined" sx={{ p: 2, mb: 2, borderRadius: 1 }}>
+                <Typography variant="body1" fontWeight={600}>
+                  {selected.title}
+                </Typography>
+                <Typography variant="body2" color="text.secondary">
+                  {selected.description}
+                </Typography>
+                <Typography variant="caption" display="block" mt={1}>
+                  Submitted by: {selected.submittedBy} on{" "}
+                  {selected.createdAt ? new Date(selected.createdAt).toLocaleString() : "N/A"}
+                </Typography>
+              </Paper>
+
+              <TextField
+                label="Resolution Remark"
+                fullWidth
+                multiline
+                rows={4}
+                value={remarkText}
+                onChange={(e) => setRemarkText(e.target.value)}
+                placeholder="Describe how the issue was resolved..."
+                required
+              />
+            </Box>
+          )}
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setResolveDialog(false)}>Cancel</Button>
+          <Button 
+            variant="contained" 
+            onClick={handleResolve}
+            disabled={!remarkText.trim()}
+          >
+            Mark as Resolved
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 };

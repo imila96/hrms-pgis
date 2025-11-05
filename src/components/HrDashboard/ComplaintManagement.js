@@ -26,9 +26,6 @@ import {
   Select,
   Stack,
   Divider,
-  List,
-  ListItem,
-  ListItemText,
 } from "@mui/material";
 import DownloadIcon from "@mui/icons-material/Download";
 import FilterListIcon from "@mui/icons-material/FilterList";
@@ -41,53 +38,9 @@ const COLORS = {
   bg: "#F5F7FF",
 };
 
-const MOCK_COMPLAINTS = [
-  {
-    id: "c1",
-    title: "Payroll discrepancy - October",
-    description: "My October payslip shows less overtime than recorded.",
-    submittedBy: "employee1",
-    submittedAt: "2025-10-25T09:15:00",
-    status: "Open",
-    assignedTo: "HR",
-    remarks: [],
-  },
-  {
-    id: "c2",
-    title: "Workstation ergonomic issue",
-    description: "Chair provided is broken and causing back pain.",
-    submittedBy: "employee2",
-    submittedAt: "2025-10-20T14:00:00",
-    status: "In Progress",
-    assignedTo: "Facilities",
-    remarks: [
-      {
-        by: "HR",
-        text: "Requested replacement chair",
-        at: "2025-10-21T10:00:00",
-      },
-    ],
-  },
-  {
-    id: "c3",
-    title: "Unfair shift allocation",
-    description: "Shifts are not being rotated fairly within my team.",
-    submittedBy: "employee3",
-    submittedAt: "2025-09-30T08:30:00",
-    status: "Resolved",
-    assignedTo: "Manager",
-    remarks: [
-      {
-        by: "Manager",
-        text: "Adjusted rota and communicated changes",
-        at: "2025-10-05T12:00:00",
-      },
-    ],
-  },
-];
-
 export default function ComplaintManagement() {
-  const [complaints, setComplaints] = useState(MOCK_COMPLAINTS);
+  const [complaints, setComplaints] = useState([]);
+  const [, setLoading] = useState(true);
 
   const [tab, setTab] = useState(0); // 0 Open,1 In Progress,2 Resolved,3 All
   const [search, setSearch] = useState("");
@@ -108,30 +61,37 @@ export default function ComplaintManagement() {
   const summary = useMemo(
     () => ({
       total: complaints.length,
-      open: complaints.filter((c) => c.status === "Open").length,
+      open: complaints.filter((c) => c.status === "PENDING").length,
       inProgress: complaints.filter((c) => c.status === "In Progress").length,
-      resolved: complaints.filter((c) => c.status === "Resolved").length,
+      resolved: complaints.filter((c) => c.status === "RESOLVED").length,
     }),
     [complaints]
   );
 
   useEffect(() => {
-    const fetch = async () => {
+    const fetchComplaints = async () => {
       try {
-        const res = await axiosInstance.get("/complaints");
-        if (Array.isArray(res.data) && res.data.length) setComplaints(res.data);
+        setLoading(true);
+        // Fetch complaints from backend - only COMPLAINT type issues
+        const res = await axiosInstance.get("/issues/complaints");
+        if (Array.isArray(res.data)) {
+          setComplaints(res.data);
+        }
       } catch (e) {
-        // keep mock
+        console.error("Failed to fetch complaints:", e);
+        alert("Failed to load complaints. Please try again.");
+      } finally {
+        setLoading(false);
       }
     };
-    fetch();
+    fetchComplaints();
   }, []);
 
   const filtered = useMemo(() => {
     let list = complaints.slice();
-    if (tab === 0) list = list.filter((c) => c.status === "Open");
+    if (tab === 0) list = list.filter((c) => c.status === "PENDING");
     if (tab === 1) list = list.filter((c) => c.status === "In Progress");
-    if (tab === 2) list = list.filter((c) => c.status === "Resolved");
+    if (tab === 2) list = list.filter((c) => c.status === "RESOLVED");
     if (filterStatus !== "All")
       list = list.filter((c) => c.status === filterStatus);
     if (search.trim()) {
@@ -144,7 +104,7 @@ export default function ComplaintManagement() {
       );
     }
     list.sort(
-      (a, b) => new Date(b.submittedAt || 0) - new Date(a.submittedAt || 0)
+      (a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0)
     );
     return list;
   }, [complaints, tab, filterStatus, search]);
@@ -161,15 +121,10 @@ export default function ComplaintManagement() {
   const openEdit = (c) => {
     setEditing(c);
     setForm({
-      status: c.status || "Open",
+      status: c.status || "PENDING",
       remark: "",
       assignedTo: c.assignedTo || "",
     });
-    setDialogOpen(true);
-  };
-  const openAdd = () => {
-    setEditing(null);
-    setForm({ status: "Open", remark: "", assignedTo: "" });
     setDialogOpen(true);
   };
   const closeDialog = () => {
@@ -179,35 +134,25 @@ export default function ComplaintManagement() {
 
   const saveUpdate = async () => {
     if (!editing) return closeDialog();
-    try {
-      const update = {
-        ...editing,
-        status: form.status,
-        assignedTo: form.assignedTo,
-      };
-      // add remark if present
-      if (form.remark && form.remark.trim()) {
-        const r = {
-          by: "HR",
-          text: form.remark.trim(),
-          at: new Date().toISOString(),
-        };
-        update.remarks = Array.isArray(update.remarks)
-          ? [r, ...update.remarks]
-          : [r];
-      }
+    
+    // If status is Resolved, we need to call the resolve endpoint
+    if (form.status === "RESOLVED" && form.remark.trim()) {
       try {
-        await axiosInstance.put(`/complaints/${editing.id}`, update);
+        const res = await axiosInstance.patch(`/issues/${editing.id}/resolve`, {
+          remark: form.remark.trim()
+        });
+        
+        // Update local state with response
+        setComplaints((prev) =>
+          prev.map((p) => (p.id === editing.id ? res.data : p))
+        );
+        closeDialog();
       } catch (e) {
-        /* ignore */
+        console.error("Failed to resolve complaint:", e);
+        alert("Failed to resolve complaint. Please try again.");
       }
-      setComplaints((prev) =>
-        prev.map((p) => (p.id === editing.id ? update : p))
-      );
-      closeDialog();
-    } catch (e) {
-      console.error(e);
-      alert("Failed to update complaint");
+    } else {
+      alert("Please provide a remark and set status to Resolved to complete the update.");
     }
   };
 
@@ -261,13 +206,6 @@ export default function ComplaintManagement() {
             View and manage complaints submitted by employees.
           </Typography>
         </Box>
-        <Button
-          variant="contained"
-          onClick={openAdd}
-          sx={{ backgroundColor: COLORS.primary, color: "#fff" }}
-        >
-          New Complaint
-        </Button>
       </Stack>
 
       <Grid container spacing={2} sx={{ mb: 2 }}>
@@ -360,9 +298,9 @@ export default function ComplaintManagement() {
                 }}
               >
                 <MenuItem value="All">All</MenuItem>
-                <MenuItem value="Open">Open</MenuItem>
+                <MenuItem value="PENDING">Open</MenuItem>
                 <MenuItem value="In Progress">In Progress</MenuItem>
-                <MenuItem value="Resolved">Resolved</MenuItem>
+                <MenuItem value="RESOLVED">Resolved</MenuItem>
               </Select>
             </FormControl>
           </Grid>
@@ -419,8 +357,8 @@ export default function ComplaintManagement() {
                     </TableCell>
                     <TableCell>{c.submittedBy}</TableCell>
                     <TableCell>
-                      {c.submittedAt
-                        ? new Date(c.submittedAt).toLocaleString()
+                      {c.createdAt
+                        ? new Date(c.createdAt).toLocaleString()
                         : "-"}
                     </TableCell>
                     <TableCell>
@@ -528,9 +466,9 @@ export default function ComplaintManagement() {
                       setForm({ ...form, status: e.target.value })
                     }
                   >
-                    <MenuItem value="Open">Open</MenuItem>
+                    <MenuItem value="PENDING">Open</MenuItem>
                     <MenuItem value="In Progress">In Progress</MenuItem>
-                    <MenuItem value="Resolved">Resolved</MenuItem>
+                    <MenuItem value="RESOLVED">Resolved</MenuItem>
                   </Select>
                 </FormControl>
 
@@ -586,8 +524,8 @@ export default function ComplaintManagement() {
                       Submitted
                     </Typography>
                     <Typography>
-                      {selected.submittedAt
-                        ? new Date(selected.submittedAt).toLocaleString()
+                      {selected.createdAt
+                        ? new Date(selected.createdAt).toLocaleString()
                         : "-"}
                     </Typography>
                   </Grid>
@@ -611,19 +549,16 @@ export default function ComplaintManagement() {
               </Paper>
 
               <Typography variant="subtitle2">Remarks</Typography>
-              {Array.isArray(selected.remarks) && selected.remarks.length ? (
-                <List>
-                  {selected.remarks.map((r, idx) => (
-                    <ListItem key={idx} alignItems="flex-start">
-                      <ListItemText
-                        primary={r.text}
-                        secondary={`${r.by} • ${
-                          r.at ? new Date(r.at).toLocaleString() : ""
-                        }`}
-                      />
-                    </ListItem>
-                  ))}
-                </List>
+              {selected.remark ? (
+                <Paper variant="outlined" sx={{ p: 2, mt: 1, borderRadius: 1 }}>
+                  <Typography variant="body2">{selected.remark}</Typography>
+                  <Typography variant="caption" color="text.secondary">
+                    Updated by: {selected.updatedBy || "N/A"} • {" "}
+                    {selected.updatedAt
+                      ? new Date(selected.updatedAt).toLocaleString()
+                      : ""}
+                  </Typography>
+                </Paper>
               ) : (
                 <Typography variant="body2" color="text.secondary">
                   No remarks yet.
