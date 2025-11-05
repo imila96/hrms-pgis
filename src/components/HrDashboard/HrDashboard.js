@@ -270,7 +270,13 @@ const tabItems = [
 ];
 
 const HrDashboard = () => {
-  const { logout, user, setActiveRole } = useAuth();
+  const {
+    logout,
+    user,
+    setActiveRole,
+    beginRoleTransition,
+    endRoleTransition,
+  } = useAuth();
   const navigate = useNavigate();
   const theme = useTheme();
   const colorMode = useContext(ColorModeContext);
@@ -310,9 +316,13 @@ const HrDashboard = () => {
   };
 
   const switchTo = (role) => {
+    beginRoleTransition(role);
     setActiveRole(role);
     handleMenuClose();
-    setTimeout(() => navigate(goToRoleHome(role)), 0);
+    setTimeout(() => {
+      navigate(goToRoleHome(role));
+      setTimeout(() => endRoleTransition(), 600);
+    }, 0);
   };
 
   // Custom theme using your color palette

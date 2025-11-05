@@ -48,7 +48,13 @@ const tabItems = [
 ];
 
 const AdminDashboard = () => {
-  const { logout, user, setActiveRole } = useAuth();
+  const {
+    logout,
+    user,
+    setActiveRole,
+    beginRoleTransition,
+    endRoleTransition,
+  } = useAuth();
   const navigate = useNavigate();
   const theme = useTheme();
 
@@ -87,10 +93,14 @@ const AdminDashboard = () => {
   };
 
   const switchTo = (role) => {
+    beginRoleTransition(role);
     setActiveRole(role);
     handleMenuClose();
     // Defer so guards see the updated role/localStorage
-    setTimeout(() => navigate(goToRoleHome(role)), 0);
+    setTimeout(() => {
+      navigate(goToRoleHome(role));
+      setTimeout(() => endRoleTransition(), 600);
+    }, 0);
   };
 
   // Toggle system-wide theme by updating localStorage config

@@ -42,7 +42,13 @@ const tabs = [
 ];
 
 export default function DirectorDashboard() {
-  const { logout, user, setActiveRole } = useAuth();
+  const {
+    logout,
+    user,
+    setActiveRole,
+    beginRoleTransition,
+    endRoleTransition,
+  } = useAuth();
   const navigate = useNavigate();
   const theme = useTheme();
   const colorMode = useContext(ColorModeContext);
@@ -80,9 +86,13 @@ export default function DirectorDashboard() {
   };
 
   const switchTo = (role) => {
+    beginRoleTransition(role);
     setActiveRole(role);
     handleMenuClose();
-    setTimeout(() => navigate(goToRoleHome(role)), 0);
+    setTimeout(() => {
+      navigate(goToRoleHome(role));
+      setTimeout(() => endRoleTransition(), 600);
+    }, 0);
   };
 
   return (

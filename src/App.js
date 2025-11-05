@@ -35,47 +35,61 @@ import DirectorDashboard from "./components/DirectorDashboard/DirectorDashboard"
 
 import { AuthProvider, useAuth } from "./context/AuthContext";
 import TokenExpirationMonitor from "./components/common/TokenExpirationMonitor";
+import RoleTransitionOverlay from "./components/common/RoleTransitionOverlay";
 
 /* ---------------- Guards ---------------- */
 
-const ProtectedRoute = ({ children }) => {
-  const { user } = useAuth();
-  const token = localStorage.getItem("token");
-  return user || token ? children : <Navigate to="/" replace />;
+const roleHomePath = (role) => {
+  const map = {
+    admin: "/admin/profile",
+    hr: "/hr/profile",
+    employee: "/employee/profile",
+    director: "/director/profile",
+  };
+  return map[role] || "/";
 };
 
-const AdminRoute = ({ children }) => {
-  const { user } = useAuth();
-  const active = user?.activeRole || localStorage.getItem("activeRole");
-  return active === "admin" ? children : <Navigate to="/" replace />;
+const makeRoleRoute = (expectedRole) => {
+  return ({ children }) => {
+    const { user } = useAuth();
+    const token = localStorage.getItem("token");
+    const active = user?.activeRole || localStorage.getItem("activeRole");
+
+    if (!token && !user) {
+      return <Navigate to="/" replace />;
+    }
+
+    if (active === expectedRole) {
+      return children;
+    }
+
+    if (active) {
+      return <Navigate to={roleHomePath(active)} replace />;
+    }
+
+    return <Navigate to="/" replace />;
+  };
 };
 
-const HrRoute = ({ children }) => {
-  const { user } = useAuth();
-  const active = user?.activeRole || localStorage.getItem("activeRole");
-  return active === "hr" ? children : <Navigate to="/" replace />;
-};
-
-const EmployeeRoute = ({ children }) => {
-  const { user } = useAuth();
-  const active = user?.activeRole || localStorage.getItem("activeRole");
-  return active === "employee" ? children : <Navigate to="/" replace />;
-};
-
-const DirectorRoute = ({ children }) => {
-  const { user } = useAuth();
-  const active = user?.activeRole || localStorage.getItem("activeRole");
-  return active === "director" ? children : <Navigate to="/" replace />;
-};
+const AdminRoute = makeRoleRoute("admin");
+const HrRoute = makeRoleRoute("hr");
+const EmployeeRoute = makeRoleRoute("employee");
+const DirectorRoute = makeRoleRoute("director");
 
 /* ---------------- App ---------------- */
 
-function App() {
+const AppRoutes = () => {
+  const { roleTransition } = useAuth();
+
   return (
-    <AuthProvider>
-      <Router>
-        <TokenExpirationMonitor />
-        <Routes>
+    <>
+      <TokenExpirationMonitor />
+      <RoleTransitionOverlay
+        open={!!roleTransition}
+        message={roleTransition?.message}
+        role={roleTransition?.role}
+      />
+      <Routes>
           {/* public */}
           <Route path="/" element={<Login />} />
           <Route path="/register" element={<Register />} />
@@ -141,6 +155,15 @@ function App() {
           {/* catch-all */}
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
+    </>
+  );
+};
+
+function App() {
+  return (
+    <AuthProvider>
+      <Router>
+        <AppRoutes />
       </Router>
     </AuthProvider>
   );

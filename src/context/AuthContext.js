@@ -13,6 +13,13 @@ const AuthContext = createContext(null);
 const CFG_KEY = "system_config";
 const CFG_DEFAULTS = { sessionTimeoutMinutes: 30 };
 
+const SWITCH_MESSAGES = {
+  admin: "Switching to Admin dashboard...",
+  hr: "Switching to HR dashboard...",
+  employee: "Switching to Employee dashboard...",
+  director: "Switching to Director dashboard...",
+};
+
 function loadConfig() {
   try {
     const raw = localStorage.getItem(CFG_KEY) || "{}";
@@ -87,10 +94,29 @@ export const AuthProvider = ({ children }) => {
     }
 
     setUser(null);
+    setRoleTransition(null);
     ["token", "refreshToken", "email", "role", "roles", "activeRole", "tokenExpiresAt", "rememberMe"].forEach((k) =>
       localStorage.removeItem(k)
     );
   }, []);
+
+  const [roleTransition, setRoleTransition] = useState(null);
+
+  const beginRoleTransition = useCallback((role) => {
+    if (!role) return;
+    const message = SWITCH_MESSAGES[role] || "Switching dashboard...";
+    setRoleTransition({ role, message, startedAt: Date.now() });
+  }, []);
+
+  const endRoleTransition = useCallback(() => {
+    setRoleTransition(null);
+  }, []);
+
+  useEffect(() => {
+    if (!roleTransition) return undefined;
+    const timer = setTimeout(() => setRoleTransition(null), 4000);
+    return () => clearTimeout(timer);
+  }, [roleTransition]);
 
   // ---- Inactivity auto-logout ----
   useEffect(() => {
@@ -135,7 +161,16 @@ export const AuthProvider = ({ children }) => {
 
   return (
     <AuthContext.Provider
-      value={{ user, setUser, logout, setActiveRole, hasRole }}
+      value={{
+        user,
+        setUser,
+        logout,
+        setActiveRole,
+        hasRole,
+        beginRoleTransition,
+        endRoleTransition,
+        roleTransition,
+      }}
     >
       {children}
     </AuthContext.Provider>
