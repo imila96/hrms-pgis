@@ -15,6 +15,10 @@ import {
   Tabs,
   Tab,
   Avatar,
+  FormHelperText,
+  CircularProgress,
+  Snackbar,
+  Alert,
 } from "@mui/material";
 import { PhotoCamera, Delete, ArrowBack } from "@mui/icons-material";
 import axiosInstance from "../../AxiosInstance";
@@ -29,6 +33,24 @@ const COLORS = {
 const RELIGIONS = ["Buddhism", "Christianity", "Hinduism", "Islam", "Other"];
 const BLOOD_GROUPS = ["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"];
 const MARITAL_STATUS = ["Single", "Married", "Divorced", "Widowed"];
+const DEPARTMENTS = [
+  "General Administration Division",
+  "Finance Administration Division",
+  "IT & Technical Support Unit",
+  "Maintenance & Facilities Unit",
+  "Biochemistry and Molecular Biology",
+  "Biomedical Sciences",
+  "Chemical Sciences",
+  "Earth Sciences",
+  "Environmental Science",
+  "Mathematics",
+  "Physics",
+  "Plant Sciences",
+  "Science Education",
+  "Statistics and Computer Science",
+  "Zoological Sciences",
+  "other",
+];
 
 function CreateEditProfile() {
   const navigate = useNavigate();
@@ -37,7 +59,6 @@ function CreateEditProfile() {
   const [profileImage, setProfileImage] = useState(null);
   const [form, setForm] = useState({
     firstName: "",
-    middleName: "",
     lastName: "",
     gender: "",
     dateOfBirth: "",
@@ -80,6 +101,197 @@ function CreateEditProfile() {
     pensionScheme: "",
   });
 
+  const [errors, setErrors] = useState({});
+
+  // UX state
+  const [isSaving, setIsSaving] = useState(false);
+  const [savingTab, setSavingTab] = useState(null);
+  const [snackbar, setSnackbar] = useState({
+    open: false,
+    message: "",
+    severity: "success",
+  });
+
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  const phoneRegex = /^\+?[0-9\s-]{7,}$/;
+  // NIC format: 9 digits followed by an uppercase 'V' (example: 962834153V)
+  const nicRegex = /^\d{9}V$/;
+
+  const setFieldError = (field, message) =>
+    setErrors((e) => ({ ...e, [field]: message }));
+  const clearFieldError = (field) =>
+    setErrors((e) => {
+      const copy = { ...e };
+      delete copy[field];
+      return copy;
+    });
+
+  const validateField = (field, value) => {
+    switch (field) {
+      case "firstName":
+      case "lastName":
+      case "nationality":
+        if (!value || !String(value).trim())
+          setFieldError(field, "This field is required");
+        else clearFieldError(field);
+        break;
+      case "nic":
+        if (!value || !String(value).trim()) {
+          setFieldError(field, "This field is required");
+        } else if (!nicRegex.test(String(value).trim())) {
+          setFieldError(
+            field,
+            "NIC must be 9 digits followed by 'V' (e.g. 962834153V)"
+          );
+        } else clearFieldError(field);
+        break;
+      case "gender":
+        if (!value) setFieldError(field, "Please select gender");
+        else clearFieldError(field);
+        break;
+      case "dateOfBirth":
+        if (!value) setFieldError(field, "Please provide date of birth");
+        else clearFieldError(field);
+        break;
+      case "email":
+      case "workEmail":
+      case "personalEmail":
+        if (value && !emailRegex.test(value))
+          setFieldError(field, "Invalid email address");
+        else clearFieldError(field);
+        break;
+      case "mobileNumber":
+      case "emergencyPhone":
+      case "homeTelephone":
+        if (value && !phoneRegex.test(value))
+          setFieldError(field, "Invalid phone number");
+        else clearFieldError(field);
+        break;
+      case "basicSalary":
+        if (value !== "" && Number(value) <= 0)
+          setFieldError(field, "Salary must be greater than 0");
+        else clearFieldError(field);
+        break;
+      default:
+        clearFieldError(field);
+    }
+  };
+
+  const employeeIdPresent = id || form.employeeId;
+
+  const personalFields = [
+    "firstName",
+    "lastName",
+    "gender",
+    "dateOfBirth",
+    "nationality",
+    "nic",
+  ];
+
+  const contactFields = [
+    "permanentAddress",
+    "mobileNumber",
+    "workEmail",
+    "personalEmail",
+    "emergencyName",
+    "emergencyPhone",
+  ];
+
+  const employmentFields = ["jobTitle", "dateOfJoining", "employmentType"];
+  const compensationFields = ["basicSalary", "accountNo"];
+
+  const isTabValid = (tab) => {
+    if (tab === 0) {
+      for (const f of personalFields)
+        if (!form[f] || String(form[f]).trim() === "") return false;
+      if (form.email && !emailRegex.test(form.email)) return false;
+      return true;
+    }
+    if (tab === 1) {
+      if (!form.permanentAddress || String(form.permanentAddress).trim() === "")
+        return false;
+      if (!form.mobileNumber && !form.workEmail && !form.personalEmail)
+        return false;
+      if (form.workEmail && !emailRegex.test(form.workEmail)) return false;
+      if (form.personalEmail && !emailRegex.test(form.personalEmail))
+        return false;
+      if (!form.emergencyName || !form.emergencyPhone) return false;
+      if (form.emergencyPhone && !phoneRegex.test(form.emergencyPhone))
+        return false;
+      return true;
+    }
+    if (tab === 2) {
+      if (!form.jobTitle || String(form.jobTitle).trim() === "") return false;
+      if (!form.dateOfJoining) return false;
+      return true;
+    }
+    if (tab === 3) {
+      if (form.basicSalary === "" || form.basicSalary == null) return false;
+      if (Number(form.basicSalary) <= 0) return false;
+      return true;
+    }
+    return true;
+  };
+
+  const validateTab = (tab) => {
+    const newErrors = {};
+    if (tab === 0) {
+      personalFields.forEach((f) => {
+        const v = form[f];
+        if (!v || String(v).trim() === "")
+          newErrors[f] = "This field is required";
+      });
+      if (form.email && !emailRegex.test(form.email))
+        newErrors.email = "Invalid email address";
+      // validate NIC format: 10 digits followed by a letter
+      if (form.nic && !nicRegex.test(String(form.nic).trim()))
+        newErrors.nic =
+          "NIC must be 10 digits followed by a letter (e.g. 0123456789A)";
+    }
+    if (tab === 1) {
+      if (!form.permanentAddress || String(form.permanentAddress).trim() === "")
+        newErrors.permanentAddress = "Permanent address is required";
+      if (!form.mobileNumber && !form.workEmail && !form.personalEmail)
+        newErrors.mobileNumber =
+          "Provide at least one contact (mobile or email)";
+      if (form.workEmail && !emailRegex.test(form.workEmail))
+        newErrors.workEmail = "Invalid work email";
+      if (form.personalEmail && !emailRegex.test(form.personalEmail))
+        newErrors.personalEmail = "Invalid personal email";
+      if (!form.emergencyName || String(form.emergencyName).trim() === "")
+        newErrors.emergencyName = "Emergency contact name required";
+      if (!form.emergencyPhone || !phoneRegex.test(form.emergencyPhone))
+        newErrors.emergencyPhone = "Valid emergency phone required";
+    }
+    if (tab === 2) {
+      if (!form.jobTitle || String(form.jobTitle).trim() === "")
+        newErrors.jobTitle = "Job title is required";
+      if (!form.dateOfJoining)
+        newErrors.dateOfJoining = "Date of joining is required";
+    }
+    if (tab === 3) {
+      if (form.basicSalary === "" || form.basicSalary == null)
+        newErrors.basicSalary = "Basic salary is required";
+      else if (Number(form.basicSalary) <= 0)
+        newErrors.basicSalary = "Salary must be greater than 0";
+    }
+
+    // clear previous errors for the tab fields then set new
+    const cleaned = { ...errors };
+    const tabFields =
+      tab === 0
+        ? personalFields
+        : tab === 1
+        ? contactFields
+        : tab === 2
+        ? employmentFields
+        : compensationFields;
+    tabFields.forEach((f) => delete cleaned[f]);
+    const merged = { ...cleaned, ...newErrors };
+    setErrors(merged);
+    return Object.keys(newErrors).length === 0;
+  };
+
   useEffect(() => {
     if (!id) return;
     let mounted = true;
@@ -91,7 +303,6 @@ function CreateEditProfile() {
         setForm((f) => ({
           ...f,
           firstName: data.firstName || "",
-          middleName: data.middleName || "",
           lastName: data.lastName || "",
           gender: data.gender || "",
           dateOfBirth: data.dateOfBirth || "",
@@ -152,32 +363,187 @@ function CreateEditProfile() {
 
   const handleRemoveImage = () => setProfileImage(null);
 
-  const handleChange = (field) => (e) =>
-    setForm({ ...form, [field]: e.target.value });
+  const handleChange = (field) => (e) => {
+    const value = e.target.value;
+    setForm((f) => ({ ...f, [field]: value }));
+    validateField(field, value);
+  };
 
-  const handleSave = async () => {
-    const payload = { ...form, profileImage };
-    try {
-      if (id) {
-        await axiosInstance.put(`/hr/employees/${id}`, payload);
-      } else {
-        await axiosInstance.post(`/hr/employees`, payload);
-      }
-      navigate("/hr/records");
-    } catch (err) {
-      console.error("Save failed:", err);
+  // Helper: map frontend form to backend EmployeeDto shape
+  const buildEmployeeDto = () => ({
+    name: (form.firstName || "") + (form.lastName ? " " + form.lastName : ""),
+    email: form.email || form.workEmail || form.personalEmail || null,
+    gender: form.gender || null,
+    dateOfBirth: form.dateOfBirth || null,
+    nationality: form.nationality || null,
+    nicNo: form.nic || null,
+    maritalStatus: form.maritalStatus || null,
+    religion: form.religion || null,
+    bloodGroup: form.bloodGroup || null,
+    profileImage: profileImage || null,
+  });
+
+  const buildContactDto = () => ({
+    permanentAddress: form.permanentAddress || null,
+    currentAddress: form.currentAddress || null,
+    mobileNumber: form.mobileNumber || null,
+    homeTelephone: form.homeTelephone || null,
+    workEmail: form.workEmail || null,
+    personalEmail: form.personalEmail || null,
+    emergencyName: form.emergencyName || null,
+    emergencyRelationship: form.emergencyRelationship || null,
+    emergencyPhone: form.emergencyPhone || null,
+  });
+
+  const buildEmploymentDto = () => ({
+    jobTitle: form.jobTitle || null,
+    department: form.department || null,
+    dateOfJoining: form.dateOfJoining || null,
+    probationEndDate: form.probationEndDate || null,
+    confirmationDate: form.confirmationDate || null,
+    dateOfRetirement: form.dateOfRetirement || null,
+    employmentStatus: form.employmentStatus || null,
+  });
+
+  const buildCompensationDto = () => ({
+    basicSalary: form.basicSalary || null,
+    bankName: form.bankName || null,
+    branch: form.branch || null,
+    accountNo: form.accountNo || null,
+    tin: form.tin || null,
+    pensionScheme: form.pensionScheme || null,
+  });
+
+  // Create/update employee(personal information)
+  const saveEmployee = async () => {
+    const dto = buildEmployeeDto();
+    if (id) {
+      const res = await axiosInstance.put(`/hr/employees/${id}`, dto);
+      return res.data?.id || id;
+    } else if (form.employeeId) {
+      // form may hold employeeId from earlier creation
+      const res = await axiosInstance.put(
+        `/hr/employees/${form.employeeId}`,
+        dto
+      );
+      return res.data?.id || form.employeeId;
+    } else {
+      const res = await axiosInstance.post(`/hr/employees`, dto);
+      return res.data?.id;
     }
   };
 
-  const isFormValid = () => {
-    return !!(
-      form.firstName &&
-      form.lastName &&
-      form.gender &&
-      form.dateOfBirth &&
-      form.nationality &&
-      form.nic
+  // Create/update employee(contact information)
+  const saveContact = async (employeeId) => {
+    const dto = buildContactDto();
+    const listRes = await axiosInstance.get(
+      `/hr/employees/${employeeId}/contacts`
     );
+    const list = listRes.data || [];
+    if (list.length > 0) {
+      const contactId = list[0].contactId;
+      const res = await axiosInstance.put(
+        `/hr/employees/${employeeId}/contacts/${contactId}`,
+        dto
+      );
+      return res.data;
+    } else {
+      const res = await axiosInstance.post(
+        `/hr/employees/${employeeId}/contacts`,
+        dto
+      );
+      return res.data;
+    }
+  };
+
+  // Create/update employee(employment information)
+  const saveEmployment = async (employeeId) => {
+    const dto = buildEmploymentDto();
+    const listRes = await axiosInstance.get(
+      `/hr/employees/${employeeId}/employments`
+    );
+    const list = listRes.data || [];
+    if (list.length > 0) {
+      const employmentId = list[0].employmentId;
+      const res = await axiosInstance.put(
+        `/hr/employees/${employeeId}/employments/${employmentId}`,
+        dto
+      );
+      return res.data;
+    } else {
+      const res = await axiosInstance.post(
+        `/hr/employees/${employeeId}/employments`,
+        dto
+      );
+      return res.data;
+    }
+  };
+
+  // Create/update employee(compensation information)
+  const saveCompensation = async (employeeId) => {
+    const dto = buildCompensationDto();
+    const listRes = await axiosInstance.get(
+      `/hr/employees/${employeeId}/compensations`
+    );
+    const list = listRes.data || [];
+    if (list.length > 0) {
+      const compensationId = list[0].compensationId;
+      const res = await axiosInstance.put(
+        `/hr/employees/${employeeId}/compensations/${compensationId}`,
+        dto
+      );
+      return res.data;
+    } else {
+      const res = await axiosInstance.post(
+        `/hr/employees/${employeeId}/compensations`,
+        dto
+      );
+      return res.data;
+    }
+  };
+
+  const handleSaveTab = async (tabIndex) => {
+    if (!validateTab(tabIndex)) return;
+    setIsSaving(true);
+    setSavingTab(tabIndex);
+    try {
+      let employeeId = id || form.employeeId;
+
+      if (tabIndex === 0) {
+        await saveEmployee();
+      } else if (tabIndex === 1) {
+        await saveContact(employeeId);
+      } else if (tabIndex === 2) {
+        await saveEmployment(employeeId);
+      } else if (tabIndex === 3) {
+        await saveCompensation(employeeId);
+      }
+
+      setSnackbar({
+        open: true,
+        message:
+          tabIndex === 0
+            ? "Employee created — Please complete full employee profile."
+            : "Saved successfully",
+        severity: "success",
+      });
+      // stop showing spinner
+      setIsSaving(false);
+      setSavingTab(null);
+      // stay on page and move user to the next tab so they can continue filling forms
+      if (tabIndex === 0) setActiveTab(1);
+      else if (tabIndex < 3) setActiveTab(tabIndex + 1);
+      else setActiveTab(3);
+    } catch (err) {
+      console.error("Save tab failed:", err);
+      setSnackbar({
+        open: true,
+        message: "Save failed. See console for details.",
+        severity: "error",
+      });
+      setIsSaving(false);
+      setSavingTab(null);
+    }
   };
 
   return (
@@ -238,27 +604,22 @@ function CreateEditProfile() {
             <Typography variant="caption" color="text.secondary" align="center">
               Upload a profile picture (recommended size: 200x200px)
             </Typography>
-
-            <Box sx={{ mt: 2, display: "flex", gap: 1, width: "100%" }}>
-              <Button
-                variant="outlined"
-                color="inherit"
-                onClick={() => navigate("/hr/records")}
-                fullWidth
-              >
-                Cancel
-              </Button>
-              <Button
-                variant="contained"
-                onClick={handleSave}
-                disabled={!isFormValid()}
-                fullWidth
-                sx={{ bgcolor: COLORS.primary }}
-              >
-                {id ? "Save Changes" : "Add Employee"}
-              </Button>
-            </Box>
           </Box>
+          {/* Snackbar for feedback */}
+          <Snackbar
+            open={snackbar.open}
+            autoHideDuration={4000}
+            onClose={() => setSnackbar((s) => ({ ...s, open: false }))}
+            anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
+          >
+            <Alert
+              onClose={() => setSnackbar((s) => ({ ...s, open: false }))}
+              severity={snackbar.severity}
+              sx={{ width: "100%" }}
+            >
+              {snackbar.message}
+            </Alert>
+          </Snackbar>
         </Paper>
 
         {/* Right column (form & tabs) */}
@@ -266,16 +627,30 @@ function CreateEditProfile() {
           <Box sx={{ borderBottom: 1, borderColor: "divider" }}>
             <Tabs
               value={activeTab}
-              onChange={(_, v) => setActiveTab(v)}
+              onChange={(_, v) => {
+                // Prevent switching to other tabs until employee is created
+                if (v > 0 && !employeeIdPresent) {
+                  setSnackbar({
+                    open: true,
+                    message: "Create employee first to enable other tabs.",
+                    severity: "info",
+                  });
+                  return;
+                }
+                setActiveTab(v);
+              }}
               sx={{
                 px: 2,
                 "& .MuiTabs-indicator": { backgroundColor: COLORS.primary },
               }}
             >
               <Tab label="Personal Information" />
-              <Tab label="Contact Information" />
-              <Tab label="Employment Details" />
-              <Tab label="Compensation & Payroll" />
+              <Tab label="Contact Information" disabled={!employeeIdPresent} />
+              <Tab label="Employment Details" disabled={!employeeIdPresent} />
+              <Tab
+                label="Compensation & Payroll"
+                disabled={!employeeIdPresent}
+              />
             </Tabs>
           </Box>
 
@@ -286,7 +661,7 @@ function CreateEditProfile() {
                 Personal Information
               </Typography>
 
-              <Grid container spacing={3}>
+              <Grid container spacing={3} direction={"column"}>
                 <Grid item xs={6}>
                   <TextField
                     label="First Name"
@@ -295,15 +670,6 @@ function CreateEditProfile() {
                     required
                     value={form.firstName}
                     onChange={handleChange("firstName")}
-                  />
-                </Grid>
-                <Grid item xs={6}>
-                  <TextField
-                    label="Middle Name"
-                    placeholder="Enter middle name (optional)"
-                    fullWidth
-                    value={form.middleName}
-                    onChange={handleChange("middleName")}
                   />
                 </Grid>
 
@@ -330,6 +696,7 @@ function CreateEditProfile() {
                       <MenuItem value="female">Female</MenuItem>
                       <MenuItem value="other">Other</MenuItem>
                     </Select>
+                    <FormHelperText>{errors.gender}</FormHelperText>
                   </FormControl>
                 </Grid>
 
@@ -342,6 +709,8 @@ function CreateEditProfile() {
                     required
                     value={form.dateOfBirth}
                     onChange={handleChange("dateOfBirth")}
+                    error={!!errors.dateOfBirth}
+                    helperText={errors.dateOfBirth || ""}
                     InputLabelProps={{ shrink: true }}
                   />
                 </Grid>
@@ -354,18 +723,34 @@ function CreateEditProfile() {
                     required
                     value={form.nationality}
                     onChange={handleChange("nationality")}
+                    error={!!errors.nationality}
+                    helperText={errors.nationality || ""}
                   />
                 </Grid>
 
                 <Grid item xs={12}>
                   <TextField
                     label="NIC Number"
-                    placeholder="e.g. 123456789V"
+                    placeholder="e.g. 962834153V (9 digits followed by 'V')"
                     fullWidth
                     required
                     value={form.nic}
                     onChange={handleChange("nic")}
-                    helperText="Enter valid National Identity Card number"
+                    error={!!errors.nic}
+                    helperText={
+                      errors.nic || "Enter valid National Identity Card number"
+                    }
+                  />
+                </Grid>
+                <Grid item xs={6}>
+                  <TextField
+                    label="Email Address"
+                    placeholder="Enter valid email address"
+                    fullWidth
+                    value={form.email}
+                    onChange={handleChange("email")}
+                    error={!!errors.email}
+                    helperText={errors.email || ""}
                   />
                 </Grid>
 
@@ -429,8 +814,29 @@ function CreateEditProfile() {
                   mt: 3,
                 }}
               >
-                <Button variant="contained" onClick={() => setActiveTab(1)}>
-                  Next
+                <Button
+                  variant="outlined"
+                  color="inherit"
+                  onClick={() => navigate("/hr/records")}
+                  fullWidth
+                >
+                  Cancel
+                </Button>
+                <Button
+                  variant="contained"
+                  onClick={() => handleSaveTab(0)}
+                  disabled={!isTabValid(0) || isSaving}
+                  fullWidth
+                  sx={{ bgcolor: COLORS.primary }}
+                >
+                  {isSaving && savingTab === 0 ? (
+                    <CircularProgress
+                      size={18}
+                      color="inherit"
+                      sx={{ mr: 1 }}
+                    />
+                  ) : null}
+                  {id ? "Save Changes" : "Add Employee"}
                 </Button>
               </Box>
             </Box>
@@ -443,7 +849,7 @@ function CreateEditProfile() {
                 Contact Information
               </Typography>
 
-              <Grid container spacing={3}>
+              <Grid container spacing={3} direction={"column"}>
                 <Grid item xs={12}>
                   <TextField
                     label="Permanent Address"
@@ -453,6 +859,8 @@ function CreateEditProfile() {
                     rows={2}
                     value={form.permanentAddress}
                     onChange={handleChange("permanentAddress")}
+                    error={!!errors.permanentAddress}
+                    helperText={errors.permanentAddress || ""}
                   />
                 </Grid>
 
@@ -475,6 +883,8 @@ function CreateEditProfile() {
                     fullWidth
                     value={form.mobileNumber}
                     onChange={handleChange("mobileNumber")}
+                    error={!!errors.mobileNumber}
+                    helperText={errors.mobileNumber || ""}
                   />
                 </Grid>
                 <Grid item xs={6}>
@@ -484,6 +894,8 @@ function CreateEditProfile() {
                     fullWidth
                     value={form.homeTelephone}
                     onChange={handleChange("homeTelephone")}
+                    error={!!errors.homeTelephone}
+                    helperText={errors.homeTelephone || ""}
                   />
                 </Grid>
 
@@ -495,6 +907,8 @@ function CreateEditProfile() {
                     fullWidth
                     value={form.workEmail}
                     onChange={handleChange("workEmail")}
+                    error={!!errors.workEmail}
+                    helperText={errors.workEmail || ""}
                   />
                 </Grid>
                 <Grid item xs={6}>
@@ -505,6 +919,8 @@ function CreateEditProfile() {
                     fullWidth
                     value={form.personalEmail}
                     onChange={handleChange("personalEmail")}
+                    error={!!errors.personalEmail}
+                    helperText={errors.personalEmail || ""}
                   />
                 </Grid>
               </Grid>
@@ -513,7 +929,7 @@ function CreateEditProfile() {
                 <Typography variant="h6" sx={{ mb: 2 }}>
                   Emergency Contact
                 </Typography>
-                <Grid container spacing={3}>
+                <Grid container spacing={3} direction={"column"}>
                   <Grid item xs={4}>
                     <TextField
                       label="Name"
@@ -521,6 +937,8 @@ function CreateEditProfile() {
                       fullWidth
                       value={form.emergencyName}
                       onChange={handleChange("emergencyName")}
+                      error={!!errors.emergencyName}
+                      helperText={errors.emergencyName || ""}
                     />
                   </Grid>
                   <Grid item xs={4}>
@@ -539,6 +957,8 @@ function CreateEditProfile() {
                       fullWidth
                       value={form.emergencyPhone}
                       onChange={handleChange("emergencyPhone")}
+                      error={!!errors.emergencyPhone}
+                      helperText={errors.emergencyPhone || ""}
                     />
                   </Grid>
                 </Grid>
@@ -552,11 +972,26 @@ function CreateEditProfile() {
                   mt: 3,
                 }}
               >
-                <Button variant="outlined" onClick={() => setActiveTab(0)}>
-                  Back
+                <Button
+                  variant="outlined"
+                  color="inherit"
+                  onClick={() => navigate("/hr/records")}
+                >
+                  Cancel
                 </Button>
-                <Button variant="contained" onClick={() => setActiveTab(2)}>
-                  Next
+                <Button
+                  variant="contained"
+                  onClick={() => handleSaveTab(1)}
+                  disabled={!isTabValid(1) || isSaving}
+                >
+                  {isSaving && savingTab === 1 ? (
+                    <CircularProgress
+                      size={18}
+                      color="inherit"
+                      sx={{ mr: 1 }}
+                    />
+                  ) : null}
+                  Save
                 </Button>
               </Box>
             </Box>
@@ -569,7 +1004,7 @@ function CreateEditProfile() {
                 Employment Details
               </Typography>
 
-              <Grid container spacing={3}>
+              <Grid container spacing={3} direction={"column"}>
                 <Grid item xs={6}>
                   <TextField
                     label="Employee ID"
@@ -583,21 +1018,30 @@ function CreateEditProfile() {
                 <Grid item xs={6}>
                   <TextField
                     label="Job Title / Position"
-                    placeholder="e.g. Senior Software Engineer"
+                    placeholder="e.g. Senior Lecturer"
                     fullWidth
                     value={form.jobTitle}
                     onChange={handleChange("jobTitle")}
+                    error={!!errors.jobTitle}
+                    helperText={errors.jobTitle || ""}
                   />
                 </Grid>
 
                 <Grid item xs={6}>
-                  <TextField
-                    label="Department"
-                    placeholder="e.g. Engineering"
-                    fullWidth
-                    value={form.department}
-                    onChange={handleChange("department")}
-                  />
+                  <FormControl fullWidth>
+                    <InputLabel>Department</InputLabel>
+                    <Select
+                      value={form.department}
+                      label="Department"
+                      onChange={handleChange("department")}
+                    >
+                      {DEPARTMENTS.map((d) => (
+                        <MenuItem key={d} value={d}>
+                          {d}
+                        </MenuItem>
+                      ))}
+                    </Select>
+                  </FormControl>
                 </Grid>
 
                 <Grid item xs={6}>
@@ -613,6 +1057,7 @@ function CreateEditProfile() {
                       <MenuItem value="temporary">Temporary</MenuItem>
                       <MenuItem value="intern">Intern</MenuItem>
                     </Select>
+                    <FormHelperText>{errors.employmentType}</FormHelperText>
                   </FormControl>
                 </Grid>
 
@@ -624,6 +1069,8 @@ function CreateEditProfile() {
                     fullWidth
                     value={form.dateOfJoining}
                     onChange={handleChange("dateOfJoining")}
+                    error={!!errors.dateOfJoining}
+                    helperText={errors.dateOfJoining || ""}
                     InputLabelProps={{ shrink: true }}
                   />
                 </Grid>
@@ -689,11 +1136,26 @@ function CreateEditProfile() {
                   mt: 3,
                 }}
               >
-                <Button variant="outlined" onClick={() => setActiveTab(1)}>
-                  Back
+                <Button
+                  variant="outlined"
+                  color="inherit"
+                  onClick={() => navigate("/hr/records")}
+                >
+                  Cancel
                 </Button>
-                <Button variant="contained" onClick={() => setActiveTab(3)}>
-                  Next
+                <Button
+                  variant="contained"
+                  onClick={() => handleSaveTab(2)}
+                  disabled={!isTabValid(2) || isSaving}
+                >
+                  {isSaving && savingTab === 2 ? (
+                    <CircularProgress
+                      size={18}
+                      color="inherit"
+                      sx={{ mr: 1 }}
+                    />
+                  ) : null}
+                  Save
                 </Button>
               </Box>
             </Box>
@@ -706,7 +1168,7 @@ function CreateEditProfile() {
                 Compensation & Payroll
               </Typography>
 
-              <Grid container spacing={3}>
+              <Grid container spacing={3} direction={"column"}>
                 <Grid item xs={6}>
                   <TextField
                     label="Basic Salary"
@@ -715,6 +1177,8 @@ function CreateEditProfile() {
                     fullWidth
                     value={form.basicSalary}
                     onChange={handleChange("basicSalary")}
+                    error={!!errors.basicSalary}
+                    helperText={errors.basicSalary || ""}
                   />
                 </Grid>
 
@@ -777,15 +1241,26 @@ function CreateEditProfile() {
                   mt: 3,
                 }}
               >
-                <Button variant="outlined" onClick={() => setActiveTab(2)}>
-                  Back
+                <Button
+                  variant="outlined"
+                  color="inherit"
+                  onClick={() => navigate("/hr/records")}
+                >
+                  Cancel
                 </Button>
                 <Button
                   variant="contained"
-                  onClick={handleSave}
-                  disabled={!isFormValid()}
+                  onClick={() => handleSaveTab(3)}
+                  disabled={!isTabValid(3) || isSaving}
                 >
-                  Finish
+                  {isSaving && savingTab === 3 ? (
+                    <CircularProgress
+                      size={18}
+                      color="inherit"
+                      sx={{ mr: 1 }}
+                    />
+                  ) : null}
+                  Save
                 </Button>
               </Box>
             </Box>
