@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import {
   Box,
   Typography,
@@ -16,87 +16,208 @@ import {
   DialogContent,
   TextField,
   DialogActions,
-  IconButton,
+  Checkbox,
+  FormControlLabel,
+  FormControl,
+  InputLabel,
   Snackbar,
   Alert,
+  Tabs,
+  Tab,
+  Grid,
+  TableContainer,
+  TablePagination,
+  Stack,
+  Chip,
 } from "@mui/material";
-import { Edit } from "@mui/icons-material";
+
 import axiosInstance from "../../AxiosInstance";
-import BackButton from "../common/BackButton";
+// mock data to populate table while backend is empty / for demo
+const MOCK_JOBS = [
+  {
+    id: "job-1",
+    title: "Software Engineer",
+    description: "Develop and maintain internal HR systems.",
+    department: "Engineering",
+    location: "Colombo",
+    jobType: "Full-time",
+    positions: 3,
+    urgent: false,
+    active: true,
+    postedDate: new Date(Date.now() - 1000 * 60 * 60 * 24 * 10).toISOString(),
+    startDate: null,
+    endDate: null,
+  },
+  {
+    id: "job-2",
+    title: "HR Manager",
+    description: "Lead HR operations and recruitment.",
+    department: "Human Resources",
+    location: "Kandy",
+    jobType: "Full-time",
+    positions: 1,
+    urgent: true,
+    active: true,
+    postedDate: new Date(Date.now() - 1000 * 60 * 60 * 24 * 30).toISOString(),
+    startDate: null,
+    endDate: null,
+  },
+  {
+    id: "job-3",
+    title: "Part-time Data Analyst",
+    description: "Analyze workforce data and produce reports.",
+    department: "Analytics",
+    location: "Remote",
+    jobType: "Part-time",
+    positions: 1,
+    urgent: false,
+    active: false,
+    postedDate: new Date(Date.now() - 1000 * 60 * 60 * 24 * 60).toISOString(),
+    startDate: null,
+    endDate: null,
+  },
+  {
+    id: "job-4",
+    title: "Recruitment Coordinator",
+    description: "Coordinate job postings and candidate screening.",
+    department: "Recruitment",
+    location: "Galle",
+    jobType: "Contract",
+    positions: 2,
+    urgent: true,
+    active: true,
+    postedDate: new Date(Date.now() - 1000 * 60 * 60 * 24 * 5).toISOString(),
+    startDate: null,
+    endDate: null,
+  },
+  {
+    id: "job-5",
+    title: "Payroll Specialist",
+    description: "Manage payroll processes and compliance.",
+    department: "Finance",
+    location: "Colombo",
+    jobType: "Full-time",
+    positions: 1,
+    urgent: false,
+    active: true,
+    postedDate: new Date(Date.now() - 1000 * 60 * 60 * 24 * 3).toISOString(),
+    startDate: null,
+    endDate: null,
+  },
+];
 
 const RecruitmentManagement = () => {
-  const [jobOpening, setJobOpening] = useState([]);
+  const [jobs, setJobs] = useState(MOCK_JOBS);
   const [formData, setFormData] = useState({
     title: "",
     description: "",
     department: "",
     status: "",
+    location: "",
+    jobType: "",
+    positions: 1,
+    urgent: false,
+    startDate: "",
+    endDate: "",
   });
   const [editJobOpening, setEditJobOpening] = useState(null);
   const [dialogOpen, setDialogOpen] = useState(false);
-
-  const [applications, setApplications] = useState([]);
-
   const [snackbarOpen, setSnackbarOpen] = useState(false);
   const [snackbarMessage, setSnackbarMessage] = useState("");
   const [snackbarSeverity, setSnackbarSeverity] = useState("info");
 
-  useEffect(() => {
-    fetchJobOpenings();
-    fetchApplications();
+  // UI for job list
+  const [jobTab, setJobTab] = useState(0); // 0: current, 1: upcoming, 2: history
+  const [search, setSearch] = useState("");
+  const [page, setPage] = useState(0);
+  const [rowsPerPage, setRowsPerPage] = useState(5);
+
+  // filters
+  const [filterDept, setFilterDept] = useState("All");
+  const [filterType, setFilterType] = useState("All");
+  const [filterLocation, setFilterLocation] = useState("All");
+
+  const vacanciesSummary = React.useMemo(() => {
+    const total = jobs.length;
+    const active = jobs.filter((j) => j && j.active).length;
+    const urgent = jobs.filter((j) => j && j.urgent).length;
+    // positions per department
+    const map = new Map();
+    jobs.forEach((j) => {
+      const dept = j.department || "Unknown";
+      const pos = j.positions ? Number(j.positions) : 1;
+      map.set(dept, (map.get(dept) || 0) + pos);
+    });
+    const positionsPerDept = Array.from(map.entries()).map(
+      ([department, positions]) => ({ department, positions })
+    );
+    return { total, active, urgent, positionsPerDept };
+  }, [jobs]);
+
+  // helper to show notifications
+  const showSnackbar = useCallback((message, severity = "info") => {
+    setSnackbarMessage(message);
+    setSnackbarSeverity(severity);
+    setSnackbarOpen(true);
   }, []);
 
-  const fetchJobOpenings = async () => {
+  const handleSnackbarClose = useCallback(() => {
+    setSnackbarOpen(false);
+  }, []);
+
+  const fetchJobOpenings = useCallback(async () => {
     try {
       const response = await axiosInstance.get("/hr/recruitment/openings");
-      setJobOpening(response.data);
+      setJobs(response.data || []);
     } catch (error) {
       console.error("Error fetching job openings", error);
       if (error.response && error.response.status === 403) {
         showSnackbar("Access denied. Please log in again.", "error");
       }
     }
-  };
+  }, [showSnackbar]);
 
-  const fetchApplications = async () => {
-    setApplications([
-      {
-        id: 1,
-        name: "Nimal Perera",
-        job: "Software Engineer",
-        status: "Applied",
-      },
-      {
-        id: 2,
-        name: "Dilani Silva",
-        job: "HR Assistant",
-        status: "Interviewed",
-      },
-      { id: 3, name: "Ruwan Fernando", job: "Accountant", status: "Rejected" },
-    ]);
-  };
-
-  const showSnackbar = (message, severity = "info") => {
-    setSnackbarMessage(message);
-    setSnackbarSeverity(severity);
-    setSnackbarOpen(true);
-  };
-
-  const handleSnackbarClose = () => {
-    setSnackbarOpen(false);
-  };
+  // call once on mount
+  useEffect(() => {
+    fetchJobOpenings();
+  }, [fetchJobOpenings]);
 
   const openDialog = (job = null) => {
     setEditJobOpening(job);
     setFormData(
       job
         ? {
-            title: job.title,
-            description: job.description,
-            department: job.department,
+            title: job.title || "",
+            description: job.description || "",
+            department: job.department || "",
             status: job.active ? "Open" : "Closed",
+            location: job.location || "",
+            jobType: job.jobType || "",
+            positions: job.positions || 1,
+            urgent: !!job.urgent,
+            startDate: job.startDate
+              ? job.startDate.slice
+                ? job.startDate.slice(0, 10)
+                : job.startDate
+              : "",
+            endDate: job.endDate
+              ? job.endDate.slice
+                ? job.endDate.slice(0, 10)
+                : job.endDate
+              : "",
           }
-        : { title: "", description: "", department: "", status: "" }
+        : {
+            title: "",
+            description: "",
+            department: "",
+            status: "",
+            location: "",
+            jobType: "",
+            positions: 1,
+            urgent: false,
+            startDate: "",
+            endDate: "",
+          }
     );
     setDialogOpen(true);
   };
@@ -109,19 +230,21 @@ const RecruitmentManagement = () => {
       description: "",
       department: "",
       status: "",
+      location: "",
+      jobType: "",
+      positions: 1,
+      urgent: false,
+      startDate: "",
+      endDate: "",
     });
   };
 
   const handleChange = (e) => {
-    setFormData((prev) => ({ ...prev, [e.target.name]: e.target.value }));
-  };
-
-  const handleApplicationStatusChange = (id, newStatus) => {
-    setApplications((prev) =>
-      prev.map((app) => (app.id === id ? { ...app, status: newStatus } : app))
-    );
-    // API call to update the status in the backend
-    showSnackbar("Application status updated", "success");
+    const { name, value, type, checked } = e.target;
+    setFormData((prev) => ({
+      ...prev,
+      [name]: type === "checkbox" ? checked : value,
+    }));
   };
 
   const handleSave = async () => {
@@ -132,28 +255,63 @@ const RecruitmentManagement = () => {
 
     try {
       if (editJobOpening) {
-        const originalStatus = editJobOpening.active ? "Open" : "Closed";
+        // update locally
+        setJobs((prev) =>
+          prev.map((j) =>
+            j.id === editJobOpening.id
+              ? {
+                  ...j,
+                  title: formData.title,
+                  description: formData.description,
+                  department: formData.department,
+                  active: formData.status === "Open",
+                  location: formData.location,
+                  jobType: formData.jobType,
+                  positions: Number(formData.positions) || 1,
+                  urgent: !!formData.urgent,
+                  startDate: formData.startDate || null,
+                  endDate: formData.endDate || null,
+                }
+              : j
+          )
+        );
 
-        if (formData.status === originalStatus) {
-          showSnackbar("No changes detected", "info");
-          return;
-        }
-
+        // if closing now and job was active, call close endpoint
         if (formData.status === "Closed" && editJobOpening.active) {
-          await axiosInstance.put(`/hr/recruitment/close/${editJobOpening.id}`);
-          showSnackbar("Job status updated to Closed", "success");
-        } else {
-          showSnackbar("Only closing open jobs is allowed", "info");
+          try {
+            await axiosInstance.put(
+              `/hr/recruitment/close/${editJobOpening.id}`
+            );
+          } catch (e) {
+            /* ignore */
+          }
         }
+
+        showSnackbar("Job updated", "success");
       } else {
         const newJob = {
+          id: `local-${Date.now()}`,
           title: formData.title,
           description: formData.description,
           department: formData.department,
           active: formData.status === "Open",
+          location: formData.location,
+          jobType: formData.jobType,
+          positions: Number(formData.positions) || 1,
+          urgent: !!formData.urgent,
+          startDate: formData.startDate || null,
+          endDate: formData.endDate || null,
+          postedDate: new Date().toISOString(),
         };
-        await axiosInstance.post("/hr/recruitment/create", newJob);
-        showSnackbar("Job opening created successfully!", "success");
+
+        try {
+          await axiosInstance.post("/hr/recruitment/create", newJob);
+          showSnackbar("Job opening created successfully!", "success");
+        } catch (err) {
+          // fallback to local insertion if API fails
+          setJobs((prev) => [newJob, ...prev]);
+          showSnackbar("Job created locally (server call failed).", "warning");
+        }
       }
 
       fetchJobOpenings();
@@ -166,126 +324,422 @@ const RecruitmentManagement = () => {
 
   return (
     <Box sx={{ p: 3 }}>
-      <BackButton />
       {/* Job Openings Section */}
       <Typography variant="h5" gutterBottom>
-        Job Openings Management
+        Job Management
       </Typography>
-      <Button variant="contained" onClick={() => openDialog()} sx={{ mb: 2 }}>
-        New Job Opening
-      </Button>
 
-      <Paper sx={{ p: 3, mb: 4 }}>
-        <Table>
-          <TableHead>
-            <TableRow>
-              <TableCell>
-                <strong>Job Title</strong>
-              </TableCell>
-              <TableCell>
-                <strong>Description</strong>
-              </TableCell>
-              <TableCell>
-                <strong>Department</strong>
-              </TableCell>
-              <TableCell>
-                <strong>Status</strong>
-              </TableCell>
-              <TableCell>
-                <strong>Posted Date</strong>
-              </TableCell>
-              <TableCell>
-                <strong>Actions</strong>
-              </TableCell>
-            </TableRow>
-          </TableHead>
+      <Grid container spacing={2} sx={{ mb: 2 }}>
+        <Grid item xs={12} sm={6} md={3}>
+          <Paper
+            sx={{
+              p: 2,
+              borderRadius: 2,
+              minHeight: 90,
+              background: "#4B49AC",
+              color: "#fff",
+            }}
+            elevation={1}
+          >
+            <Typography
+              variant="caption"
+              sx={{ color: "rgba(255,255,255,0.9)" }}
+            >
+              Total vacancies
+            </Typography>
+            <Typography variant="h4" fontWeight={700} sx={{ mt: 1 }}>
+              {vacanciesSummary.total}
+            </Typography>
+          </Paper>
+        </Grid>
 
-          <TableBody>
-            {jobOpening.length === 0 ? (
-              <TableRow>
-                <TableCell colSpan={6} align="center">
-                  No job opening records.
-                </TableCell>
-              </TableRow>
-            ) : (
-              jobOpening.map((job) => (
-                <TableRow key={job.id}>
-                  <TableCell>{job.title}</TableCell>
-                  <TableCell>{job.description}</TableCell>
-                  <TableCell>{job.department}</TableCell>
-                  <TableCell>{job.active ? "Open" : "Closed"}</TableCell>
-                  <TableCell>
-                    {new Date(job.postedDate).toLocaleDateString()}
-                  </TableCell>
-                  <TableCell>
-                    <IconButton
-                      color="primary"
-                      onClick={() => openDialog(job)}
-                      disabled={!job.active}
-                    >
-                      <Edit />
-                    </IconButton>
-                  </TableCell>
+        <Grid item xs={12} sm={6} md={3}>
+          <Paper
+            sx={{
+              p: 2,
+              borderRadius: 2,
+              minHeight: 90,
+              background: "#7DA0FA",
+              color: "#fff",
+            }}
+            elevation={1}
+          >
+            <Typography
+              variant="caption"
+              sx={{ color: "rgba(255,255,255,0.95)" }}
+            >
+              Active vacancies
+            </Typography>
+            <Typography variant="h4" fontWeight={700} sx={{ mt: 1 }}>
+              {vacanciesSummary.active}
+            </Typography>
+          </Paper>
+        </Grid>
+
+        <Grid item xs={12} sm={6} md={3}>
+          <Paper
+            sx={{
+              p: 2,
+              borderRadius: 2,
+              minHeight: 90,
+              background: "#F3797E",
+              color: "#fff",
+            }}
+            elevation={1}
+          >
+            <Typography
+              variant="caption"
+              sx={{ color: "rgba(255,255,255,0.95)" }}
+            >
+              Urgent hires
+            </Typography>
+            <Typography variant="h4" fontWeight={700} sx={{ mt: 1 }}>
+              {vacanciesSummary.urgent}
+            </Typography>
+          </Paper>
+        </Grid>
+
+        {/* Top departments card removed per request */}
+
+        <Grid
+          item
+          xs={12}
+          sx={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "flex-end",
+          }}
+        >
+          <Button
+            variant="contained"
+            onClick={() => openDialog()}
+            sx={{ height: 40 }}
+          >
+            New Job Opening
+          </Button>
+        </Grid>
+      </Grid>
+
+      <Paper sx={{ p: 2, mb: 4 }}>
+        <Tabs
+          value={jobTab}
+          onChange={(_, v) => {
+            setJobTab(v);
+            setPage(0);
+          }}
+          sx={{ mb: 2 }}
+        >
+          <Tab label="Current Vacancies" />
+          <Tab label="Upcoming Vacancies" />
+          <Tab label="Vacancies History" />
+        </Tabs>
+
+        <Box sx={{ p: 1 }}>
+          <Grid container spacing={2} alignItems="center" sx={{ mb: 2 }}>
+            <Grid item xs={12} md={3}>
+              <TextField
+                fullWidth
+                size="small"
+                placeholder="Search by title"
+                value={search}
+                onChange={(e) => {
+                  setSearch(e.target.value);
+                  setPage(0);
+                }}
+              />
+            </Grid>
+            <Grid item xs={12} md={2}>
+              <FormControl fullWidth size="small">
+                <InputLabel>Department</InputLabel>
+                <Select
+                  value={filterDept}
+                  label="Department"
+                  onChange={(e) => {
+                    setFilterDept(e.target.value);
+                    setPage(0);
+                  }}
+                >
+                  <MenuItem value="All">All</MenuItem>
+                  {Array.from(
+                    new Set(jobs.map((j) => j.department).filter(Boolean))
+                  ).map((d) => (
+                    <MenuItem key={d} value={d}>
+                      {d}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+            </Grid>
+            <Grid item xs={12} md={2}>
+              <FormControl fullWidth size="small">
+                <InputLabel>Job Type</InputLabel>
+                <Select
+                  value={filterType}
+                  label="Job Type"
+                  onChange={(e) => {
+                    setFilterType(e.target.value);
+                    setPage(0);
+                  }}
+                >
+                  <MenuItem value="All">All</MenuItem>
+                  {Array.from(
+                    new Set(jobs.map((j) => j.jobType).filter(Boolean))
+                  ).map((t) => (
+                    <MenuItem key={t} value={t}>
+                      {t}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+            </Grid>
+            <Grid item xs={12} md={2}>
+              <FormControl fullWidth size="small">
+                <InputLabel>Location</InputLabel>
+                <Select
+                  value={filterLocation}
+                  label="Location"
+                  onChange={(e) => {
+                    setFilterLocation(e.target.value);
+                    setPage(0);
+                  }}
+                >
+                  <MenuItem value="All">All</MenuItem>
+                  {Array.from(
+                    new Set(jobs.map((j) => j.location).filter(Boolean))
+                  ).map((l) => (
+                    <MenuItem key={l} value={l}>
+                      {l}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+            </Grid>
+            <Grid item xs={12} md={3} textAlign="right">
+              <Button
+                variant="outlined"
+                onClick={() => {
+                  setSearch("");
+                  setJobTab(0);
+                  setFilterDept("All");
+                  setFilterType("All");
+                  setFilterLocation("All");
+                  setPage(0);
+                }}
+              >
+                Reset
+              </Button>
+              <Button
+                variant="outlined"
+                sx={{ ml: 1 }}
+                onClick={() => {
+                  // export visible jobs
+                  const header = [
+                    "id",
+                    "title",
+                    "description",
+                    "department",
+                    "location",
+                    "jobType",
+                    "positions",
+                    "active",
+                    "urgent",
+                    "postedDate",
+                    "startDate",
+                    "endDate",
+                  ];
+                  const rows = (() => {
+                    const now = new Date();
+                    let list = jobs.slice();
+                    if (jobTab === 0)
+                      list = list.filter(
+                        (j) =>
+                          j.active === true &&
+                          (!j.startDate || new Date(j.startDate) <= now)
+                      );
+                    else if (jobTab === 1)
+                      list = list.filter(
+                        (j) => j.startDate && new Date(j.startDate) > now
+                      );
+                    else list = list.filter((j) => !j.active);
+                    if (search && search.trim()) {
+                      const q = search.toLowerCase();
+                      list = list.filter((j) =>
+                        (j.title || "").toLowerCase().includes(q)
+                      );
+                    }
+                    if (filterDept !== "All")
+                      list = list.filter((j) => j.department === filterDept);
+                    if (filterType !== "All")
+                      list = list.filter((j) => j.jobType === filterType);
+                    if (filterLocation !== "All")
+                      list = list.filter((j) => j.location === filterLocation);
+                    return list.map((j) =>
+                      header.map((h) => JSON.stringify(j[h] ?? "")).join(",")
+                    );
+                  })();
+                  const blob = new Blob(
+                    [[header.join(",")], ...rows].join("\n"),
+                    { type: "text/csv" }
+                  );
+                  const url = URL.createObjectURL(blob);
+                  const a = document.createElement("a");
+                  a.href = url;
+                  a.download = "vacancies_export.csv";
+                  a.click();
+                  URL.revokeObjectURL(url);
+                }}
+              >
+                Export CSV
+              </Button>
+            </Grid>
+          </Grid>
+
+          {/* compute filtered list */}
+          {/* Table */}
+          <TableContainer>
+            <Table>
+              <TableHead>
+                <TableRow>
+                  <TableCell sx={{ fontWeight: 700 }}>Job Title</TableCell>
+                  <TableCell>Description</TableCell>
+                  <TableCell>Department</TableCell>
+                  <TableCell>Posted</TableCell>
+                  <TableCell>Status</TableCell>
+                  <TableCell align="right">Actions</TableCell>
                 </TableRow>
-              ))
-            )}
-          </TableBody>
-        </Table>
+              </TableHead>
+
+              <TableBody>
+                {(() => {
+                  const now = new Date();
+                  let list = jobs.slice();
+                  if (jobTab === 0) {
+                    // current: active jobs whose startDate is not in future
+                    list = list.filter(
+                      (j) =>
+                        j.active === true &&
+                        (!j.startDate || new Date(j.startDate) <= now)
+                    );
+                  } else if (jobTab === 1) {
+                    // upcoming: have a startDate in future
+                    list = list.filter(
+                      (j) => j.startDate && new Date(j.startDate) > now
+                    );
+                  } else {
+                    // history: closed jobs
+                    list = list.filter((j) => !j.active);
+                  }
+                  if (search && search.trim()) {
+                    const q = search.toLowerCase();
+                    list = list.filter(
+                      (j) =>
+                        (j.title || "").toLowerCase().includes(q) ||
+                        (j.department || "").toLowerCase().includes(q)
+                    );
+                  }
+
+                  const paged = list.slice(
+                    page * rowsPerPage,
+                    page * rowsPerPage + rowsPerPage
+                  );
+                  if (paged.length === 0) {
+                    return (
+                      <TableRow>
+                        <TableCell colSpan={6} align="center">
+                          No job vacancies found.
+                        </TableCell>
+                      </TableRow>
+                    );
+                  }
+
+                  return paged.map((j) => (
+                    <TableRow key={j.id} hover>
+                      <TableCell>
+                        <Typography fontWeight={700}>{j.title}</Typography>
+                      </TableCell>
+                      <TableCell>{j.description}</TableCell>
+                      <TableCell>{j.department}</TableCell>
+                      <TableCell>
+                        {j.postedDate
+                          ? new Date(j.postedDate).toLocaleDateString()
+                          : "-"}
+                      </TableCell>
+                      <TableCell>
+                        <Stack direction="row" spacing={1} alignItems="center">
+                          <Chip
+                            label={j.active ? "Open" : "Closed"}
+                            size="small"
+                            color={j.active ? "success" : "default"}
+                          />
+                          {j.urgent && (
+                            <Chip label="Urgent" size="small" color="error" />
+                          )}
+                        </Stack>
+                      </TableCell>
+                      <TableCell align="right">
+                        <Stack
+                          direction="row"
+                          spacing={1}
+                          justifyContent="flex-end"
+                        >
+                          <Button
+                            size="small"
+                            variant="outlined"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              openDialog(j);
+                            }}
+                          >
+                            Edit
+                          </Button>
+                        </Stack>
+                      </TableCell>
+                    </TableRow>
+                  ));
+                })()}
+              </TableBody>
+            </Table>
+          </TableContainer>
+
+          <TablePagination
+            component="div"
+            count={(() => {
+              const now = new Date();
+              let list = jobs.slice();
+              if (jobTab === 0)
+                list = list.filter(
+                  (j) =>
+                    j.active === true &&
+                    (!j.startDate || new Date(j.startDate) <= now)
+                );
+              else if (jobTab === 1)
+                list = list.filter(
+                  (j) => j.startDate && new Date(j.startDate) > now
+                );
+              else list = list.filter((j) => !j.active);
+              if (search && search.trim()) {
+                const q = search.toLowerCase();
+                list = list.filter(
+                  (j) =>
+                    (j.title || "").toLowerCase().includes(q) ||
+                    (j.department || "").toLowerCase().includes(q)
+                );
+              }
+              return list.length;
+            })()}
+            page={page}
+            onPageChange={(_, newPage) => setPage(newPage)}
+            rowsPerPage={rowsPerPage}
+            onRowsPerPageChange={(e) => {
+              setRowsPerPage(parseInt(e.target.value, 10));
+              setPage(0);
+            }}
+            rowsPerPageOptions={[5, 10, 25]}
+          />
+        </Box>
       </Paper>
 
-      {/* Job Applications Section */}
-      <Typography variant="h5" gutterBottom>
-        Job Applications
-      </Typography>
-      <Paper sx={{ p: 3 }}>
-        <Table>
-          <TableHead>
-            <TableRow>
-              <TableCell>
-                <strong>Candidate</strong>
-              </TableCell>
-              <TableCell>
-                <strong>Job Title</strong>
-              </TableCell>
-              <TableCell>
-                <strong>Status</strong>
-              </TableCell>
-            </TableRow>
-          </TableHead>
-
-          <TableBody>
-            {applications.length === 0 ? (
-              <TableRow>
-                <TableCell colSpan={3} align="center">
-                  No applications found.
-                </TableCell>
-              </TableRow>
-            ) : (
-              applications.map((app) => (
-                <TableRow key={app.id}>
-                  <TableCell>{app.name}</TableCell>
-                  <TableCell>{app.job}</TableCell>
-                  <TableCell>
-                    <Select
-                      value={app.status}
-                      onChange={(e) =>
-                        handleApplicationStatusChange(app.id, e.target.value)
-                      }
-                      size="small"
-                      fullWidth
-                    >
-                      <MenuItem value="Applied">Applied</MenuItem>
-                      <MenuItem value="Interviewed">Interviewed</MenuItem>
-                      <MenuItem value="Hired">Hired</MenuItem>
-                      <MenuItem value="Rejected">Rejected</MenuItem>
-                    </Select>
-                  </TableCell>
-                </TableRow>
-              ))
-            )}
-          </TableBody>
-        </Table>
-      </Paper>
+      {/* Details drawer removed */}
 
       {/* Job Opening Dialog */}
       <Dialog open={dialogOpen} onClose={closeDialog}>
@@ -301,7 +755,6 @@ const RecruitmentManagement = () => {
             value={formData.title}
             onChange={handleChange}
             required
-            disabled={!!editJobOpening}
           />
           <TextField
             label="Description"
@@ -311,7 +764,6 @@ const RecruitmentManagement = () => {
             value={formData.description}
             onChange={handleChange}
             required
-            disabled={!!editJobOpening}
           />
           <TextField
             label="Department"
@@ -321,8 +773,68 @@ const RecruitmentManagement = () => {
             value={formData.department}
             onChange={handleChange}
             required
-            disabled={!!editJobOpening}
           />
+
+          <TextField
+            label="Location"
+            name="location"
+            fullWidth
+            margin="dense"
+            value={formData.location}
+            onChange={handleChange}
+          />
+
+          <TextField
+            label="Job Type"
+            name="jobType"
+            fullWidth
+            margin="dense"
+            value={formData.jobType}
+            onChange={handleChange}
+          />
+
+          <TextField
+            label="Positions"
+            name="positions"
+            type="number"
+            fullWidth
+            margin="dense"
+            value={formData.positions}
+            onChange={handleChange}
+            inputProps={{ min: 1 }}
+          />
+
+          <FormControlLabel
+            control={
+              <Checkbox
+                name="urgent"
+                checked={!!formData.urgent}
+                onChange={handleChange}
+              />
+            }
+            label="Urgent hire"
+          />
+
+          <Box sx={{ display: "flex", gap: 1 }}>
+            <TextField
+              label="Start Date"
+              name="startDate"
+              type="date"
+              value={formData.startDate}
+              onChange={handleChange}
+              InputLabelProps={{ shrink: true }}
+              fullWidth
+            />
+            <TextField
+              label="End Date"
+              name="endDate"
+              type="date"
+              value={formData.endDate}
+              onChange={handleChange}
+              InputLabelProps={{ shrink: true }}
+              fullWidth
+            />
+          </Box>
 
           <Select
             fullWidth
