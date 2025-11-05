@@ -1,4 +1,3 @@
-// src/components/AdminDashboard/SystemConfig/SystemConfig.js
 import React, { useEffect, useRef, useState } from "react";
 import {
   Box,
@@ -17,7 +16,6 @@ import {
   Select,
   MenuItem,
 } from "@mui/material";
-import BackButton from "../../common/BackButton";
 
 /** --- Local, self-contained config helper (no external imports needed) --- */
 const STORAGE_KEY = "system_config";
@@ -43,7 +41,9 @@ const loadConfig = () => {
 const saveConfig = (cfg) => {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(cfg));
   // broadcast so other components can react (Attendance, AuthContext, Theme)
-  window.dispatchEvent(new CustomEvent("system-config-change", { detail: cfg }));
+  window.dispatchEvent(
+    new CustomEvent("system-config-change", { detail: cfg })
+  );
 };
 /** ----------------------------------------------------------------------- */
 
@@ -96,7 +96,6 @@ export default function SystemConfig() {
 
   return (
     <Box sx={{ p: 3 }}>
-      <BackButton />
       <Typography variant="h5" gutterBottom>
         System Configuration
       </Typography>
@@ -186,7 +185,6 @@ export default function SystemConfig() {
           </Grid>
         </Grid>
       </Paper>
-
       <Stack direction="row" spacing={2}>
         <Button variant="contained" onClick={handleSave}>
           Save
@@ -197,7 +195,10 @@ export default function SystemConfig() {
         <Button variant="outlined" onClick={handleExport}>
           Export
         </Button>
-        <Button variant="text" onClick={() => fileRef.current?.click()}>
+        <Button
+          variant="outlined" // changed from "text" to "outlined"
+          onClick={() => fileRef.current?.click()}
+        >
           Import
         </Button>
         <input

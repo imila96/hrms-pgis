@@ -10,8 +10,8 @@ import {
   Badge,
   Box,
 } from "@mui/material";
-import MarkEmailReadIcon from '@mui/icons-material/MarkEmailRead';
-import MarkEmailUnreadIcon from '@mui/icons-material/MarkEmailUnread';
+import MarkEmailReadIcon from "@mui/icons-material/MarkEmailRead";
+import MarkEmailUnreadIcon from "@mui/icons-material/MarkEmailUnread";
 
 const initialNotifications = [
   { id: 1, message: "New user registered", read: false },
@@ -24,9 +24,7 @@ const Notifications = () => {
 
   const toggleRead = (id) => {
     setNotifications((prev) =>
-      prev.map((n) =>
-        n.id === id ? { ...n, read: !n.read } : n
-      )
+      prev.map((n) => (n.id === id ? { ...n, read: !n.read } : n))
     );
   };
 

@@ -1,29 +1,47 @@
 import React, { useEffect, useState } from "react";
 import {
-  Box, Typography, Table, TableHead, TableRow, TableCell, TableBody,
-  IconButton, Button, Paper, Dialog, DialogTitle, DialogContent,
-  DialogActions, TextField, Select, MenuItem, FormControl, InputLabel, Chip
+  Box,
+  Typography,
+  Table,
+  TableHead,
+  TableRow,
+  TableCell,
+  TableBody,
+  IconButton,
+  Button,
+  Paper,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  TextField,
+  Select,
+  MenuItem,
+  FormControl,
+  InputLabel,
+  Chip,
+  Stack,
+  InputAdornment,
+  Pagination,
 } from "@mui/material";
-import { Delete, Edit } from "@mui/icons-material";
-import api from "../../../AxiosInstance";
-import BackButton from "../../common/BackButton";
+import { Delete, Edit, Search as SearchIcon } from "@mui/icons-material";
+import api from "../../../AxiosInstance"; // calling backend
 
-const ROLE_OPTIONS = ["ADMIN", "HR", "EMPLOYEE","DIRECTOR"];
+const ROLE_OPTIONS = ["ADMIN", "HR", "EMPLOYEE", "DIRECTOR"];
 
 export default function UserManagement() {
   // main users table
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  // pending employees (no user accounts yet)
-  const [pendingEmployees, setPendingEmployees] = useState([]);
+  // pending password table
+  const [pending, setPending] = useState([]);
   const [pendingLoading, setPendingLoading] = useState(true);
 
-  // assign password dialog (for creating user from employee)
+  // assign password dialog (row-action)
   const [pwdOpen, setPwdOpen] = useState(false);
-  const [pwdTarget, setPwdTarget] = useState(null); // {employeeId, email, name, jobTitle}
+  const [pwdTarget, setPwdTarget] = useState(null); // {id,email,name,jobTitle}
   const [initialPassword, setInitialPassword] = useState("");
-  const [userEmail, setUserEmail] = useState(""); // Email for the user account
 
   // assign role dialog
   const [openRole, setOpenRole] = useState(false);
@@ -31,13 +49,27 @@ export default function UserManagement() {
   const [selectedRole, setSelectedRole] = useState("");
 
   // (kept for UI only; will NOT be sent)
-  const [empFields, setEmpFields] = useState({ name: "", jobTitle: "", contact: "", address: "" });
+  const [empFields, setEmpFields] = useState({
+    name: "",
+    jobTitle: "",
+    contact: "",
+    address: "",
+  });
+
+  // --- Search & Filter states ---
+  const [searchQuery, setSearchQuery] = useState("");
+  const [roleFilter, setRoleFilter] = useState("All");
+
+  // Pagination states
+  const [userPage, setUserPage] = useState(1);
+  const [pendingPage, setPendingPage] = useState(1);
+  const itemsPerPage = 5; // number of rows per page
 
   const loadUsers = async () => {
     setLoading(true);
     try {
       const { data } = await api.get("/admin/users");
-      setUsers(data.filter(u => u.adminPasswordAssigned));
+      setUsers(data.filter((u) => u.adminPasswordAssigned));
     } finally {
       setLoading(false);
     }
@@ -46,8 +78,8 @@ export default function UserManagement() {
   const loadPending = async () => {
     setPendingLoading(true);
     try {
-      const { data } = await api.get("/admin/users/pending-employees");
-      setPendingEmployees(data);
+      const { data } = await api.get("/admin/users/pending-password");
+      setPending(data);
     } finally {
       setPendingLoading(false);
     }
@@ -58,40 +90,62 @@ export default function UserManagement() {
     loadPending();
   }, []);
 
-  /* ---------------- Create user for employee ---------------- */
-  const openPwdDialog = (emp) => {
-    setPwdTarget(emp);
-    setUserEmail(emp.email || ""); // Pre-fill with employee email
+  // --- Filter Logic ---
+  const filteredUsers = users.filter((u) => {
+    const matchesSearch =
+      u.email?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      u.roles.some((r) => r.toLowerCase().includes(searchQuery.toLowerCase()));
+    const matchesRole = roleFilter === "All" || u.roles.includes(roleFilter);
+    return matchesSearch && matchesRole;
+  });
+
+  const filteredPending = pending.filter(
+    (p) =>
+      p.email?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      p.name?.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+  // Pagination logic for users
+  const indexOfLastUser = userPage * itemsPerPage;
+  const indexOfFirstUser = indexOfLastUser - itemsPerPage;
+  const currentUsers = filteredUsers.slice(indexOfFirstUser, indexOfLastUser);
+
+  // Pagination logic for pending users
+  const indexOfLastPending = pendingPage * itemsPerPage;
+  const indexOfFirstPending = indexOfLastPending - itemsPerPage;
+  const currentPending = filteredPending.slice(
+    indexOfFirstPending,
+    indexOfLastPending
+  );
+
+  // Handlers
+  const handleUserPageChange = (event, value) => setUserPage(value);
+  const handlePendingPageChange = (event, value) => setPendingPage(value);
+
+  /* ---------------- Assign initial password ---------------- */
+  const openPwdDialog = (row) => {
+    setPwdTarget(row);
     setInitialPassword("");
     setPwdOpen(true);
   };
 
-  const createUserForEmployee = async () => {
-    if (!pwdTarget?.employeeId) return;
-    if (!userEmail || !userEmail.includes('@')) {
-      alert("Please enter a valid email address.");
-      return;
-    }
+  const assignInitialPassword = async () => {
+    if (!pwdTarget?.id) return;
     if (!initialPassword || initialPassword.length < 6) {
       alert("Password must be at least 6 characters.");
       return;
     }
     try {
-      await api.post("/admin/users/create-user-for-employee", {
-        employeeId: pwdTarget.employeeId,
-        email: userEmail,
+      await api.put(`/admin/users/${pwdTarget.id}/password`, {
         password: initialPassword,
-        role: "EMPLOYEE" // Default role
       });
       setPwdOpen(false);
       setPwdTarget(null);
       setInitialPassword("");
-      setUserEmail("");
       await Promise.all([loadUsers(), loadPending()]);
-      alert("User account created successfully!");
     } catch (e) {
       console.error(e);
-      alert(e.response?.data?.message || "Failed to create user account.");
+      alert("Failed to assign password.");
     }
   };
 
@@ -103,7 +157,7 @@ export default function UserManagement() {
       name: u.hasEmployee ? "" : u.email,
       jobTitle: u.hasEmployee ? "" : "Staff",
       contact: "",
-      address: ""
+      address: "",
     });
     setOpenRole(true);
   };
@@ -137,129 +191,257 @@ export default function UserManagement() {
 
   return (
     <Box sx={{ p: 3 }}>
-      <BackButton />
-      <Typography variant="h5" mb={2}>User Account Management</Typography>
+      {/* ===== Title ===== */}
+      <Typography variant="h5" mb={2}>
+        User Account Management
+      </Typography>
+
+      {/* 🔍 Search + Filter + Counts in one row */}
+      <Box
+        display="flex"
+        flexDirection={{ xs: "column", sm: "row" }}
+        justifyContent="space-between"
+        alignItems={{ xs: "stretch", sm: "center" }}
+        gap={2}
+        mb={2}
+      >
+        {/* Left side: Search + Filter */}
+        <Stack
+          direction={{ xs: "column", sm: "row" }}
+          spacing={2}
+          sx={{ flex: 1 }}
+        >
+          <TextField
+            label="Search by Email or Role"
+            variant="outlined"
+            size="small"
+            value={searchQuery}
+            onChange={(e) => {
+              setSearchQuery(e.target.value);
+              setUserPage(1);
+              setPendingPage(1);
+            }}
+            sx={{ width: { xs: "100%", sm: "40%" } }}
+            InputProps={{
+              startAdornment: (
+                <InputAdornment position="start">
+                  <SearchIcon color="action" />
+                </InputAdornment>
+              ),
+            }}
+          />
+          <FormControl size="small" sx={{ width: { xs: "100%", sm: "25%" } }}>
+            <InputLabel>Filter by Role</InputLabel>
+            <Select
+              value={roleFilter}
+              label="Filter by Role"
+              onChange={(e) => {
+                setRoleFilter(e.target.value);
+                setUserPage(1);
+                setPendingPage(1);
+              }}
+            >
+              <MenuItem value="All">All</MenuItem>
+              {ROLE_OPTIONS.map((r) => (
+                <MenuItem key={r} value={r}>
+                  {r}
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+        </Stack>
+
+        {/* Right side: User counts */}
+        <Box display="flex" gap={2}>
+          <Chip
+            label={`Total Users: ${users.length}`}
+            variant="outlined"
+            color="primary"
+          />
+          <Chip
+            label={`Pending Employees: ${pending.length}`}
+            variant="outlined"
+            color="warning"
+          />
+        </Box>
+      </Box>
 
       {/* ===== Table 1: Users ===== */}
       <Paper sx={{ mb: 3 }}>
         <Table>
           <TableHead>
             <TableRow>
-              <TableCell><strong>ID</strong></TableCell>
-              <TableCell><strong>Email</strong></TableCell>
-              <TableCell><strong>Roles</strong></TableCell>
-              <TableCell><strong>Employee Row</strong></TableCell>
-              <TableCell align="right"><strong>Actions</strong></TableCell>
+              <TableCell>
+                <strong>ID</strong>
+              </TableCell>
+              <TableCell>
+                <strong>Email</strong>
+              </TableCell>
+              <TableCell>
+                <strong>Roles</strong>
+              </TableCell>
+              <TableCell>
+                <strong>Employee Row</strong>
+              </TableCell>
+              <TableCell align="right">
+                <strong>Actions</strong>
+              </TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
             {loading && (
-              <TableRow><TableCell colSpan={5} align="center">Loading…</TableCell></TableRow>
-            )}
-            {!loading && users.length === 0 && (
-              <TableRow><TableCell colSpan={5} align="center">No users</TableCell></TableRow>
-            )}
-            {!loading && users.map(u => (
-              <TableRow key={u.id}>
-                <TableCell>{u.id}</TableCell>
-                <TableCell>{u.email}</TableCell>
-                <TableCell>
-                  {u.roles.length
-                    ? u.roles.map(r => <Chip key={r} label={r} size="small" sx={{ mr: 0.5 }} />)
-                    : <em>None</em>}
-                </TableCell>
-                <TableCell>{u.hasEmployee ? "Yes" : "No"}</TableCell>
-                <TableCell align="right">
-                  <IconButton color="primary" onClick={() => openRoleDlg(u)} title="Assign/Edit Role">
-                    <Edit />
-                  </IconButton>
-                  <IconButton color="error" onClick={() => deleteUser(u.id)} title="Delete">
-                    <Delete />
-                  </IconButton>
+              <TableRow>
+                <TableCell colSpan={5} align="center">
+                  Loading…
                 </TableCell>
               </TableRow>
-            ))}
+            )}
+            {!loading && users.length === 0 && (
+              <TableRow>
+                <TableCell colSpan={5} align="center">
+                  No users
+                </TableCell>
+              </TableRow>
+            )}
+            {!loading &&
+              currentUsers.map((u) => (
+                <TableRow key={u.id}>
+                  <TableCell>{u.id}</TableCell>
+                  <TableCell>{u.email}</TableCell>
+                  <TableCell>
+                    {u.roles.length ? (
+                      u.roles.map((r) => (
+                        <Chip key={r} label={r} size="small" sx={{ mr: 0.5 }} />
+                      ))
+                    ) : (
+                      <em>None</em>
+                    )}
+                  </TableCell>
+                  <TableCell>{u.hasEmployee ? "Yes" : "No"}</TableCell>
+                  <TableCell align="right">
+                    <IconButton
+                      color="primary"
+                      onClick={() => openRoleDlg(u)}
+                      title="Assign/Edit Role"
+                    >
+                      <Edit />
+                    </IconButton>
+                    <IconButton
+                      color="error"
+                      onClick={() => deleteUser(u.id)}
+                      title="Delete"
+                    >
+                      <Delete />
+                    </IconButton>
+                  </TableCell>
+                </TableRow>
+              ))}
           </TableBody>
         </Table>
+        <Box display="flex" justifyContent="center" mt={2} mb={3}>
+          <Pagination
+            count={Math.ceil(filteredUsers.length / itemsPerPage)}
+            page={userPage}
+            onChange={handleUserPageChange}
+            color="primary"
+          />
+        </Box>
       </Paper>
 
-      {/* ===== Table 2: Pending Employee Accounts (employees without users) ===== */}
-      <Typography variant="h6" mb={1}>Pending Employee Accounts (Need User Creation)</Typography>
+      {/* ===== Table 2: Pending Employee Accounts (need password set by Admin) ===== */}
+      <Typography variant="h6" mb={1}>
+        Pending Employee Accounts (Need Password)
+      </Typography>
       <Paper>
         <Table>
           <TableHead>
             <TableRow>
-              <TableCell><strong>Employee ID</strong></TableCell>
-              <TableCell><strong>Name</strong></TableCell>
-              <TableCell><strong>Email</strong></TableCell>
-              <TableCell><strong>Position</strong></TableCell>
-              <TableCell><strong>Contact</strong></TableCell>
-              <TableCell align="right"><strong>Action</strong></TableCell>
+              <TableCell>
+                <strong>Email</strong>
+              </TableCell>
+              <TableCell>
+                <strong>Name</strong>
+              </TableCell>
+              <TableCell>
+                <strong>Position</strong>
+              </TableCell>
+              <TableCell align="right">
+                <strong>Action</strong>
+              </TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
             {pendingLoading && (
-              <TableRow><TableCell colSpan={6} align="center">Loading…</TableCell></TableRow>
-            )}
-            {!pendingLoading && pendingEmployees.length === 0 && (
-              <TableRow><TableCell colSpan={6} align="center">No pending employees.</TableCell></TableRow>
-            )}
-            {!pendingLoading && pendingEmployees.map(emp => (
-              <TableRow key={emp.employeeId}>
-                <TableCell>{emp.employeeId}</TableCell>
-                <TableCell>{emp.name || "-"}</TableCell>
-                <TableCell>{emp.email || "-"}</TableCell>
-                <TableCell>{emp.jobTitle || "-"}</TableCell>
-                <TableCell>{emp.contact || "-"}</TableCell>
-                <TableCell align="right">
-                  <Button variant="contained" color="primary" onClick={() => openPwdDialog(emp)}>
-                    Create User Account
-                  </Button>
+              <TableRow>
+                <TableCell colSpan={4} align="center">
+                  Loading…
                 </TableCell>
               </TableRow>
-            ))}
+            )}
+            {!pendingLoading && pending.length === 0 && (
+              <TableRow>
+                <TableCell colSpan={4} align="center">
+                  No pending employees.
+                </TableCell>
+              </TableRow>
+            )}
+            {!pendingLoading &&
+              currentPending.map((p) => (
+                <TableRow key={p.id}>
+                  <TableCell>{p.email}</TableCell>
+                  <TableCell>{p.name || p.empName || "-"}</TableCell>
+                  <TableCell>{p.jobTitle || "-"}</TableCell>
+                  <TableCell align="right">
+                    <Button
+                      variant="contained"
+                      onClick={() => openPwdDialog(p)}
+                    >
+                      Add User
+                    </Button>
+                  </TableCell>
+                </TableRow>
+              ))}
           </TableBody>
         </Table>
+        <Box display="flex" justifyContent="center" mt={2}>
+          <Pagination
+            count={Math.ceil(filteredPending.length / itemsPerPage)}
+            page={pendingPage}
+            onChange={handlePendingPageChange}
+            color="primary"
+          />
+        </Box>
       </Paper>
 
-      {/* ===== Create User Dialog ===== */}
-      <Dialog open={pwdOpen} onClose={() => setPwdOpen(false)} maxWidth="sm" fullWidth>
-        <DialogTitle>Create User Account for Employee</DialogTitle>
-        <DialogContent>
-          <Box sx={{ mt: 1 }}>
-            <Typography variant="body2" color="text.secondary" gutterBottom>
-              Employee: <strong>{pwdTarget?.name}</strong> ({pwdTarget?.jobTitle})
-            </Typography>
-            <TextField
-              label="User Email"
-              type="email"
-              fullWidth
-              margin="normal"
-              value={userEmail}
-              onChange={e => setUserEmail(e.target.value)}
-              helperText="Email address for login"
-              required
-            />
-            <TextField
-              label="Initial Password"
-              type="password"
-              fullWidth
-              margin="normal"
-              value={initialPassword}
-              onChange={e => setInitialPassword(e.target.value)}
-              helperText="At least 6 characters"
-              required
-            />
-          </Box>
+      {/* ===== Assign Password Dialog ===== */}
+      <Dialog open={pwdOpen} onClose={() => setPwdOpen(false)}>
+        <DialogTitle>Assign Initial Password</DialogTitle>
+        <DialogContent sx={{ minWidth: 360 }}>
+          <TextField
+            label="Email"
+            value={pwdTarget?.email || ""}
+            fullWidth
+            margin="dense"
+            InputProps={{ readOnly: true }}
+          />
+          <TextField
+            label="Initial Password"
+            type="password"
+            fullWidth
+            margin="dense"
+            value={initialPassword}
+            onChange={(e) => setInitialPassword(e.target.value)}
+            helperText="At least 6 characters"
+          />
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setPwdOpen(false)}>Cancel</Button>
           <Button
             variant="contained"
-            onClick={createUserForEmployee}
-            disabled={!userEmail || !initialPassword || initialPassword.length < 6}
+            onClick={assignInitialPassword}
+            disabled={!initialPassword || initialPassword.length < 6}
           >
-            Create User
+            Assign
           </Button>
         </DialogActions>
       </Dialog>
@@ -271,43 +453,66 @@ export default function UserManagement() {
           <FormControl fullWidth margin="dense">
             <InputLabel id="role">Role</InputLabel>
             <Select
-              labelId="role" label="Role"
+              labelId="role"
+              label="Role"
               value={selectedRole}
-              onChange={e => setSelectedRole(e.target.value)}
+              onChange={(e) => setSelectedRole(e.target.value)}
             >
-              {ROLE_OPTIONS.map(r => <MenuItem key={r} value={r}>{r}</MenuItem>)}
+              {ROLE_OPTIONS.map((r) => (
+                <MenuItem key={r} value={r}>
+                  {r}
+                </MenuItem>
+              ))}
             </Select>
           </FormControl>
 
           {/* Show but disabled so only role can be changed */}
           <TextField
-            label="Name" fullWidth margin="dense"
+            label="Name"
+            fullWidth
+            margin="dense"
             value={empFields.name}
-            onChange={e => setEmpFields({ ...empFields, name: e.target.value })}
+            onChange={(e) =>
+              setEmpFields({ ...empFields, name: e.target.value })
+            }
             disabled
           />
           <TextField
-            label="Job Title" fullWidth margin="dense"
+            label="Job Title"
+            fullWidth
+            margin="dense"
             value={empFields.jobTitle}
-            onChange={e => setEmpFields({ ...empFields, jobTitle: e.target.value })}
+            onChange={(e) =>
+              setEmpFields({ ...empFields, jobTitle: e.target.value })
+            }
             disabled
           />
           <TextField
-            label="Contact" fullWidth margin="dense"
+            label="Contact"
+            fullWidth
+            margin="dense"
             value={empFields.contact}
-            onChange={e => setEmpFields({ ...empFields, contact: e.target.value })}
+            onChange={(e) =>
+              setEmpFields({ ...empFields, contact: e.target.value })
+            }
             disabled
           />
           <TextField
-            label="Address" fullWidth margin="dense"
+            label="Address"
+            fullWidth
+            margin="dense"
             value={empFields.address}
-            onChange={e => setEmpFields({ ...empFields, address: e.target.value })}
+            onChange={(e) =>
+              setEmpFields({ ...empFields, address: e.target.value })
+            }
             disabled
           />
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setOpenRole(false)}>Cancel</Button>
-          <Button variant="contained" onClick={saveRole}>Save</Button>
+          <Button variant="contained" onClick={saveRole}>
+            Save
+          </Button>
         </DialogActions>
       </Dialog>
     </Box>
