@@ -11,12 +11,12 @@ public interface EmployeeRepository extends JpaRepository<Employee,Integer> {
 
     Optional<Employee> findByEmail(String email);
 
-    @Query("""
-        SELECT e FROM Employee e 
-        WHERE NOT EXISTS (
-            SELECT 1 FROM User u WHERE u.employee.employeeId = e.employeeId
+    @Query(value = """
+        SELECT e.* FROM employee e 
+        WHERE e.employee_id NOT IN (
+            SELECT u.employee_id FROM user_auth u WHERE u.employee_id IS NOT NULL
         )
-    """)
+    """, nativeQuery = true)
     List<Employee> findEmployeesWithoutUsers();
 
 }

@@ -25,8 +25,17 @@ public class LeaveController {
     private final LeaveApplicationRepository appRepo;
 
     private Integer currentEmpId(String email) {
-        return userRepo.findByEmail(email).map(u->u.getEmployee().getEmployeeId())
-                .orElseThrow();
+        return userRepo.findByEmail(email)
+                .map(u -> {
+                    if (u.getEmployee() == null) {
+                        throw new IllegalStateException(
+                            "User account is not linked to an employee record. " +
+                            "Please contact HR to complete your profile setup."
+                        );
+                    }
+                    return u.getEmployee().getEmployeeId();
+                })
+                .orElseThrow(() -> new IllegalStateException("User not found"));
     }
 
     /* ---- apply (employee) ---- */

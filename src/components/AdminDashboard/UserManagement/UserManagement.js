@@ -24,7 +24,7 @@ import {
   InputAdornment,
   Pagination,
 } from "@mui/material";
-import { Delete, Edit, Search as SearchIcon } from "@mui/icons-material";
+import { Edit, Search as SearchIcon } from "@mui/icons-material";
 import api from "../../../AxiosInstance"; // calling backend
 
 const ROLE_OPTIONS = ["ADMIN", "HR", "EMPLOYEE", "DIRECTOR"];
@@ -78,7 +78,7 @@ export default function UserManagement() {
   const loadPending = async () => {
     setPendingLoading(true);
     try {
-      const { data } = await api.get("/admin/users/pending-password");
+      const { data } = await api.get("/admin/users/pending-employees");
       setPending(data);
     } finally {
       setPendingLoading(false);
@@ -130,14 +130,18 @@ export default function UserManagement() {
   };
 
   const assignInitialPassword = async () => {
-    if (!pwdTarget?.id) return;
+    if (!pwdTarget?.employeeId) return;
     if (!initialPassword || initialPassword.length < 6) {
       alert("Password must be at least 6 characters.");
       return;
     }
     try {
-      await api.put(`/admin/users/${pwdTarget.id}/password`, {
+      // Create user for the existing employee
+      await api.post(`/admin/users/create-user-for-employee`, {
+        employeeId: pwdTarget.employeeId,
+        email: pwdTarget.email,
         password: initialPassword,
+        role: "EMPLOYEE" // Default role
       });
       setPwdOpen(false);
       setPwdTarget(null);
@@ -145,7 +149,7 @@ export default function UserManagement() {
       await Promise.all([loadUsers(), loadPending()]);
     } catch (e) {
       console.error(e);
-      alert("Failed to assign password.");
+      alert(e.response?.data?.message || "Failed to create user account.");
     }
   };
 
@@ -326,13 +330,7 @@ export default function UserManagement() {
                     >
                       <Edit />
                     </IconButton>
-                    <IconButton
-                      color="error"
-                      onClick={() => deleteUser(u.id)}
-                      title="Delete"
-                    >
-                      <Delete />
-                    </IconButton>
+
                   </TableCell>
                 </TableRow>
               ))}
@@ -350,7 +348,7 @@ export default function UserManagement() {
 
       {/* ===== Table 2: Pending Employee Accounts (need password set by Admin) ===== */}
       <Typography variant="h6" mb={1}>
-        Pending Employee Accounts (Need Password)
+        Pending Employee Accounts (Need User Account)
       </Typography>
       <Paper>
         <Table>
@@ -363,7 +361,7 @@ export default function UserManagement() {
                 <strong>Name</strong>
               </TableCell>
               <TableCell>
-                <strong>Position</strong>
+                <strong>NIC No</strong>
               </TableCell>
               <TableCell align="right">
                 <strong>Action</strong>
@@ -387,10 +385,10 @@ export default function UserManagement() {
             )}
             {!pendingLoading &&
               currentPending.map((p) => (
-                <TableRow key={p.id}>
+                <TableRow key={p.employeeId}>
                   <TableCell>{p.email}</TableCell>
-                  <TableCell>{p.name || p.empName || "-"}</TableCell>
-                  <TableCell>{p.jobTitle || "-"}</TableCell>
+                  <TableCell>{p.name || "-"}</TableCell>
+                  <TableCell>{p.nicNo || "-"}</TableCell>
                   <TableCell align="right">
                     <Button
                       variant="contained"
@@ -415,8 +413,15 @@ export default function UserManagement() {
 
       {/* ===== Assign Password Dialog ===== */}
       <Dialog open={pwdOpen} onClose={() => setPwdOpen(false)}>
-        <DialogTitle>Assign Initial Password</DialogTitle>
+        <DialogTitle>Create User Account for Employee</DialogTitle>
         <DialogContent sx={{ minWidth: 360 }}>
+          <TextField
+            label="Employee Name"
+            value={pwdTarget?.name || ""}
+            fullWidth
+            margin="dense"
+            InputProps={{ readOnly: true }}
+          />
           <TextField
             label="Email"
             value={pwdTarget?.email || ""}
@@ -441,7 +446,7 @@ export default function UserManagement() {
             onClick={assignInitialPassword}
             disabled={!initialPassword || initialPassword.length < 6}
           >
-            Assign
+            Create User
           </Button>
         </DialogActions>
       </Dialog>
