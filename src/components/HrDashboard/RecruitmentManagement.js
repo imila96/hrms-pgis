@@ -22,6 +22,7 @@ import {
 } from "@mui/material";
 import { Edit } from "@mui/icons-material";
 import axiosInstance from "../../AxiosInstance";
+import BackButton from "../common/BackButton";
 
 const RecruitmentManagement = () => {
   const [jobOpening, setJobOpening] = useState([]);
@@ -165,6 +166,7 @@ const RecruitmentManagement = () => {
 
   return (
     <Box sx={{ p: 3 }}>
+      <BackButton />
       {/* Job Openings Section */}
       <Typography variant="h5" gutterBottom>
         Job Openings Management

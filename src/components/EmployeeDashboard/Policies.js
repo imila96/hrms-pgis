@@ -12,6 +12,7 @@ import CalendarMonthIcon from "@mui/icons-material/CalendarMonth";
 import CampaignIcon from "@mui/icons-material/Campaign";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import axiosInstance from "../../AxiosInstance";
+import BackButton from "../common/BackButton";
 
 const getText = (obj, keys) => keys.map(k => obj?.[k]).find(v => typeof v === "string" && v.trim().length);
 const getDateStr = (obj, keys) => {
@@ -207,8 +208,10 @@ export default function Policies() {
   }
 
   return (
-    <Stack spacing={4}>
-      {/* Header / Search */}
+    <Box>
+      <BackButton />
+      <Stack spacing={4}>
+        {/* Header / Search */}
       <Paper
         sx={{
           p: 2.5, borderRadius: 3,
@@ -288,5 +291,6 @@ export default function Policies() {
         </Alert>
       </Snackbar>
     </Stack>
+    </Box>
   );
 }

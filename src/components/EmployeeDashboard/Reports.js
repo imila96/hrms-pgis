@@ -1,7 +1,8 @@
 // src/components/EmployeeDashboard/Reports.js
 import React from "react";
-import { Paper, Typography, List, ListItem, ListItemText, IconButton, Link } from "@mui/material";
+import { Paper, Typography, List, ListItem, ListItemText, IconButton, Link, Box } from "@mui/material";
 import DownloadIcon from "@mui/icons-material/Download";
+import BackButton from "../common/BackButton";
 
 const Reports = () => {
   const reports = [
@@ -11,10 +12,12 @@ const Reports = () => {
   ];
 
   return (
-    <Paper sx={{ p: 3, maxWidth: 700 }}>
-      <Typography variant="h6" gutterBottom>
-        Public Reports
-      </Typography>
+    <Box>
+      <BackButton />
+      <Paper sx={{ p: 3, maxWidth: 700 }}>
+        <Typography variant="h6" gutterBottom>
+          Public Reports
+        </Typography>
       <List>
         {reports.map(({ id, name, fileUrl }) => (
           <ListItem
@@ -37,6 +40,7 @@ const Reports = () => {
         ))}
       </List>
     </Paper>
+    </Box>
   );
 };
 

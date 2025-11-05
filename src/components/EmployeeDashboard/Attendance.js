@@ -38,6 +38,7 @@ import {
 } from "@mui/icons-material";
 import axiosInstance from "../../AxiosInstance";
 import dayjs from "dayjs";
+import BackButton from "../common/BackButton";
 
 /** ---- Minimal config helper (localStorage-based) ----------------------- */
 const CFG_STORAGE_KEY = "system_config";
@@ -266,6 +267,7 @@ const Attendance = () => {
 
   return (
     <Box sx={{ p: { xs: 2, md: 3 } }}>
+      <BackButton />
       {/* Page header */}
       <Paper
         elevation={0}

@@ -368,6 +368,7 @@ import {
 } from "@mui/material";
 import { Edit, Delete, Done, Close } from "@mui/icons-material";
 import axiosInstance from "../../AxiosInstance";
+import BackButton from "../common/BackButton";
 
 const EmployeeRecords = () => {
   const navigate = useNavigate();
@@ -500,6 +501,7 @@ const EmployeeRecords = () => {
 
   return (
     <Box sx={{ p: 3 }}>
+      <BackButton />
       <Typography variant="h5" mb={2}>
         Employee Record Management
       </Typography>

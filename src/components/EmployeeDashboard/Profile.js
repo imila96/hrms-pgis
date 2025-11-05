@@ -22,6 +22,7 @@ import {
 } from "@mui/material";
 import { Person, Email, Phone, Home, Work, CalendarToday } from "@mui/icons-material";
 import axiosInstance from "../../AxiosInstance";
+import BackButton from "../common/BackButton";
 
 const toViewModel = (e) => ({
   empID: `EMP${e.id}`,
@@ -120,6 +121,7 @@ export default function Profile() {
         },
       }}
     >
+      <BackButton />
       {/* Header Card */}
       <Paper
         sx={{

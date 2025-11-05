@@ -6,6 +6,7 @@ import {
   DialogActions, MenuItem, Snackbar, Alert, Chip, Box, Stack
 } from "@mui/material";
 import axiosInstance from "../../AxiosInstance";
+import BackButton from "../common/BackButton";
 
 const leaveTypes = [
   { label: "Annual Leave", value: "ANNUAL" },
@@ -73,8 +74,10 @@ export default function Leave() {
   };
 
   return (
-    <Paper sx={{ p: 3, maxWidth: 900 }}>
-      <Typography variant="h6" gutterBottom>Leave Management</Typography>
+    <Box>
+      <BackButton />
+      <Paper sx={{ p: 3, maxWidth: 900 }}>
+        <Typography variant="h6" gutterBottom>Leave Management</Typography>
 
       {/* show ALL types (service pads missing ones with zeros) */}
       <Stack direction="row" spacing={1} sx={{ mb: 2, flexWrap: "wrap" }}>
@@ -162,5 +165,6 @@ export default function Leave() {
         <Alert severity={snack.severity} sx={{ width: "100%" }}>{snack.msg}</Alert>
       </Snackbar>
     </Paper>
+    </Box>
   );
 }

@@ -13,6 +13,7 @@ import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 import HourglassBottomIcon from "@mui/icons-material/HourglassBottom";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import axiosInstance from "../../AxiosInstance";
+import BackButton from "../common/BackButton";
 
 const statusChip = (s) => (
   <Chip
@@ -150,8 +151,10 @@ export default function Complaints() {
   };
 
   return (
-    <Paper sx={{ p: 3 }}>
-      {/* Header */}
+    <Box>
+      <BackButton />
+      <Paper sx={{ p: 3 }}>
+        {/* Header */}
       <Box
         sx={{
           p: 2, mb: 2, borderRadius: 3,
@@ -251,5 +254,6 @@ export default function Complaints() {
         </Alert>
       </Snackbar>
     </Paper>
+    </Box>
   );
 }

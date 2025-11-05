@@ -17,6 +17,7 @@ import {
 } from "@mui/material";
 import axiosInstance from "../../AxiosInstance";
 import dayjs from "dayjs";
+import BackButton from "../common/BackButton";
 
 const AttendanceTracking = () => {
   const [attendanceRecords, setAttendanceRecords] = useState([]);
@@ -92,6 +93,7 @@ const AttendanceTracking = () => {
 
   return (
     <Box sx={{ p: 3 }}>
+      <BackButton />
       <Typography variant="h5" gutterBottom>
         Attendance Tracking
       </Typography>

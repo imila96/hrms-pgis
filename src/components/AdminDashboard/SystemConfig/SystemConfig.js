@@ -17,6 +17,7 @@ import {
   Select,
   MenuItem,
 } from "@mui/material";
+import BackButton from "../../common/BackButton";
 
 /** --- Local, self-contained config helper (no external imports needed) --- */
 const STORAGE_KEY = "system_config";
@@ -95,6 +96,7 @@ export default function SystemConfig() {
 
   return (
     <Box sx={{ p: 3 }}>
+      <BackButton />
       <Typography variant="h5" gutterBottom>
         System Configuration
       </Typography>

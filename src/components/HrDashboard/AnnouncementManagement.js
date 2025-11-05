@@ -23,6 +23,7 @@ import {
   Visibility as VisibilityIcon,
 } from "@mui/icons-material";
 import axiosInstance from "../../AxiosInstance";
+import BackButton from "../common/BackButton";
 
 const AnnouncementManagement = () => {
   const [announcements, setAnnouncements] = useState([]);
@@ -135,13 +136,15 @@ const AnnouncementManagement = () => {
   };
 
   return (
-    <Paper sx={{ p: 3 }}>
-      <Box
-        display="flex"
-        justifyContent="space-between"
-        alignItems="center"
-        mb={2}
-      >
+    <Box>
+      <BackButton />
+      <Paper sx={{ p: 3 }}>
+        <Box
+          display="flex"
+          justifyContent="space-between"
+          alignItems="center"
+          mb={2}
+        >
         <Typography variant="h5">Announcement Management</Typography>
         <Button
           variant="contained"
@@ -284,6 +287,7 @@ const AnnouncementManagement = () => {
         </Dialog>
       )}
     </Paper>
+    </Box>
   );
 };
 

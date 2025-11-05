@@ -14,6 +14,7 @@ import {
   Stack,
 } from "@mui/material";
 import axiosInstance from "../../AxiosInstance";
+import BackButton from "../common/BackButton";
 
 const STATUS_COLOR = {
   PENDING: "warning",
@@ -177,8 +178,10 @@ export default function LeaveManagement() {
   );
 
   return (
-    <Stack spacing={4}>
-      <Paper sx={{ p: 3 }}>
+    <Box>
+      <BackButton />
+      <Stack spacing={4}>
+        <Paper sx={{ p: 3 }}>
         <Stack
           direction="row"
           justifyContent="space-between"
@@ -219,5 +222,6 @@ export default function LeaveManagement() {
         {renderTable(decided, false)}
       </Paper> */}
     </Stack>
+    </Box>
   );
 }

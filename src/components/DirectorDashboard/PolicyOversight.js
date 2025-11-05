@@ -24,6 +24,7 @@ import {
   DialogActions,
 } from "@mui/material";
 import axiosInstance from "../../AxiosInstance";
+import BackButton from "../common/BackButton";
 
 export default function PolicyOversight() {
   const [allPolicies, setAllPolicies] = useState([]);
@@ -101,6 +102,7 @@ export default function PolicyOversight() {
 
   return (
     <Box>
+      <BackButton />
       {/* Header + filter */}
       <Stack direction="row" justifyContent="space-between" alignItems="center" mb={2}>
         <Typography variant="h5">Policy Oversight</Typography>

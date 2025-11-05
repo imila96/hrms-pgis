@@ -9,7 +9,9 @@ import {
   TableHead,
   TableRow,
   Typography,
+  Box,
 } from "@mui/material";
+import BackButton from "../common/BackButton";
 
 const Salary = () => {
   // Dummy salary data
@@ -20,10 +22,12 @@ const Salary = () => {
   ];
 
   return (
-    <Paper sx={{ p: 3, maxWidth: 800 }}>
-      <Typography variant="h6" gutterBottom>
-        Salary Details
-      </Typography>
+    <Box>
+      <BackButton />
+      <Paper sx={{ p: 3, maxWidth: 800 }}>
+        <Typography variant="h6" gutterBottom>
+          Salary Details
+        </Typography>
       <TableContainer>
         <Table>
           <TableHead>
@@ -47,6 +51,7 @@ const Salary = () => {
         </Table>
       </TableContainer>
     </Paper>
+    </Box>
   );
 };
 

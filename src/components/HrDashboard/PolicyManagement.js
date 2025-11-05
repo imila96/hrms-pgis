@@ -17,6 +17,7 @@ import {
 } from "@mui/material";
 import { Edit as EditIcon, Add as AddIcon } from "@mui/icons-material";
 import axiosInstance from "../../AxiosInstance";
+import BackButton from "../common/BackButton";
 
 const PolicyManagement = () => {
   const [policies, setPolicies] = useState([]);
@@ -110,13 +111,15 @@ const PolicyManagement = () => {
   };
 
   return (
-    <Paper sx={{ p: 3 }}>
-      <Box
-        display="flex"
-        justifyContent="space-between"
-        alignItems="center"
-        mb={2}
-      >
+    <Box>
+      <BackButton />
+      <Paper sx={{ p: 3 }}>
+        <Box
+          display="flex"
+          justifyContent="space-between"
+          alignItems="center"
+          mb={2}
+        >
         <Typography variant="h5">Policy Management</Typography>
         <Button
           variant="contained"
@@ -247,6 +250,7 @@ const PolicyManagement = () => {
         </Dialog>
       )}
     </Paper>
+    </Box>
   );
 };
 

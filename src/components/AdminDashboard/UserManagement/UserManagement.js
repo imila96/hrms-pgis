@@ -6,6 +6,7 @@ import {
 } from "@mui/material";
 import { Delete, Edit } from "@mui/icons-material";
 import api from "../../../AxiosInstance";
+import BackButton from "../../common/BackButton";
 
 const ROLE_OPTIONS = ["ADMIN", "HR", "EMPLOYEE","DIRECTOR"];
 
@@ -136,6 +137,7 @@ export default function UserManagement() {
 
   return (
     <Box sx={{ p: 3 }}>
+      <BackButton />
       <Typography variant="h5" mb={2}>User Account Management</Typography>
 
       {/* ===== Table 1: Users ===== */}
