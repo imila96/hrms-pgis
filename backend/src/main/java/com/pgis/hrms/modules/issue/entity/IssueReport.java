@@ -17,14 +17,21 @@ public class IssueReport {
     @Column(nullable = false, length = 2000) private String description;
 
     @Enumerated(EnumType.STRING) @Column(nullable = false)
+    private IssueType type = IssueType.TECHNICAL_ISSUE;
+
+    @Enumerated(EnumType.STRING) @Column(nullable = false)
     private Status status = Status.PENDING;
 
     // keep both if you have users by email/ID; adjust as needed
     private Long submittedById;
-    @Column(length = 255) private String submittedBy; // email/username
+    @Column(length = 255) private String submittedBy;
+
+    @Column(length = 2000) private String remark;
+    @Column(length = 255) private String updatedBy;
 
     @CreationTimestamp private LocalDateTime createdAt;
     @UpdateTimestamp private LocalDateTime updatedAt;
 
     public enum Status { PENDING, RESOLVED }
+    public enum IssueType { TECHNICAL_ISSUE, COMPLAINT }
 }

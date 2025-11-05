@@ -11,6 +11,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
 
 import static com.pgis.hrms.modules.issue.entity.IssueReport.Status;
+import static com.pgis.hrms.modules.issue.entity.IssueReport.IssueType;
 
 @Service
 @RequiredArgsConstructor
@@ -21,6 +22,7 @@ public class IssueService {
     public IssueRes create(String user, Long userId, IssueCreateReq req) {
         var e = new IssueReport();
         e.setTitle(req.title()); e.setDescription(req.description());
+        e.setType(req.type() != null ? req.type() : IssueReport.IssueType.TECHNICAL_ISSUE);
         e.setSubmittedBy(user); e.setSubmittedById(userId);
         e.setStatus(Status.PENDING);
         e = repo.save(e);
@@ -39,15 +41,23 @@ public class IssueService {
         return list.stream().map(IssueService::toRes).toList();
     }
 
+    @Transactional(readOnly = true)
+    public List<IssueRes> getByType(IssueType type, Status status) {
+        var list = status == null ? repo.findByType(type) : repo.findByTypeAndStatus(type, status);
+        return list.stream().map(IssueService::toRes).toList();
+    }
+
     @Transactional
-    public IssueRes resolve(Long id) {
+    public IssueRes resolve(Long id, String remark, String resolverName) {
         var e = repo.findById(id).orElseThrow();
         e.setStatus(Status.RESOLVED);
+        e.setRemark(remark);
+        e.setUpdatedBy(resolverName);
         return toRes(e);
     }
 
     private static IssueRes toRes(IssueReport e) {
-        return new IssueRes(e.getId(), e.getTitle(), e.getDescription(), e.getStatus(),
-                e.getSubmittedBy(), e.getCreatedAt(), e.getUpdatedAt());
+        return new IssueRes(e.getId(), e.getTitle(), e.getDescription(), e.getType(), e.getStatus(),
+                e.getSubmittedBy(), e.getRemark(), e.getUpdatedBy(), e.getCreatedAt(), e.getUpdatedAt());
     }
 }

@@ -1,3 +1,5 @@
 package com.pgis.hrms.modules.issue.dto;
 
-public record IssueCreateReq(String title, String description) {}
+import com.pgis.hrms.modules.issue.entity.IssueReport.IssueType;
+
+public record IssueCreateReq(String title, String description, IssueType type) {}
