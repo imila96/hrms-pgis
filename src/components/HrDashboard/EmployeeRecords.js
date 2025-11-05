@@ -351,6 +351,8 @@ import {
   TableRow,
   TableCell,
   TableBody,
+  TableContainer,
+  TablePagination,
   IconButton,
   Dialog,
   DialogTitle,
@@ -379,6 +381,10 @@ const EmployeeRecords = () => {
     message: "",
     severity: "info",
   });
+
+  // pagination for employee table
+  const [page, setPage] = useState(0);
+  const [rowsPerPage, setRowsPerPage] = useState(10);
 
   const [confirmDialog, setConfirmDialog] = useState({
     open: false,
@@ -498,6 +504,17 @@ const EmployeeRecords = () => {
       );
     });
   }, [employees, searchQuery, filterJobTitle]);
+
+  // ensure page resets when filters change (so we don't end up on an out-of-range page)
+  useEffect(() => {
+    setPage(0);
+  }, [searchQuery, filterJobTitle, employees.length]);
+
+  const handleChangePage = (_, newPage) => setPage(newPage);
+  const handleChangeRowsPerPage = (e) => {
+    setRowsPerPage(parseInt(e.target.value, 10));
+    setPage(0);
+  };
 
   return (
     <Box sx={{ p: 3 }}>
@@ -637,54 +654,37 @@ const EmployeeRecords = () => {
         </Grid>
       </Grid>
 
-      <Paper sx={{ overflowX: "auto", maxHeight: 420, overflowY: "auto" }}>
+      <TableContainer component={Paper} sx={{ mb: 2 }}>
         <Table sx={{ minWidth: 800 }}>
-          <TableHead
-            sx={{
-              position: "sticky",
-              top: 0,
-              zIndex: 2,
-              backgroundColor: "#fff",
-            }}
-          >
+          <TableHead>
             <TableRow>
-              <TableCell>
-                <strong>Name</strong>
-              </TableCell>
-              <TableCell>
-                <strong>Email</strong>
-              </TableCell>
-              <TableCell>
-                <strong>Contact</strong>
-              </TableCell>
-              <TableCell>
-                <strong>Position</strong>
-              </TableCell>
-              <TableCell>
-                <strong>Hire Date</strong>
-              </TableCell>
-              <TableCell>
-                <strong>Address</strong>
-              </TableCell>
-              <TableCell>
-                <strong>Actions</strong>
-              </TableCell>
+              <TableCell sx={{ fontWeight: 700 }}>Employee</TableCell>
+              <TableCell>Email</TableCell>
+              <TableCell>Contact</TableCell>
+              <TableCell>Position</TableCell>
+              <TableCell>Hire Date</TableCell>
+              <TableCell>Address</TableCell>
+              <TableCell align="right">Actions</TableCell>
             </TableRow>
           </TableHead>
+
           <TableBody>
-            {filteredEmployees.length === 0 ? (
-              <TableRow>
-                <TableCell colSpan={7} align="center">
-                  No employee records.
-                </TableCell>
-              </TableRow>
-            ) : (
-              filteredEmployees.map((emp) => (
-                <TableRow key={emp.id}>
-                  <TableCell>{emp.name}</TableCell>
+            {filteredEmployees
+              .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
+              .map((emp) => (
+                <TableRow key={emp.id} hover>
+                  <TableCell>
+                    <Typography fontWeight={700}>{emp.name}</Typography>
+                    <Typography variant="caption" color="text.secondary">
+                      {emp.id}
+                    </Typography>
+                  </TableCell>
                   <TableCell>{emp.email}</TableCell>
                   <TableCell>{emp.contact}</TableCell>
-                  <TableCell>{emp.jobTitle}</TableCell>
+                  <TableCell>
+                    {/* small visual chip-like feel */}
+                    <Typography>{emp.jobTitle}</Typography>
+                  </TableCell>
                   <TableCell>{emp.hireDate}</TableCell>
                   <TableCell
                     sx={{
@@ -696,7 +696,7 @@ const EmployeeRecords = () => {
                   >
                     {emp.address}
                   </TableCell>
-                  <TableCell>
+                  <TableCell align="right">
                     <IconButton color="primary" onClick={() => handleEdit(emp)}>
                       <Edit />
                     </IconButton>
@@ -708,11 +708,28 @@ const EmployeeRecords = () => {
                     </IconButton>
                   </TableCell>
                 </TableRow>
-              ))
+              ))}
+
+            {filteredEmployees.length === 0 && (
+              <TableRow>
+                <TableCell colSpan={7} align="center">
+                  No employee records.
+                </TableCell>
+              </TableRow>
             )}
           </TableBody>
         </Table>
-      </Paper>
+
+        <TablePagination
+          component="div"
+          count={filteredEmployees.length}
+          page={page}
+          onPageChange={handleChangePage}
+          rowsPerPage={rowsPerPage}
+          onRowsPerPageChange={handleChangeRowsPerPage}
+          rowsPerPageOptions={[5, 10, 25]}
+        />
+      </TableContainer>
 
       <Typography variant="h6" sx={{ mt: 4, mb: 1 }}>
         Employee profile change request
