@@ -9,11 +9,11 @@ const Field = ({ label, value }) => (
     <Typography variant="body1">{value || "-"}</Typography>
   </div>
 );
-export default function PersonalInfo() {
+export default function EmploymentInfo() {
   return (
     <>
       <Typography variant="h5" sx={{ mb: 2 }}>
-        Personal Information
+        Employment Information
       </Typography>
       <Divider sx={{ mb: 3 }} />
       <Grid container columnSpacing={"50%"}>
@@ -21,19 +21,19 @@ export default function PersonalInfo() {
         <Grid item xs={12} md={6}>
           <Grid container spacing={3} direction={`column`}>
             <Grid item xs={12}>
-              <Field label="First Name" value="Imila" />
+              <Field label="Employee Id" value="E12345" />
             </Grid>
             <Grid item xs={12}>
-              <Field label="Last Name" value="Ranathunga" />
+              <Field label="Job Title" value="Software Engineer" />
             </Grid>
             <Grid item xs={12}>
-              <Field label="Date of Birth" value="05/15/1990" />
+              <Field label="Department" value="IT" />
             </Grid>
             <Grid item xs={12}>
-              <Field label="NIC" value="1234567890V" />
+              <Field label="Employment Type" value="Full-time" />
             </Grid>
             <Grid item xs={12}>
-              <Field label="Religion" value="Christian" />
+              <Field label="Date of Joining" value="01/01/2020" />
             </Grid>
           </Grid>
         </Grid>
@@ -42,19 +42,16 @@ export default function PersonalInfo() {
         <Grid item xs={12} md={6}>
           <Grid container spacing={3} direction={`column`}>
             <Grid item xs={12}>
-              <Field label="Middle Name" value="Maheshan" />
+              <Field label="Probation End Date" value="06/30/2020" />
             </Grid>
             <Grid item xs={12}>
-              <Field label="Gender" value="Male" />
+              <Field label="Confirmation Date" value="07/01/2020" />
             </Grid>
             <Grid item xs={12}>
-              <Field label="Nationality" value="American" />
+              <Field label="Date of Retirement" value="12/31/2030" />
             </Grid>
             <Grid item xs={12}>
-              <Field label="Marital Status" value="Single" />
-            </Grid>
-            <Grid item xs={12}>
-              <Field label="Blood Group" value="O+" />
+              <Field label="Employment Status" value="Active" />
             </Grid>
           </Grid>
         </Grid>

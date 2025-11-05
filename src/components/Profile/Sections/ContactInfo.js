@@ -64,22 +64,26 @@ export default function ContactInfo() {
         {/* Left Column */}
         <Grid item xs={12} md={6}>
           <Stack spacing={3}>
-            <Field label="Address" value="123 Maple Street" />
-            <Field label="City" value="Springfield" />
-            <Field label="State" value="IL" />
-            <Field label="Zip Code" value="62704" />
-            <Field label="Country" value="USA" />
+            <Typography variant="h6" sx={{ mb: 2 }}></Typography>
+            <Field label="Permanent Address" value="123 Maple Street" />
+            <Field label="Current Address" value="Springfield" />
+            <Field label="Home Phone" value="+1-555-111-2222" />
+            <Field label="Mobile Phone" value="+1-555-333-4444" />
+            <Field label="Work Phone" value="+1-555-555-6666" />
           </Stack>
         </Grid>
 
         {/* Right Column */}
         <Grid item xs={12} md={6}>
           <Stack spacing={3}>
+            <Typography variant="h6" sx={{ mb: 2 }}>
+              Emergency Contact Information
+            </Typography>
             <Field label="Home Phone" value="+1-555-111-2222" />
             <Field label="Mobile Phone" value="+1-555-333-4444" />
             <Field label="Work Phone" value="+1-555-555-6666" />
             <Field label="Work Email" value="sophia.carter@example.com" />
-            <Field label="Other Email" value="sophia.personal@example.com" />
+            <Field label="Personal Email" value="sophia.personal@example.com" />
           </Stack>
         </Grid>
       </Grid>
