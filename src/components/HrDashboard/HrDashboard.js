@@ -254,19 +254,19 @@ import PolicyManagement from "./PolicyManagement";
 import AnnouncementManagement from "./AnnouncementManagement";
 import Profile from "../Profile/Profile";
 import CreateEditProfile from "../Profile/CreateEditProfile";
-// import Profile from "../HrDashboard/Profile";
+import ComplainManagement from "../HrDashboard/ComplaintManagement";
 
 // Theme context
 const ColorModeContext = React.createContext({ toggleColorMode: () => {} });
 
 const tabItems = [
-  { label: "Profile", path: "/hr/profile" },
   { label: "Employee Records", path: "/hr/records" },
   { label: "Leave", path: "/hr/leave" },
   { label: "Attendance", path: "/hr/attendance" },
   { label: "Recruitment", path: "/hr/recruitment" },
   { label: "Policies", path: "/hr/policies" },
   { label: "Announcements", path: "/hr/announcements" },
+  { label: "Complaints", path: "/hr/complaints" },
 ];
 
 const HrDashboard = () => {
@@ -775,6 +775,7 @@ const HrDashboard = () => {
             <Route path="recruitment" element={<RecruitmentManagement />} />
             <Route path="policies" element={<PolicyManagement />} />
             <Route path="announcements" element={<AnnouncementManagement />} />
+            <Route path="complaints" element={<ComplainManagement />} />
           </Routes>
         </Box>
       </Box>
