@@ -15,6 +15,7 @@ import PersonalInfo from "../Profile/Sections/PersonalInfo";
 import ContactInfo from "../Profile/Sections/ContactInfo";
 import CompensationPayroll from "../Profile/Sections/CompensationPayroll";
 import EmploymentInfo from "../Profile/Sections/EmploymentInfo";
+import AttendanceInfo from "./Sections/AttendanceInfo";
 
 export default function Profile() {
   const [tab, setTab] = useState(0);
@@ -89,9 +90,7 @@ export default function Profile() {
           {tab === 1 && <ContactInfo />}
           {tab === 2 && <EmploymentInfo />}
           {tab === 3 && <CompensationPayroll />}
-          {tab === 4 && (
-            <Typography variant="h5">Attendance Details</Typography>
-          )}
+          {tab === 4 && <AttendanceInfo />}
           {tab === 5 && <Typography variant="h5">Leave Details</Typography>}
         </Paper>
       </Box>
