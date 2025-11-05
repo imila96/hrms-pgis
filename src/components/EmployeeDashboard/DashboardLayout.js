@@ -45,6 +45,7 @@ const menuItems = [
   { label: "Attendance", path: "/employee/attendance" },
   { label: "My Leaves", path: "/employee/leave" },
   { label: "Policies", path: "/employee/policies" },
+  { label: "Announcements", path: "/employee/announcements" },
   { label: "Complaints", path: "/employee/complaints" },
   { label: "Reports", path: "/employee/reports" },
 ];
@@ -203,8 +204,8 @@ const DashboardLayout = () => {
             </Box>
 
             {/* Center: Compact Navigation (Desktop only) */}
-            <Box sx={{ display: { xs: "none", md: "flex" }, gap: 1 }}>
-              {menuItems.slice(0, 5).map((item) => (
+            <Box sx={{ display: { xs: "none", md: "flex" }, gap: 0.5 }}>
+              {menuItems.slice(0, 6).map((item) => (
                 <Button
                   key={item.path}
                   component={NavLink}
@@ -214,10 +215,10 @@ const DashboardLayout = () => {
                   sx={{
                     textTransform: "none",
                     fontWeight: 600,
-                    fontSize: "0.9rem",
+                    fontSize: "0.85rem",
                     color: "#E6E9FF",
                     borderRadius: "8px",
-                    px: 2,
+                    px: 1.5,
                     py: 0.8,
                     minWidth: "auto",
                     "&.active": {

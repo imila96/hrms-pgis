@@ -24,11 +24,12 @@ import PolicyManagement from "./components/HrDashboard/PolicyManagement";
 
 import EmployeeDashboardLayout from "./components/EmployeeDashboard/DashboardLayout";
 import EmployeeOverview from "./components/EmployeeDashboard/EmployeeOverview";
-import Profile from "./components/EmployeeDashboard/Profile";
+import Profile from "./components/Profile/Profile";
 import Salary from "./components/EmployeeDashboard/Salary";
 import Attendance from "./components/EmployeeDashboard/Attendance";
 import Leave from "./components/EmployeeDashboard/Leave";
 import Policies from "./components/EmployeeDashboard/Policies";
+import Announcements from "./components/EmployeeDashboard/Announcements";
 import Complaints from "./components/EmployeeDashboard/Complaints";
 import Reports from "./components/EmployeeDashboard/Reports";
 
@@ -149,6 +150,7 @@ const AppRoutes = () => {
             <Route path="attendance" element={<Attendance />} />
             <Route path="leave" element={<Leave />} />
             <Route path="policies" element={<Policies />} />
+            <Route path="announcements" element={<Announcements />} />
             <Route path="complaints" element={<Complaints />} />
             <Route path="reports" element={<Reports />} />
           </Route>

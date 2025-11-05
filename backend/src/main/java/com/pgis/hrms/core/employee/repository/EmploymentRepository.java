@@ -11,7 +11,9 @@ import java.util.Optional;
 public interface EmploymentRepository extends JpaRepository<Employment, Integer> {
     
     List<Employment> findByEmployeeEmployeeId(Integer employeeId);
-    
+
+    Optional<Employment> findFirstByEmployeeEmployeeIdOrderByDateOfJoiningAsc(Integer employeeId);
+
     Optional<Employment> findByEmployeeEmployeeIdAndEmploymentId(Integer employeeId, Integer employmentId);
     
     void deleteByEmployeeEmployeeId(Integer employeeId);

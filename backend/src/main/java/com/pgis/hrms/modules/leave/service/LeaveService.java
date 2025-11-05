@@ -1,7 +1,9 @@
 package com.pgis.hrms.modules.leave.service;
 
 import com.pgis.hrms.core.employee.entity.Employee;
+import com.pgis.hrms.core.employee.entity.Employment;
 import com.pgis.hrms.core.employee.repository.EmployeeRepository;
+import com.pgis.hrms.core.employee.repository.EmploymentRepository;
 import com.pgis.hrms.modules.leave.config.LeaveConfig;
 import com.pgis.hrms.modules.leave.dto.*;
 import com.pgis.hrms.modules.leave.model.*;
@@ -23,6 +25,9 @@ public class LeaveService {
     private final LeaveConfig leaveConfig;
 
     private final EmployeeRepository       empRepo;
+
+    private final EmploymentRepository emptRepo;
+
     private final LeaveApplicationRepository appRepo;
     private final LeaveBalanceRepository   balRepo;
 
@@ -36,11 +41,16 @@ public class LeaveService {
     @Transactional
     public void apply(Integer empId, ApplyLeaveRequest in, MultipartFile medicalFile) {
         Employee emp = empRepo.findById(empId).orElseThrow();
+        Employment empt = emptRepo.findFirstByEmployeeEmployeeIdOrderByDateOfJoiningAsc(empId)
+                .orElseThrow(() -> new RuntimeException("Employment record not found for employee"));
         int days = workingDays(in.startDate(), in.endDate());
         int year = in.startDate().getYear();
 
-        // Note: Probation accrual rule removed as hireDate is no longer in Employee entity
-        // If probation tracking is needed, consider adding it to a separate employment history table
+        // probation accrual rule for ANNUAL leave
+        if (in.type() == LeaveType.ANNUAL && isOnProbation(empt)) {
+            int earned = probationDaysEarned(empt.getDateOfJoining(), in.startDate());
+            ensureBalanceRow(emp, LeaveType.ANNUAL, year, earned);
+        }
 
         // ensure balance exists (creates if missing with default entitlement)
         var bal = ensureBalanceRow(emp, in.type(), year, defaultEntitlement(in.type()));
@@ -147,19 +157,17 @@ public class LeaveService {
         };
     }
 
-    // Note: Probation-related methods commented out as hireDate is no longer in Employee entity
-    // If probation tracking is needed, consider adding it to a separate employment history table
-    
-    /*
-    private boolean isOnProbation(Employee e) {
-        return Period.between(e.getHireDate(), LocalDate.now()).getMonths() < 6; // 6‑month probation
+    private boolean isOnProbation(Employment employment) {
+        if (employment.getDateOfJoining() == null) {
+            return false; // If no hire date, assume not on probation
+        }
+        return Period.between(employment.getDateOfJoining(), LocalDate.now()).getMonths() < 6; // 6‑month probation
     }
 
     private int probationDaysEarned(LocalDate hireDate, LocalDate asOf) {
         long months = ChronoUnit.MONTHS.between(hireDate.withDayOfMonth(1), asOf.withDayOfMonth(1));
         return (int) (months * 0.5);  // ½ day per month
     }
-    */
 
     private int workingDays(LocalDate from, LocalDate to) {
         int days = 0;
