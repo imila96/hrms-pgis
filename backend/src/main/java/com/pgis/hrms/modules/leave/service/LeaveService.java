@@ -41,14 +41,16 @@ public class LeaveService {
     @Transactional
     public void apply(Integer empId, ApplyLeaveRequest in, MultipartFile medicalFile) {
         Employee emp = empRepo.findById(empId).orElseThrow();
-        Employment empt = emptRepo.findFirstByEmployeeEmployeeIdOrderByDateOfJoiningAsc(empId)
-                .orElseThrow(() -> new RuntimeException("Employment record not found for employee"));
+        
+        // Get employment record (optional - may not exist for newly created employees)
+        Optional<Employment> emptOpt = emptRepo.findFirstByEmployeeEmployeeIdOrderByDateOfJoiningAsc(empId);
+        
         int days = workingDays(in.startDate(), in.endDate());
         int year = in.startDate().getYear();
 
-        // probation accrual rule for ANNUAL leave
-        if (in.type() == LeaveType.ANNUAL && isOnProbation(empt)) {
-            int earned = probationDaysEarned(empt.getDateOfJoining(), in.startDate());
+        // probation accrual rule for ANNUAL leave (only if employment record exists)
+        if (in.type() == LeaveType.ANNUAL && emptOpt.isPresent() && isOnProbation(emptOpt.get())) {
+            int earned = probationDaysEarned(emptOpt.get().getDateOfJoining(), in.startDate());
             ensureBalanceRow(emp, LeaveType.ANNUAL, year, earned);
         }
 

@@ -34,6 +34,7 @@ import DownloadIcon from "@mui/icons-material/Download";
 import CheckCircleOutlineIcon from "@mui/icons-material/CheckCircleOutline";
 import CancelOutlinedIcon from "@mui/icons-material/CancelOutlined";
 import { format, isWithinInterval, parseISO } from "date-fns";
+import api from "../../AxiosInstance"; // Import axios instance
 
 // Keep project color palette (from HrDashboard)
 const COLORS = {
@@ -45,98 +46,11 @@ const COLORS = {
   bg: "#F5F7FF",
 };
 
-// --- Mock data (replace with API responses when ready) ---
-
-const MOCK_LEAVE_REQUESTS = [
-  {
-    id: 1,
-    employeeId: "EMP001",
-    employeeName: "Alice Perera",
-    dept: "Computer Science",
-    type: "Annual",
-    startDate: "2025-11-10",
-    endDate: "2025-11-14",
-    days: 5,
-    reason: "Conference attendance",
-    status: "Pending",
-    createdAt: "2025-10-15",
-    attachmentUrl: null,
-  },
-  {
-    id: 2,
-    employeeId: "EMP002",
-    employeeName: "Bimal Jayasuriya",
-    dept: "Mathematics",
-    type: "Medical",
-    startDate: "2025-10-20",
-    endDate: "2025-10-22",
-    days: 3,
-    reason: "Medical certificate provided",
-    status: "Approved",
-    createdAt: "2025-10-18",
-    attachmentUrl: null,
-  },
-  {
-    id: 3,
-    employeeId: "EMP003",
-    employeeName: "C. Fernando",
-    dept: "Admin",
-    type: "Casual",
-    startDate: "2025-11-03",
-    endDate: "2025-11-03",
-    days: 1,
-    reason: "Personal work",
-    status: "Pending",
-    createdAt: "2025-10-28",
-    attachmentUrl: null,
-  },
-  {
-    id: 4,
-    employeeId: "EMP004",
-    employeeName: "Dinesh Silva",
-    dept: "Physics",
-    type: "Annual",
-    startDate: "2025-12-01",
-    endDate: "2025-12-10",
-    days: 8,
-    reason: "Family travel",
-    status: "Rejected",
-    createdAt: "2025-10-14",
-    attachmentUrl: null,
-  },
-];
-
-const MOCK_LEAVE_BALANCES = [
-  {
-    employeeId: "EMP001",
-    employeeName: "Alice Perera",
-    annual: 14,
-    usedAnnual: 5,
-  },
-  {
-    employeeId: "EMP002",
-    employeeName: "Bimal Jayasuriya",
-    annual: 21,
-    usedAnnual: 12,
-  },
-  {
-    employeeId: "EMP003",
-    employeeName: "C. Fernando",
-    annual: 14,
-    usedAnnual: 2,
-  },
-  {
-    employeeId: "EMP004",
-    employeeName: "Dinesh Silva",
-    annual: 14,
-    usedAnnual: 0,
-  },
-];
-
 export default function LeaveManagement() {
-  // Data (start with mock; replace with api calls if you want)
-  const [requests, setRequests] = useState(MOCK_LEAVE_REQUESTS);
-  const [balances, setBalances] = useState(MOCK_LEAVE_BALANCES);
+  // Data (fetched from backend)
+  const [requests, setRequests] = useState([]);
+  const [balances, setBalances] = useState([]);
+  const [loading, setLoading] = useState(true);
 
   // UI state
   const [tab, setTab] = useState(0); // 0: Pending,1 Approved,2 Rejected,3 Balances,4 Calendar
@@ -315,28 +229,40 @@ export default function LeaveManagement() {
     closeApply();
   }
 
-  // Approve / Reject actions (update local state; keep hooks for backend integration)
-  function applyDecision(requestId, newStatus, comment) {
-    setRequests((prev) =>
-      prev.map((r) =>
-        r.id === requestId ? { ...r, status: newStatus, hrComment: comment } : r
-      )
-    );
+  // Approve / Reject actions (call backend API)
+  async function applyDecision(requestId, newStatus, comment) {
+    try {
+      const approve = newStatus === "Approved";
+      
+      // Call backend to approve/reject
+      await api.patch(`/leave/${requestId}?approve=${approve}`);
+      
+      // Update local state
+      setRequests((prev) =>
+        prev.map((r) =>
+          r.id === requestId ? { ...r, status: newStatus, hrComment: comment } : r
+        )
+      );
 
-    if (newStatus === "Approved") {
-      const req = requests.find((r) => r.id === requestId);
-      if (req) {
-        setBalances((prev) =>
-          prev.map((b) =>
-            b.employeeId === req.employeeId
-              ? { ...b, usedAnnual: b.usedAnnual + req.days }
-              : b
-          )
-        );
+      if (newStatus === "Approved") {
+        const req = requests.find((r) => r.id === requestId);
+        if (req) {
+          setBalances((prev) =>
+            prev.map((b) =>
+              b.employeeId === req.employeeId
+                ? { ...b, usedAnnual: b.usedAnnual + req.days }
+                : b
+            )
+          );
+        }
       }
+
+      alert(`Leave request ${approve ? "approved" : "rejected"} successfully!`);
+    } catch (error) {
+      console.error("Failed to update leave request:", error);
+      alert("Failed to update leave request. Please try again.");
     }
 
-    // TODO: call backend to persist decision
     closeDetail();
   }
 
@@ -398,11 +324,64 @@ export default function LeaveManagement() {
     return keys.map((k) => ({ date: k, items: map[k] }));
   }, [requests]);
 
-  // EFFECT: placeholder to fetch real data if needed
+  // EFFECT: Fetch real data from backend
   useEffect(() => {
-    // Replace with API calls if you want real data (axiosInstance)
-    // e.g. axiosInstance.get('/leave').then(res => setRequests(res.data))
+    const fetchData = async () => {
+      try {
+        setLoading(true);
+        // Fetch all leave requests
+        const { data } = await api.get("/leave/all");
+        
+        // Helper to convert enum to Title Case (PENDING -> Pending)
+        const toTitleCase = (str) => {
+          if (!str) return str;
+          return str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();
+        };
+        
+        // Transform backend data to match frontend format
+        const transformedRequests = data.map((item) => ({
+          id: item.id,
+          employeeId: `EMP${String(item.id).padStart(3, "0")}`, // Generate ID if not provided
+          employeeName: item.employee || "Unknown",
+          dept: "N/A", // Department not in backend DTO, can be added later
+          type: toTitleCase(item.type), // ANNUAL -> Annual, SICK -> Sick, CASUAL -> Casual
+          startDate: item.start, // ISO date string
+          endDate: item.end, // ISO date string
+          days: calculateDays(item.start, item.end),
+          reason: item.reason || "",
+          status: toTitleCase(item.status), // PENDING -> Pending, APPROVED -> Approved, REJECTED -> Rejected
+          createdAt: item.start, // Use start date as fallback
+          attachmentUrl: null,
+        }));
+        
+        setRequests(transformedRequests);
+        
+        // TODO: Fetch balances if endpoint exists
+        // For now, keep balances empty or fetch from another endpoint
+        
+      } catch (error) {
+        console.error("Failed to fetch leave data:", error);
+        alert("Failed to load leave requests. Please try again.");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
   }, []);
+
+  // Helper function to calculate working days
+  const calculateDays = (start, end) => {
+    if (!start || !end) return 0;
+    const startDate = new Date(start);
+    const endDate = new Date(end);
+    let days = 0;
+    for (let d = new Date(startDate); d <= endDate; d.setDate(d.getDate() + 1)) {
+      const day = d.getDay();
+      if (day !== 0 && day !== 6) days++; // Exclude weekends
+    }
+    return days;
+  };
 
   return (
     <Box sx={{ p: 3, background: COLORS.bg, minHeight: "80vh" }}>
@@ -666,17 +645,34 @@ export default function LeaveManagement() {
               </TableHead>
 
               <TableBody>
-                {filteredRequests
-                  .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
-                  .map((r) => (
-                    <TableRow key={r.id} hover>
-                      <TableCell>
-                        <Typography fontWeight={700}>
-                          {r.employeeName}
-                        </Typography>
-                        <Typography variant="caption" color="text.secondary">
-                          {r.employeeId}
-                        </Typography>
+                {loading ? (
+                  <TableRow>
+                    <TableCell colSpan={8} align="center" sx={{ py: 4 }}>
+                      <Typography color="text.secondary">
+                        Loading leave requests...
+                      </Typography>
+                    </TableCell>
+                  </TableRow>
+                ) : filteredRequests.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={8} align="center" sx={{ py: 4 }}>
+                      <Typography color="text.secondary">
+                        No leave requests found
+                      </Typography>
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  filteredRequests
+                    .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
+                    .map((r) => (
+                      <TableRow key={r.id} hover>
+                        <TableCell>
+                          <Typography fontWeight={700}>
+                            {r.employeeName}
+                          </Typography>
+                          <Typography variant="caption" color="text.secondary">
+                            {r.employeeId}
+                          </Typography>
                       </TableCell>
                       <TableCell>{r.dept}</TableCell>
                       <TableCell>
@@ -770,14 +766,7 @@ export default function LeaveManagement() {
                         </Stack>
                       </TableCell>
                     </TableRow>
-                  ))}
-
-                {filteredRequests.length === 0 && (
-                  <TableRow>
-                    <TableCell colSpan={8} align="center">
-                      No requests found.
-                    </TableCell>
-                  </TableRow>
+                  ))
                 )}
               </TableBody>
             </Table>

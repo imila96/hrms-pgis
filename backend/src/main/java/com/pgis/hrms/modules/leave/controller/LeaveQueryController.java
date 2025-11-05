@@ -35,4 +35,26 @@ class LeaveQueryController {
                 ))
                 .toList();
     }
+
+    @GetMapping("/all")
+    @PreAuthorize("hasRole('HR') or hasRole('ADMIN') or hasRole('DIRECTOR')")
+    public List<LeaveSummaryDto> all() {
+        return appRepo.findAll()
+                .stream()
+                .sorted((a, b) -> {
+                    if (a.getRequestedAt() == null) return 1;
+                    if (b.getRequestedAt() == null) return -1;
+                    return b.getRequestedAt().compareTo(a.getRequestedAt());
+                })
+                .map(app -> new LeaveSummaryDto(
+                        app.getLeaveId(),
+                        app.getEmployee().getName(),
+                        app.getLeaveType(),
+                        app.getStartDate(),
+                        app.getEndDate(),
+                        app.getStatus(),
+                        app.getReason()
+                ))
+                .toList();
+    }
 }
