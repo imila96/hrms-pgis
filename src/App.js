@@ -23,6 +23,7 @@ import RecruitmentManagement from "./components/HrDashboard/RecruitmentManagemen
 import PolicyManagement from "./components/HrDashboard/PolicyManagement";
 
 import EmployeeDashboardLayout from "./components/EmployeeDashboard/DashboardLayout";
+import EmployeeOverview from "./components/EmployeeDashboard/EmployeeOverview";
 import Profile from "./components/EmployeeDashboard/Profile";
 import Salary from "./components/EmployeeDashboard/Salary";
 import Attendance from "./components/EmployeeDashboard/Attendance";
@@ -43,7 +44,7 @@ const roleHomePath = (role) => {
   const map = {
     admin: "/admin/profile",
     hr: "/hr/profile",
-    employee: "/employee/profile",
+    employee: "/employee",
     director: "/director/profile",
   };
   return map[role] || "/";
@@ -142,6 +143,7 @@ const AppRoutes = () => {
               </EmployeeRoute>
             }
           >
+            <Route index element={<EmployeeOverview />} />
             <Route path="profile" element={<Profile />} />
             <Route path="salary" element={<Salary />} />
             <Route path="attendance" element={<Attendance />} />
@@ -149,7 +151,6 @@ const AppRoutes = () => {
             <Route path="policies" element={<Policies />} />
             <Route path="complaints" element={<Complaints />} />
             <Route path="reports" element={<Reports />} />
-            <Route path="" element={<Navigate to="profile" replace />} />
           </Route>
 
           {/* catch-all */}

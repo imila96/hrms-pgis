@@ -1,3 +1,11 @@
+/**
+ * Profile.js
+ * 
+ * Enhanced Employee Profile matching HR design system.
+ * UI improvements: gradient header, smooth animations, better spacing.
+ * Business logic unchanged - all API calls and state management intact.
+ */
+
 import React, { useEffect, useState } from "react";
 import {
   Box,
@@ -9,7 +17,10 @@ import {
   Snackbar,
   Alert,
   CircularProgress,
+  Avatar,
+  Chip,
 } from "@mui/material";
+import { Person, Email, Phone, Home, Work, CalendarToday } from "@mui/icons-material";
 import axiosInstance from "../../AxiosInstance";
 
 const toViewModel = (e) => ({
@@ -61,7 +72,7 @@ export default function Profile() {
       });
       setUser({ ...temp });
       setEdit(false);
-      setSnack({ open: true, msg: "Profile updated", sev: "success" });
+      setSnack({ open: true, msg: "Profile updated successfully!", sev: "success" });
     } catch (e) {
       setSnack({ open: true, msg: "Update failed", sev: "error" });
     } finally {
@@ -71,230 +82,528 @@ export default function Profile() {
 
   if (loading) {
     return (
-      <Box sx={{ display: "grid", placeItems: "center", height: 300 }}>
-        <CircularProgress />
+      <Box
+        sx={{
+          display: "grid",
+          placeItems: "center",
+          height: 400,
+          animation: "fadeIn 0.3s ease-out",
+          "@keyframes fadeIn": {
+            from: { opacity: 0 },
+            to: { opacity: 1 },
+          },
+        }}
+      >
+        <CircularProgress size={60} sx={{ color: "#4B49AC" }} />
       </Box>
     );
   }
   if (!user) return null;
 
+  const getInitials = (name) => {
+    if (!name) return "U";
+    const parts = name.split(" ");
+    if (parts.length === 1) return parts[0].charAt(0).toUpperCase();
+    return (parts[0][0] + parts[1][0]).toUpperCase();
+  };
+
   return (
-    <Paper
+    <Box
       sx={{
-        p: 5,
-        maxWidth: 720,
-        mx: "auto",
-        mt: 5,
-        boxShadow: 3,
-        borderRadius: 3,
+        animation: "slideUp 0.4s ease-out",
+        "@keyframes slideUp": {
+          from: { opacity: 0, transform: "translateY(20px)" },
+          to: { opacity: 1, transform: "translateY(0)" },
+        },
+        "@media (prefers-reduced-motion: reduce)": {
+          animation: "none",
+        },
       }}
     >
-      <Box
-        display="flex"
-        alignItems="center"
-        mb={4}
-        sx={{ borderBottom: 1, borderColor: "divider", pb: 3 }}
+      {/* Header Card */}
+      <Paper
+        sx={{
+          p: 4,
+          mb: 3,
+          borderRadius: 3,
+          background: "linear-gradient(135deg, #4B49AC 0%, #7DA0FA 100%)",
+          color: "#fff",
+          boxShadow: "0 4px 20px rgba(75,73,172,0.3)",
+        }}
       >
-        <Box>
-          <Typography variant="h4" fontWeight="bold" gutterBottom>
-            {user.fullName}
-          </Typography>
-          <Typography variant="subtitle1" color="text.secondary" gutterBottom>
-            {user.position}
-          </Typography>
-          <Typography variant="body2" color="text.secondary">
-            {user.email}
-          </Typography>
-          <Typography variant="body2" color="text.secondary">
-            {user.contactNumber}
-          </Typography>
+        <Box display="flex" alignItems="center" gap={3} flexWrap="wrap">
+          <Avatar
+            sx={{
+              width: 100,
+              height: 100,
+              bgcolor: "#98BDFF",
+              fontSize: "2.5rem",
+              fontWeight: 700,
+              border: "4px solid #fff",
+              boxShadow: "0 4px 12px rgba(0,0,0,0.2)",
+            }}
+          >
+            {getInitials(user.fullName)}
+          </Avatar>
+          <Box flex={1}>
+            <Typography variant="h4" fontWeight={700} gutterBottom>
+              {user.fullName}
+            </Typography>
+            <Box display="flex" gap={1} flexWrap="wrap" mt={1}>
+              <Chip
+                icon={<Work sx={{ color: "#fff !important" }} />}
+                label={user.position}
+                sx={{
+                  bgcolor: "rgba(255,255,255,0.2)",
+                  color: "#fff",
+                  fontWeight: 600,
+                  backdropFilter: "blur(10px)",
+                }}
+              />
+              <Chip
+                icon={<CalendarToday sx={{ color: "#fff !important" }} />}
+                label={`Since ${user.dateHired || "N/A"}`}
+                sx={{
+                  bgcolor: "rgba(255,255,255,0.2)",
+                  color: "#fff",
+                  fontWeight: 600,
+                  backdropFilter: "blur(10px)",
+                }}
+              />
+            </Box>
+          </Box>
         </Box>
-      </Box>
+      </Paper>
 
-      {!edit ? (
-        <>
-          <Typography
-            variant="h6"
-            sx={{ mb: 2, fontWeight: "medium", color: "primary.main" }}
-          >
-            Employee Details
-          </Typography>
-          <Grid container spacing={3} sx={{ mb: 4 }}>
-            <Grid item xs={6}>
-              <Typography variant="subtitle2" color="text.secondary">
-                Employee ID
-              </Typography>
-              <Typography>{user.empID}</Typography>
-            </Grid>
-            <Grid item xs={6}>
-              <Typography variant="subtitle2" color="text.secondary">
-                Full Name
-              </Typography>
-              <Typography>{user.fullName}</Typography>
-            </Grid>
-
-            <Grid item xs={12}>
-              <Typography variant="subtitle2" color="text.secondary">
-                Address
-              </Typography>
-              <Typography>{user.address || "—"}</Typography>
-            </Grid>
-
-            <Grid item xs={12}>
-              <Typography variant="subtitle2" color="text.secondary">
-                Email
-              </Typography>
-              <Typography>{user.email || "—"}</Typography>
-            </Grid>
-
-            <Grid item xs={12}>
-              <Typography variant="subtitle2" color="text.secondary">
-                Contact No
-              </Typography>
-              <Typography>{user.contactNumber || "—"}</Typography>
-            </Grid>
-
-            <Grid item xs={6}>
-              <Typography variant="subtitle2" color="text.secondary">
-                Department
-              </Typography>
-              <Typography>{user.department}</Typography>
-            </Grid>
-
-            <Grid item xs={6}>
-              <Typography variant="subtitle2" color="text.secondary">
-                Position
-              </Typography>
-              <Typography>{user.position}</Typography>
-            </Grid>
-
-            <Grid item xs={6}>
-              <Typography variant="subtitle2" color="text.secondary">
-                Date Hired
-              </Typography>
-              <Typography>{user.dateHired || "—"}</Typography>
-            </Grid>
-          </Grid>
-
-          <Box textAlign="center">
-            <Button
-              variant="contained"
-              size="large"
-              onClick={() => setEdit(true)}
-              sx={{ minWidth: 140 }}
+      {/* Main Profile Card */}
+      <Paper
+        sx={{
+          p: 4,
+          borderRadius: 3,
+          boxShadow: "0 2px 12px rgba(0,0,0,0.08)",
+          transition: "box-shadow 0.3s ease",
+          "&:hover": {
+            boxShadow: "0 4px 20px rgba(75,73,172,0.12)",
+          },
+        }}
+      >
+        {!edit ? (
+          <>
+            <Box
+              display="flex"
+              justifyContent="space-between"
+              alignItems="center"
+              mb={4}
+              pb={2}
+              borderBottom="2px solid #f0f1f5"
             >
-              Edit Profile
-            </Button>
-          </Box>
-        </>
-      ) : (
-        <>
-          <Typography
-            variant="h6"
-            sx={{ mb: 3, fontWeight: "medium", color: "primary.main" }}
-          >
-            Edit Profile
-          </Typography>
-          <Grid container spacing={3} sx={{ mb: 4 }}>
-            <Grid item xs={6}>
-              <TextField
-                label="Employee ID"
-                value={user.empID}
-                fullWidth
-                disabled
-              />
+              <Typography variant="h5" fontWeight={700} color="#4B49AC">
+                Employee Information
+              </Typography>
+              <Button
+                variant="contained"
+                onClick={() => setEdit(true)}
+                sx={{
+                  bgcolor: "#4B49AC",
+                  textTransform: "none",
+                  fontWeight: 600,
+                  px: 3,
+                  py: 1,
+                  borderRadius: 2,
+                  "&:hover": {
+                    bgcolor: "#3d3a8f",
+                    transform: "translateY(-2px)",
+                    boxShadow: "0 4px 12px rgba(75,73,172,0.3)",
+                  },
+                  transition: "all 0.2s ease",
+                }}
+              >
+                Edit Profile
+              </Button>
+            </Box>
+
+            <Grid container spacing={3}>
+              <Grid item xs={12} sm={6}>
+                <Box
+                  sx={{
+                    p: 2.5,
+                    borderRadius: 2,
+                    bgcolor: "#f8f9ff",
+                    transition: "all 0.2s ease",
+                    "&:hover": {
+                      bgcolor: "#f0f2ff",
+                      transform: "translateX(4px)",
+                    },
+                  }}
+                >
+                  <Box display="flex" alignItems="center" gap={1} mb={1}>
+                    <Person sx={{ color: "#4B49AC" }} />
+                    <Typography variant="caption" color="text.secondary" fontWeight={600}>
+                      Employee ID
+                    </Typography>
+                  </Box>
+                  <Typography variant="body1" fontWeight={600}>
+                    {user.empID}
+                  </Typography>
+                </Box>
+              </Grid>
+
+              <Grid item xs={12} sm={6}>
+                <Box
+                  sx={{
+                    p: 2.5,
+                    borderRadius: 2,
+                    bgcolor: "#f8f9ff",
+                    transition: "all 0.2s ease",
+                    "&:hover": {
+                      bgcolor: "#f0f2ff",
+                      transform: "translateX(4px)",
+                    },
+                  }}
+                >
+                  <Box display="flex" alignItems="center" gap={1} mb={1}>
+                    <Person sx={{ color: "#4B49AC" }} />
+                    <Typography variant="caption" color="text.secondary" fontWeight={600}>
+                      Full Name
+                    </Typography>
+                  </Box>
+                  <Typography variant="body1" fontWeight={600}>
+                    {user.fullName}
+                  </Typography>
+                </Box>
+              </Grid>
+
+              <Grid item xs={12} sm={6}>
+                <Box
+                  sx={{
+                    p: 2.5,
+                    borderRadius: 2,
+                    bgcolor: "#f8f9ff",
+                    transition: "all 0.2s ease",
+                    "&:hover": {
+                      bgcolor: "#f0f2ff",
+                      transform: "translateX(4px)",
+                    },
+                  }}
+                >
+                  <Box display="flex" alignItems="center" gap={1} mb={1}>
+                    <Email sx={{ color: "#7DA0FA" }} />
+                    <Typography variant="caption" color="text.secondary" fontWeight={600}>
+                      Email
+                    </Typography>
+                  </Box>
+                  <Typography variant="body1" fontWeight={600}>
+                    {user.email || "—"}
+                  </Typography>
+                </Box>
+              </Grid>
+
+              <Grid item xs={12} sm={6}>
+                <Box
+                  sx={{
+                    p: 2.5,
+                    borderRadius: 2,
+                    bgcolor: "#f8f9ff",
+                    transition: "all 0.2s ease",
+                    "&:hover": {
+                      bgcolor: "#f0f2ff",
+                      transform: "translateX(4px)",
+                    },
+                  }}
+                >
+                  <Box display="flex" alignItems="center" gap={1} mb={1}>
+                    <Phone sx={{ color: "#7DA0FA" }} />
+                    <Typography variant="caption" color="text.secondary" fontWeight={600}>
+                      Contact Number
+                    </Typography>
+                  </Box>
+                  <Typography variant="body1" fontWeight={600}>
+                    {user.contactNumber || "—"}
+                  </Typography>
+                </Box>
+              </Grid>
+
+              <Grid item xs={12} sm={6}>
+                <Box
+                  sx={{
+                    p: 2.5,
+                    borderRadius: 2,
+                    bgcolor: "#f8f9ff",
+                    transition: "all 0.2s ease",
+                    "&:hover": {
+                      bgcolor: "#f0f2ff",
+                      transform: "translateX(4px)",
+                    },
+                  }}
+                >
+                  <Box display="flex" alignItems="center" gap={1} mb={1}>
+                    <Work sx={{ color: "#7978E9" }} />
+                    <Typography variant="caption" color="text.secondary" fontWeight={600}>
+                      Department
+                    </Typography>
+                  </Box>
+                  <Typography variant="body1" fontWeight={600}>
+                    {user.department}
+                  </Typography>
+                </Box>
+              </Grid>
+
+              <Grid item xs={12} sm={6}>
+                <Box
+                  sx={{
+                    p: 2.5,
+                    borderRadius: 2,
+                    bgcolor: "#f8f9ff",
+                    transition: "all 0.2s ease",
+                    "&:hover": {
+                      bgcolor: "#f0f2ff",
+                      transform: "translateX(4px)",
+                    },
+                  }}
+                >
+                  <Box display="flex" alignItems="center" gap={1} mb={1}>
+                    <Work sx={{ color: "#7978E9" }} />
+                    <Typography variant="caption" color="text.secondary" fontWeight={600}>
+                      Position
+                    </Typography>
+                  </Box>
+                  <Typography variant="body1" fontWeight={600}>
+                    {user.position}
+                  </Typography>
+                </Box>
+              </Grid>
+
+              <Grid item xs={12}>
+                <Box
+                  sx={{
+                    p: 2.5,
+                    borderRadius: 2,
+                    bgcolor: "#f8f9ff",
+                    transition: "all 0.2s ease",
+                    "&:hover": {
+                      bgcolor: "#f0f2ff",
+                      transform: "translateX(4px)",
+                    },
+                  }}
+                >
+                  <Box display="flex" alignItems="center" gap={1} mb={1}>
+                    <Home sx={{ color: "#F3797E" }} />
+                    <Typography variant="caption" color="text.secondary" fontWeight={600}>
+                      Address
+                    </Typography>
+                  </Box>
+                  <Typography variant="body1" fontWeight={600}>
+                    {user.address || "—"}
+                  </Typography>
+                </Box>
+              </Grid>
             </Grid>
-            <Grid item xs={6}>
-              <TextField
-                label="Date Hired"
-                value={user.dateHired || ""}
-                fullWidth
-                disabled
-              />
+          </>
+        ) : (
+          <>
+            <Box
+              display="flex"
+              justifyContent="space-between"
+              alignItems="center"
+              mb={4}
+              pb={2}
+              borderBottom="2px solid #f0f1f5"
+            >
+              <Typography variant="h5" fontWeight={700} color="#4B49AC">
+                Edit Profile
+              </Typography>
+            </Box>
+
+            <Grid container spacing={3}>
+              <Grid item xs={12} sm={6}>
+                <TextField
+                  label="Employee ID"
+                  value={user.empID}
+                  fullWidth
+                  disabled
+                  variant="outlined"
+                  sx={{
+                    "& .MuiOutlinedInput-root": {
+                      borderRadius: 2,
+                    },
+                  }}
+                />
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                <TextField
+                  label="Date Hired"
+                  value={user.dateHired || ""}
+                  fullWidth
+                  disabled
+                  variant="outlined"
+                  sx={{
+                    "& .MuiOutlinedInput-root": {
+                      borderRadius: 2,
+                    },
+                  }}
+                />
+              </Grid>
+
+              <Grid item xs={12}>
+                <TextField
+                  label="Full Name"
+                  fullWidth
+                  value={temp.fullName}
+                  onChange={(e) => setTemp({ ...temp, fullName: e.target.value })}
+                  variant="outlined"
+                  sx={{
+                    "& .MuiOutlinedInput-root": {
+                      borderRadius: 2,
+                    },
+                  }}
+                />
+              </Grid>
+
+              <Grid item xs={12} sm={6}>
+                <TextField
+                  label="Email"
+                  fullWidth
+                  value={user.email}
+                  disabled
+                  variant="outlined"
+                  sx={{
+                    "& .MuiOutlinedInput-root": {
+                      borderRadius: 2,
+                    },
+                  }}
+                />
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                <TextField
+                  label="Contact Number"
+                  fullWidth
+                  value={temp.contactNumber}
+                  onChange={(e) => setTemp({ ...temp, contactNumber: e.target.value })}
+                  variant="outlined"
+                  sx={{
+                    "& .MuiOutlinedInput-root": {
+                      borderRadius: 2,
+                    },
+                  }}
+                />
+              </Grid>
+
+              <Grid item xs={12} sm={6}>
+                <TextField
+                  label="Department"
+                  fullWidth
+                  value={user.department}
+                  disabled
+                  variant="outlined"
+                  sx={{
+                    "& .MuiOutlinedInput-root": {
+                      borderRadius: 2,
+                    },
+                  }}
+                />
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                <TextField
+                  label="Position"
+                  fullWidth
+                  value={user.position}
+                  disabled
+                  variant="outlined"
+                  sx={{
+                    "& .MuiOutlinedInput-root": {
+                      borderRadius: 2,
+                    },
+                  }}
+                />
+              </Grid>
+
+              <Grid item xs={12}>
+                <TextField
+                  label="Address"
+                  fullWidth
+                  multiline
+                  rows={3}
+                  value={temp.address}
+                  onChange={(e) => setTemp({ ...temp, address: e.target.value })}
+                  variant="outlined"
+                  sx={{
+                    "& .MuiOutlinedInput-root": {
+                      borderRadius: 2,
+                    },
+                  }}
+                />
+              </Grid>
             </Grid>
 
-            <Grid item xs={12}>
-              <TextField
-                label="Full Name"
-                fullWidth
-                value={temp.fullName}
-                onChange={(e) => setTemp({ ...temp, fullName: e.target.value })}
-              />
-            </Grid>
-            <Grid item xs={6}>
-              <TextField label="Email" fullWidth value={user.email} disabled />
-            </Grid>
-            <Grid item xs={6}>
-              <TextField
-                label="Contact Number"
-                fullWidth
-                value={temp.contactNumber}
-                onChange={(e) =>
-                  setTemp({ ...temp, contactNumber: e.target.value })
-                }
-              />
-            </Grid>
-            <Grid item xs={6}>
-              <TextField
-                label="Department"
-                fullWidth
-                value={user.department}
-                disabled
-              />
-            </Grid>
-            <Grid item xs={6}>
-              <TextField
-                label="Position"
-                fullWidth
-                value={user.position}
-                disabled
-              />
-            </Grid>
-            <Grid item xs={12}>
-              <TextField
-                label="Address"
-                fullWidth
-                multiline
-                rows={3}
-                value={temp.address}
-                onChange={(e) => setTemp({ ...temp, address: e.target.value })}
-              />
-            </Grid>
-          </Grid>
-
-          <Box display="flex" justifyContent="center" gap={3}>
-            <Button
-              variant="contained"
-              onClick={onSave}
-              disabled={saving}
-              sx={{ minWidth: 120 }}
-            >
-              {saving ? "Saving..." : "Save"}
-            </Button>
-            <Button
-              variant="outlined"
-              onClick={() => {
-                setTemp(user);
-                setEdit(false);
-              }}
-              disabled={saving}
-              sx={{ minWidth: 120 }}
-            >
-              Cancel
-            </Button>
-          </Box>
-        </>
-      )}
+            <Box display="flex" justifyContent="center" gap={2} mt={4}>
+              <Button
+                variant="contained"
+                onClick={onSave}
+                disabled={saving}
+                sx={{
+                  bgcolor: "#4B49AC",
+                  minWidth: 140,
+                  py: 1.5,
+                  textTransform: "none",
+                  fontWeight: 600,
+                  borderRadius: 2,
+                  "&:hover": {
+                    bgcolor: "#3d3a8f",
+                    transform: "translateY(-2px)",
+                    boxShadow: "0 4px 12px rgba(75,73,172,0.3)",
+                  },
+                  transition: "all 0.2s ease",
+                }}
+              >
+                {saving ? <CircularProgress size={24} sx={{ color: "#fff" }} /> : "Save Changes"}
+              </Button>
+              <Button
+                variant="outlined"
+                onClick={() => {
+                  setTemp(user);
+                  setEdit(false);
+                }}
+                disabled={saving}
+                sx={{
+                  borderColor: "#7DA0FA",
+                  color: "#7DA0FA",
+                  minWidth: 140,
+                  py: 1.5,
+                  textTransform: "none",
+                  fontWeight: 600,
+                  borderRadius: 2,
+                  "&:hover": {
+                    borderColor: "#4B49AC",
+                    bgcolor: "#f8f9ff",
+                    transform: "translateY(-2px)",
+                  },
+                  transition: "all 0.2s ease",
+                }}
+              >
+                Cancel
+              </Button>
+            </Box>
+          </>
+        )}
+      </Paper>
 
       <Snackbar
         open={snack.open}
         autoHideDuration={3000}
         onClose={() => setSnack((s) => ({ ...s, open: false }))}
+        anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
       >
-        <Alert severity={snack.sev} sx={{ width: "100%" }}>
+        <Alert
+          severity={snack.sev}
+          sx={{
+            width: "100%",
+            borderRadius: 2,
+            fontWeight: 600,
+          }}
+        >
           {snack.msg}
         </Alert>
       </Snackbar>
-    </Paper>
+    </Box>
   );
 }
