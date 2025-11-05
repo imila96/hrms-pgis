@@ -51,7 +51,13 @@ const tabItems = [
 ];
 
 const AdminDashboard = () => {
-  const { logout, user } = useAuth();
+  const {
+    logout,
+    user,
+    setActiveRole,
+    beginRoleTransition,
+    endRoleTransition,
+  } = useAuth();
   const navigate = useNavigate();
   const theme = useTheme();
   const colorMode = useContext(ColorModeContext);
@@ -78,6 +84,26 @@ const AdminDashboard = () => {
     const parts = nameOrEmail.split(" ");
     if (parts.length === 1) return parts[0].charAt(0).toUpperCase();
     return (parts[0][0] + parts[1][0]).toUpperCase();
+  };
+
+  const goToRoleHome = (r) => {
+    const map = {
+      admin: "/admin/profile",
+      hr: "/hr/profile",
+      director: "/director/profile",
+      employee: "/employee/profile",
+    };
+    return map[r] || "/";
+  };
+
+  const switchTo = (role) => {
+    beginRoleTransition(role);
+    setActiveRole(role);
+    handleMenuClose();
+    setTimeout(() => {
+      navigate(goToRoleHome(role));
+      setTimeout(() => endRoleTransition(), 600);
+    }, 0);
   };
 
   // Custom theme identical to DirectorDashboard
@@ -216,6 +242,16 @@ const AdminDashboard = () => {
                 transformOrigin={{ vertical: "top", horizontal: "right" }}
               >
                 <MenuItem onClick={handleProfile}>Profile</MenuItem>
+                <MenuItem disabled>
+                  Active: {(user?.activeRole || "").toUpperCase()}
+                </MenuItem>
+                {user?.roles
+                  ?.filter((r) => r !== user?.activeRole)
+                  .map((r) => (
+                    <MenuItem key={r} onClick={() => switchTo(r)}>
+                      Switch to {r.charAt(0).toUpperCase() + r.slice(1)} view
+                    </MenuItem>
+                  ))}
                 <MenuItem onClick={handleLogout}>Logout</MenuItem>
               </Menu>
             </Box>
