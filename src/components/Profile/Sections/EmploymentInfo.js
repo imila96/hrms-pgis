@@ -9,7 +9,9 @@ const Field = ({ label, value }) => (
     <Typography variant="body1">{value || "-"}</Typography>
   </div>
 );
-export default function EmploymentInfo() {
+
+export default function EmploymentInfo({ employments = [] }) {
+  const e = employments && employments.length > 0 ? employments[0] : {};
   return (
     <>
       <Typography variant="h5" sx={{ mb: 2 }}>
@@ -21,19 +23,25 @@ export default function EmploymentInfo() {
         <Grid item xs={12} md={6}>
           <Grid container spacing={3} direction={`column`}>
             <Grid item xs={12}>
-              <Field label="Employee Id" value="E12345" />
+              <Field
+                label="Employee Id"
+                value={e.employeeId || e.employee?.employeeId}
+              />
             </Grid>
             <Grid item xs={12}>
-              <Field label="Job Title" value="Software Engineer" />
+              <Field label="Job Title" value={e.jobTitle} />
             </Grid>
             <Grid item xs={12}>
-              <Field label="Department" value="IT" />
+              <Field label="Department" value={e.department} />
             </Grid>
             <Grid item xs={12}>
-              <Field label="Employment Type" value="Full-time" />
+              <Field
+                label="Employment Type"
+                value={e.employmentType || e.employmentStatus}
+              />
             </Grid>
             <Grid item xs={12}>
-              <Field label="Date of Joining" value="01/01/2020" />
+              <Field label="Date of Joining" value={e.dateOfJoining} />
             </Grid>
           </Grid>
         </Grid>
@@ -42,16 +50,16 @@ export default function EmploymentInfo() {
         <Grid item xs={12} md={6}>
           <Grid container spacing={3} direction={`column`}>
             <Grid item xs={12}>
-              <Field label="Probation End Date" value="06/30/2020" />
+              <Field label="Probation End Date" value={e.probationEndDate} />
             </Grid>
             <Grid item xs={12}>
-              <Field label="Confirmation Date" value="07/01/2020" />
+              <Field label="Confirmation Date" value={e.confirmationDate} />
             </Grid>
             <Grid item xs={12}>
-              <Field label="Date of Retirement" value="12/31/2030" />
+              <Field label="Date of Retirement" value={e.dateOfRetirement} />
             </Grid>
             <Grid item xs={12}>
-              <Field label="Employment Status" value="Active" />
+              <Field label="Employment Status" value={e.employmentStatus} />
             </Grid>
           </Grid>
         </Grid>

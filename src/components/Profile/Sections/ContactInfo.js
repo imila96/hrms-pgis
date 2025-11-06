@@ -1,4 +1,3 @@
-import React from "react";
 import { Typography, Divider, Grid, Stack } from "@mui/material";
 
 const Field = ({ label, value }) => (
@@ -10,50 +9,8 @@ const Field = ({ label, value }) => (
   </div>
 );
 
-// export default function ContactInfo({ user }) {
-//   return (
-//     <>
-//       <Typography variant="h5" sx={{ mb: 2 }}>
-//         Contact Information
-//       </Typography>
-//       <Divider sx={{ mb: 3 }} />
-//       <Grid container spacing={3}>
-//         <Grid item xs={12} md={6}>
-//           <Field label="Address" value={user?.address} />
-//         </Grid>
-//         <Grid item xs={12} md={6}>
-//           <Field label="City" value={user?.city} />
-//         </Grid>
-//         <Grid item xs={12} md={6}>
-//           <Field label="State" value={user?.state} />
-//         </Grid>
-//         <Grid item xs={12} md={6}>
-//           <Field label="Zip Code" value={user?.zipCode} />
-//         </Grid>
-//         <Grid item xs={12} md={6}>
-//           <Field label="Country" value={user?.country} />
-//         </Grid>
-//         <Grid item xs={12} md={6}>
-//           <Field label="Home Phone" value={user?.homePhone} />
-//         </Grid>
-//         <Grid item xs={12} md={6}>
-//           <Field label="Mobile Phone" value={user?.mobilePhone} />
-//         </Grid>
-//         <Grid item xs={12} md={6}>
-//           <Field label="Work Phone" value={user?.workPhone} />
-//         </Grid>
-//         <Grid item xs={12} md={6}>
-//           <Field label="Work Email" value={user?.email} />
-//         </Grid>
-//         <Grid item xs={12} md={6}>
-//           <Field label="Other Email" value={user?.otherEmail} />
-//         </Grid>
-//       </Grid>
-//     </>
-//   );
-// }
-
-export default function ContactInfo() {
+export default function ContactInfo({ contacts = [] }) {
+  const c = contacts && contacts.length > 0 ? contacts[0] : {};
   return (
     <>
       <Typography variant="h5" sx={{ mb: 2 }}>
@@ -65,11 +22,12 @@ export default function ContactInfo() {
         <Grid item xs={12} md={6}>
           <Stack spacing={3}>
             <Typography variant="h6" sx={{ mb: 2 }}></Typography>
-            <Field label="Permanent Address" value="123 Maple Street" />
-            <Field label="Current Address" value="Springfield" />
-            <Field label="Home Phone" value="+1-555-111-2222" />
-            <Field label="Mobile Phone" value="+1-555-333-4444" />
-            <Field label="Work Phone" value="+1-555-555-6666" />
+            <Field label="Permanent Address" value={c.permanentAddress} />
+            <Field label="Current Address" value={c.currentAddress} />
+            <Field label="Home Phone" value={c.homeTelephone} />
+            <Field label="Mobile Phone" value={c.mobileNumber} />
+            <Field label="Work Email" value={c.workEmail} />
+            <Field label="Personal Email" value={c.personalEmail} />
           </Stack>
         </Grid>
 
@@ -79,11 +37,12 @@ export default function ContactInfo() {
             <Typography variant="h6" sx={{ mb: 2 }}>
               Emergency Contact Information
             </Typography>
-            <Field label="Home Phone" value="+1-555-111-2222" />
-            <Field label="Mobile Phone" value="+1-555-333-4444" />
-            <Field label="Work Phone" value="+1-555-555-6666" />
-            <Field label="Work Email" value="sophia.carter@example.com" />
-            <Field label="Personal Email" value="sophia.personal@example.com" />
+            <Field label="Emergency Contact Name" value={c.emergencyName} />
+            <Field
+              label="Emergency Contact Relationship"
+              value={c.emergencyRelationship}
+            />
+            <Field label="Emergency Phone" value={c.emergencyPhone} />
           </Stack>
         </Grid>
       </Grid>

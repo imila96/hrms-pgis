@@ -1,8 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import { Box, CircularProgress, Typography } from "@mui/material";
-import ProfileSidebar from "../Profile/ProfileSidebar";
-import SectionTabs from "../Profile/SectionTabs";
+import { ProfileSidebar, SectionTabs } from "../Profile/Profile";
 import PersonalInfo from "../Profile/Sections/PersonalInfo";
 import ContactInfo from "../Profile/Sections/ContactInfo";
 import CompensationPayroll from "../Profile/Sections/CompensationPayroll";
