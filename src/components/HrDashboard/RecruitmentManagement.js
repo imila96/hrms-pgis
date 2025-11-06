@@ -16,8 +16,6 @@ import {
   DialogContent,
   TextField,
   DialogActions,
-  Checkbox,
-  FormControlLabel,
   FormControl,
   InputLabel,
   Snackbar,
@@ -32,93 +30,14 @@ import {
 } from "@mui/material";
 
 import axiosInstance from "../../AxiosInstance";
-// mock data to populate table while backend is empty / for demo
-const MOCK_JOBS = [
-  {
-    id: "job-1",
-    title: "Software Engineer",
-    description: "Develop and maintain internal HR systems.",
-    department: "Engineering",
-    location: "Colombo",
-    jobType: "Full-time",
-    positions: 3,
-    urgent: false,
-    active: true,
-    postedDate: new Date(Date.now() - 1000 * 60 * 60 * 24 * 10).toISOString(),
-    startDate: null,
-    endDate: null,
-  },
-  {
-    id: "job-2",
-    title: "HR Manager",
-    description: "Lead HR operations and recruitment.",
-    department: "Human Resources",
-    location: "Kandy",
-    jobType: "Full-time",
-    positions: 1,
-    urgent: true,
-    active: true,
-    postedDate: new Date(Date.now() - 1000 * 60 * 60 * 24 * 30).toISOString(),
-    startDate: null,
-    endDate: null,
-  },
-  {
-    id: "job-3",
-    title: "Part-time Data Analyst",
-    description: "Analyze workforce data and produce reports.",
-    department: "Analytics",
-    location: "Remote",
-    jobType: "Part-time",
-    positions: 1,
-    urgent: false,
-    active: false,
-    postedDate: new Date(Date.now() - 1000 * 60 * 60 * 24 * 60).toISOString(),
-    startDate: null,
-    endDate: null,
-  },
-  {
-    id: "job-4",
-    title: "Recruitment Coordinator",
-    description: "Coordinate job postings and candidate screening.",
-    department: "Recruitment",
-    location: "Galle",
-    jobType: "Contract",
-    positions: 2,
-    urgent: true,
-    active: true,
-    postedDate: new Date(Date.now() - 1000 * 60 * 60 * 24 * 5).toISOString(),
-    startDate: null,
-    endDate: null,
-  },
-  {
-    id: "job-5",
-    title: "Payroll Specialist",
-    description: "Manage payroll processes and compliance.",
-    department: "Finance",
-    location: "Colombo",
-    jobType: "Full-time",
-    positions: 1,
-    urgent: false,
-    active: true,
-    postedDate: new Date(Date.now() - 1000 * 60 * 60 * 24 * 3).toISOString(),
-    startDate: null,
-    endDate: null,
-  },
-];
 
 const RecruitmentManagement = () => {
-  const [jobs, setJobs] = useState(MOCK_JOBS);
+  const [jobs, setJobs] = useState([]);
   const [formData, setFormData] = useState({
     title: "",
     description: "",
     department: "",
     status: "",
-    location: "",
-    jobType: "",
-    positions: 1,
-    urgent: false,
-    startDate: "",
-    endDate: "",
   });
   const [editJobOpening, setEditJobOpening] = useState(null);
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -191,32 +110,12 @@ const RecruitmentManagement = () => {
             description: job.description || "",
             department: job.department || "",
             status: job.active ? "Open" : "Closed",
-            location: job.location || "",
-            jobType: job.jobType || "",
-            positions: job.positions || 1,
-            urgent: !!job.urgent,
-            startDate: job.startDate
-              ? job.startDate.slice
-                ? job.startDate.slice(0, 10)
-                : job.startDate
-              : "",
-            endDate: job.endDate
-              ? job.endDate.slice
-                ? job.endDate.slice(0, 10)
-                : job.endDate
-              : "",
           }
         : {
             title: "",
             description: "",
             department: "",
             status: "",
-            location: "",
-            jobType: "",
-            positions: 1,
-            urgent: false,
-            startDate: "",
-            endDate: "",
           }
     );
     setDialogOpen(true);
@@ -289,26 +188,32 @@ const RecruitmentManagement = () => {
 
         showSnackbar("Job updated", "success");
       } else {
-        const newJob = {
-          id: `local-${Date.now()}`,
+        // Build a minimal payload matching backend DTO (title, description, department).
+        const payload = {
           title: formData.title,
           description: formData.description,
           department: formData.department,
-          active: formData.status === "Open",
-          location: formData.location,
-          jobType: formData.jobType,
-          positions: Number(formData.positions) || 1,
-          urgent: !!formData.urgent,
-          startDate: formData.startDate || null,
-          endDate: formData.endDate || null,
-          postedDate: new Date().toISOString(),
         };
 
         try {
-          await axiosInstance.post("/hr/recruitment/create", newJob);
+          await axiosInstance.post("/hr/recruitment/create", payload);
           showSnackbar("Job opening created successfully!", "success");
         } catch (err) {
           // fallback to local insertion if API fails
+          const newJob = {
+            id: `local-${Date.now()}`,
+            title: formData.title,
+            description: formData.description,
+            department: formData.department,
+            active: formData.status === "Open",
+            location: formData.location,
+            jobType: formData.jobType,
+            positions: Number(formData.positions) || 1,
+            urgent: !!formData.urgent,
+            startDate: formData.startDate || null,
+            endDate: formData.endDate || null,
+            postedDate: new Date().toISOString(),
+          };
           setJobs((prev) => [newJob, ...prev]);
           showSnackbar("Job created locally (server call failed).", "warning");
         }
@@ -774,67 +679,6 @@ const RecruitmentManagement = () => {
             onChange={handleChange}
             required
           />
-
-          <TextField
-            label="Location"
-            name="location"
-            fullWidth
-            margin="dense"
-            value={formData.location}
-            onChange={handleChange}
-          />
-
-          <TextField
-            label="Job Type"
-            name="jobType"
-            fullWidth
-            margin="dense"
-            value={formData.jobType}
-            onChange={handleChange}
-          />
-
-          <TextField
-            label="Positions"
-            name="positions"
-            type="number"
-            fullWidth
-            margin="dense"
-            value={formData.positions}
-            onChange={handleChange}
-            inputProps={{ min: 1 }}
-          />
-
-          <FormControlLabel
-            control={
-              <Checkbox
-                name="urgent"
-                checked={!!formData.urgent}
-                onChange={handleChange}
-              />
-            }
-            label="Urgent hire"
-          />
-
-          <Box sx={{ display: "flex", gap: 1 }}>
-            <TextField
-              label="Start Date"
-              name="startDate"
-              type="date"
-              value={formData.startDate}
-              onChange={handleChange}
-              InputLabelProps={{ shrink: true }}
-              fullWidth
-            />
-            <TextField
-              label="End Date"
-              name="endDate"
-              type="date"
-              value={formData.endDate}
-              onChange={handleChange}
-              InputLabelProps={{ shrink: true }}
-              fullWidth
-            />
-          </Box>
 
           <Select
             fullWidth

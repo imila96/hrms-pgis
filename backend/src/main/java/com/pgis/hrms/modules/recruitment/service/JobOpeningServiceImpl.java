@@ -1,7 +1,6 @@
 package com.pgis.hrms.modules.recruitment.service;
 
-
-import com.pgis.hrms.modules.announcement.dto.AnnouncementDetailDto;
+import com.pgis.hrms.modules.recruitment.dto.JobOpeningDto;
 import com.pgis.hrms.modules.recruitment.model.JobOpening;
 import com.pgis.hrms.modules.recruitment.repository.JobOpeningRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -9,26 +8,50 @@ import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 public class JobOpeningServiceImpl implements JobOpeningService {
     @Autowired
     private JobOpeningRepository jobOpeningRepository;
 
-    public List<JobOpening> getAllOpenings() {
-        return jobOpeningRepository.findAll();
+    @Override
+    public List<JobOpeningDto> getAllOpenings() {
+        return jobOpeningRepository.findAll()
+                .stream()
+                .map(this::toDto)
+                .collect(Collectors.toList());
     }
 
-    public JobOpening createOpening(JobOpening jobOpening) {
-        jobOpening.setPostedDate(LocalDate.now());
-        jobOpening.setActive(true);
-        return jobOpeningRepository.save(jobOpening);
+    @Override
+    public JobOpeningDto createOpening(JobOpeningDto jobOpeningDto) {
+        JobOpening entity = new JobOpening();
+        entity.setTitle(jobOpeningDto.title());
+        entity.setDescription(jobOpeningDto.description());
+        entity.setDepartment(jobOpeningDto.department());
+        // postedDate & active are set by the service
+        entity.setPostedDate(LocalDate.now());
+        entity.setActive(true);
+        JobOpening saved = jobOpeningRepository.save(entity);
+        return toDto(saved);
     }
 
+    @Override
     public void closeOpening(Long id) {
         JobOpening opening = jobOpeningRepository.findById(id).orElseThrow();
         opening.setActive(false);
         jobOpeningRepository.save(opening);
+    }
+
+    private JobOpeningDto toDto(JobOpening j) {
+        return new JobOpeningDto(
+                j.getId(),
+                j.getTitle(),
+                j.getDescription(),
+                j.getDepartment(),
+                j.getPostedDate(),
+                j.isActive()
+        );
     }
 
 }

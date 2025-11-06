@@ -1,12 +1,10 @@
 package com.pgis.hrms.modules.recruitment.controller;
 
-
-import com.pgis.hrms.modules.recruitment.model.JobOpening;
+import com.pgis.hrms.modules.recruitment.dto.JobOpeningDto;
 import com.pgis.hrms.modules.recruitment.service.JobOpeningService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import org.w3c.dom.stylesheets.LinkStyle;
 
 import java.util.List;
 
@@ -19,12 +17,12 @@ public class RecruitmentController {
 
 
     @GetMapping("/openings")
-    public List<JobOpening> getAllOpenings() {
+    public List<JobOpeningDto> getAllOpenings() {
         return jobOpeningService.getAllOpenings();
     }
 
     @PostMapping("/create")
-    public ResponseEntity<JobOpening> createJob(@RequestBody JobOpening jobOpening) {
+    public ResponseEntity<JobOpeningDto> createJob(@RequestBody JobOpeningDto jobOpening) {
         return ResponseEntity.ok(jobOpeningService.createOpening(jobOpening));
     }
 

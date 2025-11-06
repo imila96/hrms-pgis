@@ -1,14 +1,13 @@
 package com.pgis.hrms.modules.recruitment.service;
 
-
-import com.pgis.hrms.modules.recruitment.model.JobOpening;
+import com.pgis.hrms.modules.recruitment.dto.JobOpeningDto;
 
 import java.util.List;
 
 public interface JobOpeningService {
-    List<JobOpening> getAllOpenings();
+    List<JobOpeningDto> getAllOpenings();
 
-    JobOpening createOpening(JobOpening jobOpening);
+    JobOpeningDto createOpening(JobOpeningDto jobOpeningDto);
 
     void closeOpening(Long id);
 }
