@@ -79,6 +79,9 @@ public class AttendanceService {
                     throw conflict("End the break before checking out.");
                 }
             }
+            case MANUAL -> {
+                // Admin manual entry - allow without validation
+            }
         }
 
         // Persist event (eventDate is set by @PrePersist on entity)
@@ -106,8 +109,8 @@ public class AttendanceService {
                 ((java.sql.Date)      row[1]).toLocalDate(),
                 row[2] == null ? null : ((java.sql.Timestamp) row[2]).toLocalDateTime(),
                 row[3] == null ? null : ((java.sql.Timestamp) row[3]).toLocalDateTime(),
-                ((Number)             row[4]).intValue(),
-                ((Number)             row[5]).intValue());
+                row[4] == null ? 0 : ((Number) row[4]).intValue(),
+                row[5] == null ? 0 : ((Number) row[5]).intValue());
     }
 
     @Transactional(readOnly = true)

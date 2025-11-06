@@ -71,6 +71,9 @@ const COLORS = {
   error: "#F44336",
 };
 
+const LEAVE_TYPE_LABEL_ID = "employee-leave-type-label";
+const LEAVE_TYPE_SELECT_ID = "employee-leave-type";
+
 const leaveTypes = [
   { label: "Annual Leave", value: "ANNUAL" },
   { label: "Sick Leave", value: "SICK" },
@@ -829,22 +832,36 @@ export default function Leave() {
         <DialogContent dividers>
           <Grid container spacing={2}>
             <Grid item xs={12}>
-              <FormControl fullWidth size="small">
-                <InputLabel>Leave Type *</InputLabel>
-                <Select
-                  name="type"
-                  value={newLeave.type}
-                  label="Leave Type *"
-                  onChange={handleChange}
-                >
-                  {leaveTypes.map((t) => (
-                    <MenuItem key={t.value} value={t.value}>
-                      {t.label}
-                    </MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
-            </Grid>
+  <FormControl fullWidth size="small" variant="outlined">
+    <InputLabel id={LEAVE_TYPE_LABEL_ID} shrink>
+      Leave Type *
+    </InputLabel>
+    <Select
+      labelId={LEAVE_TYPE_LABEL_ID}
+      id={LEAVE_TYPE_SELECT_ID}
+      name="type"
+      value={newLeave.type}
+      label="Leave Type *"
+      onChange={handleChange}
+      displayEmpty
+      renderValue={(v) =>
+        v
+          ? (leaveTypes.find(t => t.value === v)?.label ?? v)
+          : <span style={{ color: 'rgba(0,0,0,0.6)' }}>Select leave type</span>
+      }
+    >
+      <MenuItem value="">
+        <em>Select leave type</em>
+      </MenuItem>
+      {leaveTypes.map(t => (
+        <MenuItem key={t.value} value={t.value}>
+          {t.label}
+        </MenuItem>
+      ))}
+    </Select>
+  </FormControl>
+</Grid>
+
 
             <Grid item xs={12} md={6}>
               <TextField
