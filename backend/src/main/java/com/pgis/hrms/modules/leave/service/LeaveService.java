@@ -42,11 +42,45 @@ public class LeaveService {
     public void apply(Integer empId, ApplyLeaveRequest in, MultipartFile medicalFile) {
         Employee emp = empRepo.findById(empId).orElseThrow();
         
+        // Validation 1: Don't allow past dates
+        if (in.startDate().isBefore(LocalDate.now())) {
+            throw new RuntimeException("Cannot apply for leave with past dates. Start date must be today or in the future.");
+        }
+        
+        // Validation: End date must be after or equal to start date
+        if (in.endDate().isBefore(in.startDate())) {
+            throw new RuntimeException("End date cannot be before start date.");
+        }
+        
         // Get employment record (optional - may not exist for newly created employees)
         Optional<Employment> emptOpt = emptRepo.findFirstByEmployeeEmployeeIdOrderByDateOfJoiningAsc(empId);
         
         int days = workingDays(in.startDate(), in.endDate());
         int year = in.startDate().getYear();
+
+        // Validation 2: Check for overlapping leaves (approved or pending)
+        List<LeaveApplication> existingLeaves = appRepo.findByEmployeeEmployeeIdAndStartDateBetween(
+            empId, 
+            in.startDate().minusDays(365), // Check within a reasonable range
+            in.endDate().plusDays(365)
+        );
+        
+        for (LeaveApplication existing : existingLeaves) {
+            // Only check approved and pending leaves
+            if (existing.getStatus() == LeaveStatus.APPROVED || existing.getStatus() == LeaveStatus.PENDING) {
+                // Check if dates overlap
+                boolean overlaps = !(in.endDate().isBefore(existing.getStartDate()) || 
+                                    in.startDate().isAfter(existing.getEndDate()));
+                if (overlaps) {
+                    throw new RuntimeException(
+                        String.format("Leave dates overlap with an existing %s leave from %s to %s", 
+                            existing.getStatus().toString().toLowerCase(),
+                            existing.getStartDate(),
+                            existing.getEndDate())
+                    );
+                }
+            }
+        }
 
         // probation accrual rule for ANNUAL leave (only if employment record exists)
         if (in.type() == LeaveType.ANNUAL && emptOpt.isPresent() && isOnProbation(emptOpt.get())) {
@@ -61,8 +95,13 @@ public class LeaveService {
         if (in.type()==LeaveType.SICK && days>2 && (medicalFile==null || medicalFile.isEmpty()))
             throw new RuntimeException("Medical certificate required for sick leave > 2 days");
 
-        if (bal.remaining() < days)
-            throw new RuntimeException("Insufficient balance");
+        // Validation 3: Check if sufficient balance (this was already implemented)
+        if (bal.remaining() < days) {
+            throw new RuntimeException(
+                String.format("Insufficient leave balance. You have %d days remaining but requested %d days.", 
+                    bal.remaining(), days)
+            );
+        }
 
         // persist application
         LeaveApplication app = new LeaveApplication();
@@ -79,6 +118,43 @@ public class LeaveService {
         appRepo.save(app);
     }
 
+
+    // Employee withdraws their own leave request
+    @Transactional
+    public void withdraw(Integer leaveId, Integer empId) {
+        var app = appRepo.findById(leaveId).orElseThrow(() -> 
+            new RuntimeException("Leave application not found"));
+        
+        // Verify the leave belongs to this employee
+        if (!app.getEmployee().getEmployeeId().equals(empId)) {
+            throw new RuntimeException("Unauthorized: This leave request does not belong to you");
+        }
+        
+        // Only PENDING or APPROVED leaves can be withdrawn
+        if (app.getStatus() != LeaveStatus.PENDING && app.getStatus() != LeaveStatus.APPROVED) {
+            throw new RuntimeException("Cannot withdraw: Leave is already " + app.getStatus());
+        }
+        
+        // If the leave was APPROVED, we need to restore the balance
+        if (app.getStatus() == LeaveStatus.APPROVED) {
+            int days = workingDays(app.getStartDate(), app.getEndDate());
+            int year = app.getStartDate().getYear();
+            
+            var balOpt = balRepo.findByEmployeeEmployeeIdAndLeaveTypeAndYear(
+                    app.getEmployee().getEmployeeId(), app.getLeaveType(), year);
+            
+            if (balOpt.isPresent()) {
+                LeaveBalance bal = balOpt.get();
+                // Restore the days by reducing taken count
+                bal.setTaken(Math.max(0, bal.getTaken() - days));
+                balRepo.save(bal);
+            }
+        }
+        
+        // Mark as CANCELLED
+        app.setStatus(LeaveStatus.CANCELLED);
+        appRepo.save(app);
+    }
 
     // HR approves or rejects
     @Transactional
@@ -172,11 +248,7 @@ public class LeaveService {
     }
 
     private int workingDays(LocalDate from, LocalDate to) {
-        int days = 0;
-        for (LocalDate d = from; !d.isAfter(to); d = d.plusDays(1)) {
-            if (!(d.getDayOfWeek()==DayOfWeek.SATURDAY || d.getDayOfWeek()==DayOfWeek.SUNDAY))
-                days++;
-        }
-        return days;
+        // Count all days including weekends
+        return (int) ChronoUnit.DAYS.between(from, to) + 1;
     }
 }

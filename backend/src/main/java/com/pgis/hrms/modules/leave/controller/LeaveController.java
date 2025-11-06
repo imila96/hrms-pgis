@@ -5,13 +5,10 @@ import com.pgis.hrms.modules.leave.dto.*;
 import com.pgis.hrms.modules.leave.repository.LeaveApplicationRepository;
 import com.pgis.hrms.modules.leave.service.LeaveService;
 import lombok.RequiredArgsConstructor;
-import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.multipart.MultipartFile;
-import java.time.*;
 import java.util.*;
 
 @RestController
@@ -53,6 +50,15 @@ public class LeaveController {
     public List<LeaveBalanceDto> myBalances(@AuthenticationPrincipal UserDetails ud,
                                             @RequestParam(defaultValue="#{T(java.time.Year).now().value}") int year) {
         return svc.balances(currentEmpId(ud.getUsername()), year);
+    }
+
+    /* ---- Employee withdraw leave ---- */
+    @DeleteMapping("/{leaveId}")
+    @PreAuthorize("hasAnyRole('HR','ADMIN','DIRECTOR','EMPLOYEE')")
+    public void withdraw(@PathVariable Integer leaveId,
+                        @AuthenticationPrincipal UserDetails ud) {
+        int empId = currentEmpId(ud.getUsername());
+        svc.withdraw(leaveId, empId);
     }
 
     /* ---- HR approve / reject ---- */

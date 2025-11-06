@@ -111,6 +111,11 @@ export default function Leave() {
   const [detailOpen, setDetailOpen] = useState(false);
   const [selectedLeave, setSelectedLeave] = useState(null);
 
+  // Withdraw confirmation dialog
+  const [withdrawOpen, setWithdrawOpen] = useState(false);
+  const [withdrawingLeave, setWithdrawingLeave] = useState(null);
+  const [withdrawing, setWithdrawing] = useState(false);
+
   // Snackbar
   const [snack, setSnack] = useState({
     open: false,
@@ -296,11 +301,70 @@ export default function Leave() {
   const handleChange = (e) =>
     setNewLeave((prev) => ({ ...prev, [e.target.name]: e.target.value }));
 
-  const handleSubmit = async () => {
+  const validateLeaveApplication = () => {
+    // Check required fields
     if (!newLeave.type || !newLeave.startDate || !newLeave.endDate) {
+      return "Please fill all required fields";
+    }
+
+    const today = format(new Date(), "yyyy-MM-dd");
+    const startDate = newLeave.startDate;
+    const endDate = newLeave.endDate;
+
+    // Validation 1: No past dates
+    if (startDate < today) {
+      return "Cannot apply for leave with past dates. Start date must be today or in the future.";
+    }
+
+    // Validation: End date must be after or equal to start date
+    if (endDate < startDate) {
+      return "End date cannot be before start date.";
+    }
+
+    // Calculate requested days
+    const start = new Date(startDate);
+    const end = new Date(endDate);
+    const requestedDays = differenceInDays(end, start) + 1;
+
+    // Validation 2: Check remaining balance
+    const balance = balances.find(b => b.type === newLeave.type);
+    if (balance && balance.remaining < requestedDays) {
+      return `Insufficient leave balance. You have ${balance.remaining} days remaining but requested ${requestedDays} days.`;
+    }
+
+    // Validation 3: Check for overlapping leaves (approved or pending only)
+    const overlappingLeave = leaves.find(leave => {
+      if (leave.status === "REJECTED" || leave.status === "CANCELLED") {
+        return false; // Skip rejected/cancelled leaves
+      }
+      
+      try {
+        const existingStart = leave.start;
+        const existingEnd = leave.end;
+        
+        // Check if dates overlap: !(endDate < existingStart || startDate > existingEnd)
+        const overlaps = !(endDate < existingStart || startDate > existingEnd);
+        return overlaps;
+      } catch (e) {
+        return false;
+      }
+    });
+
+    if (overlappingLeave) {
+      const statusText = overlappingLeave.status.toLowerCase();
+      return `Leave dates overlap with an existing ${statusText} leave from ${overlappingLeave.start} to ${overlappingLeave.end}`;
+    }
+
+    return null; // All validations passed
+  };
+
+  const handleSubmit = async () => {
+    // Run frontend validations
+    const validationError = validateLeaveApplication();
+    if (validationError) {
       setSnack({
         open: true,
-        msg: "Please fill all required fields",
+        msg: validationError,
         severity: "warning",
       });
       return;
@@ -324,7 +388,8 @@ export default function Leave() {
       await loadData();
     } catch (e) {
       console.error("Error submitting leave:", e); // Debug log
-      setSnack({ open: true, msg: "Failed to submit leave", severity: "error" });
+      const errorMsg = e.response?.data?.message || e.response?.data || "Failed to submit leave";
+      setSnack({ open: true, msg: errorMsg, severity: "error" });
     } finally {
       setSubmitting(false);
     }
@@ -338,6 +403,38 @@ export default function Leave() {
   const closeDetail = () => {
     setSelectedLeave(null);
     setDetailOpen(false);
+  };
+
+  const openWithdrawDialog = (leave) => {
+    setWithdrawingLeave(leave);
+    setWithdrawOpen(true);
+  };
+
+  const closeWithdrawDialog = () => {
+    setWithdrawingLeave(null);
+    setWithdrawOpen(false);
+  };
+
+  const handleWithdraw = async () => {
+    if (!withdrawingLeave) return;
+
+    try {
+      setWithdrawing(true);
+      await axiosInstance.delete(`/leave/${withdrawingLeave.id}`);
+      setSnack({
+        open: true,
+        msg: "Leave request withdrawn successfully! Balance has been restored.",
+        severity: "success",
+      });
+      closeWithdrawDialog();
+      await loadData(); // Reload both leaves and balances
+    } catch (e) {
+      console.error("Error withdrawing leave:", e);
+      const errorMsg = e.response?.data?.message || e.response?.data || "Failed to withdraw leave";
+      setSnack({ open: true, msg: errorMsg, severity: "error" });
+    } finally {
+      setWithdrawing(false);
+    }
   };
 
   const exportCSV = (rows) => {
@@ -736,17 +833,35 @@ export default function Leave() {
                         />
                       </TableCell>
                       <TableCell align="right">
-                        <Button
-                          size="small"
-                          variant="outlined"
-                          onClick={() => openDetail(row)}
-                          sx={{
-                            borderColor: COLORS.primary,
-                            color: COLORS.primary,
-                          }}
-                        >
-                          View
-                        </Button>
+                        <Stack direction="row" spacing={1} justifyContent="flex-end">
+                          <Button
+                            size="small"
+                            variant="outlined"
+                            onClick={() => openDetail(row)}
+                            sx={{
+                              borderColor: COLORS.primary,
+                              color: COLORS.primary,
+                            }}
+                          >
+                            View
+                          </Button>
+                          
+                          {/* Show withdraw button only for PENDING or APPROVED leaves */}
+                          {(row.status === "PENDING" || row.status === "APPROVED") && (
+                            <Button
+                              size="small"
+                              variant="outlined"
+                              color="error"
+                              onClick={() => openWithdrawDialog(row)}
+                              sx={{
+                                borderColor: COLORS.error,
+                                color: COLORS.error,
+                              }}
+                            >
+                              Withdraw
+                            </Button>
+                          )}
+                        </Stack>
                       </TableCell>
                     </TableRow>
                   ))}
@@ -968,6 +1083,94 @@ export default function Leave() {
         </DialogContent>
         <DialogActions>
           <Button onClick={closeDetail}>Close</Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Withdraw Confirmation Dialog */}
+      <Dialog open={withdrawOpen} onClose={closeWithdrawDialog} maxWidth="sm" fullWidth>
+        <DialogTitle sx={{ color: COLORS.error }}>
+          Withdraw Leave Request?
+        </DialogTitle>
+        <DialogContent dividers>
+          {withdrawingLeave && (
+            <Box>
+              <Typography variant="body1" sx={{ mb: 2 }}>
+                Are you sure you want to withdraw this leave request?
+              </Typography>
+              
+              <Box sx={{ bgcolor: COLORS.bg, p: 2, borderRadius: 1, mb: 2 }}>
+                <Grid container spacing={1}>
+                  <Grid item xs={6}>
+                    <Typography variant="caption" color="text.secondary">
+                      Leave Type
+                    </Typography>
+                    <Typography fontWeight={600}>{withdrawingLeave.type}</Typography>
+                  </Grid>
+                  <Grid item xs={6}>
+                    <Typography variant="caption" color="text.secondary">
+                      Status
+                    </Typography>
+                    <Chip
+                      label={withdrawingLeave.status}
+                      color={statusColor(withdrawingLeave.status)}
+                      size="small"
+                    />
+                  </Grid>
+                  <Grid item xs={6}>
+                    <Typography variant="caption" color="text.secondary">
+                      From
+                    </Typography>
+                    <Typography>
+                      {format(parseISO(withdrawingLeave.start), "dd MMM yyyy")}
+                    </Typography>
+                  </Grid>
+                  <Grid item xs={6}>
+                    <Typography variant="caption" color="text.secondary">
+                      To
+                    </Typography>
+                    <Typography>
+                      {format(parseISO(withdrawingLeave.end), "dd MMM yyyy")}
+                    </Typography>
+                  </Grid>
+                  <Grid item xs={12}>
+                    <Typography variant="caption" color="text.secondary">
+                      Duration
+                    </Typography>
+                    <Typography>
+                      {calculateDays(withdrawingLeave.start, withdrawingLeave.end)} days
+                    </Typography>
+                  </Grid>
+                </Grid>
+              </Box>
+
+              <Alert severity="info" sx={{ mb: 2 }}>
+                {withdrawingLeave.status === "APPROVED" 
+                  ? "This leave was already approved. Withdrawing it will restore your leave balance."
+                  : "Your leave balance will be updated accordingly."}
+              </Alert>
+
+              <Typography variant="body2" color="text.secondary">
+                This action cannot be undone. You'll need to submit a new request if you change your mind.
+              </Typography>
+            </Box>
+          )}
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={closeWithdrawDialog} disabled={withdrawing}>
+            Cancel
+          </Button>
+          <Button
+            variant="contained"
+            color="error"
+            onClick={handleWithdraw}
+            disabled={withdrawing}
+            sx={{ 
+              backgroundColor: COLORS.error,
+              "&:hover": { backgroundColor: "#d32f2f" }
+            }}
+          >
+            {withdrawing ? "Withdrawing..." : "Yes, Withdraw"}
+          </Button>
         </DialogActions>
       </Dialog>
 
