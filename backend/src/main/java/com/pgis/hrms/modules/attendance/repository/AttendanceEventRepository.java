@@ -62,4 +62,7 @@ public interface AttendanceEventRepository
     List<Object[]> findDailySummary(@Param("empId") Integer empId,
                                     @Param("from") LocalDate from,
                                     @Param("to")   LocalDate to);
+
+  @Query("SELECT COUNT(DISTINCT a.employee.employeeId) FROM com.pgis.hrms.modules.attendance.model.AttendanceEvent a WHERE a.eventDate = :date AND a.eventType = :type")
+  long countDistinctEmployeesByEventDateAndEventType(@Param("date") LocalDate date, @Param("type") com.pgis.hrms.modules.attendance.model.AttendanceEventType type);
 }

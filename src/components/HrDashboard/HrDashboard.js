@@ -1,4 +1,4 @@
-import React, { useState, useContext } from "react";
+import React, { useState, useContext, useEffect } from "react";
 import {
   Box,
   Paper,
@@ -18,10 +18,6 @@ import {
   AppBar,
   Toolbar,
   Divider,
-  Card,
-  CardContent,
-  CardActions,
-  Icon,
 } from "@mui/material";
 import {
   BeachAccess as BeachAccessIcon,
@@ -34,7 +30,7 @@ import {
   Brightness7,
   Notifications as NotificationsIcon,
 } from "@mui/icons-material";
-import NotificationsNoneIcon from "@mui/icons-material/NotificationsNone";
+// note: NotificationsNoneIcon removed (unused)
 import EventNoteIcon from "@mui/icons-material/EventNote";
 import { useTheme, createTheme, ThemeProvider } from "@mui/material/styles";
 import { Routes, Route, NavLink, useNavigate } from "react-router-dom";
@@ -50,6 +46,7 @@ import AnnouncementManagement from "./AnnouncementManagement";
 import Profile from "../Profile/Profile";
 import CreateEditProfile from "../Profile/CreateEditProfile";
 import ComplainManagement from "../HrDashboard/ComplaintManagement";
+import axiosInstance from "../../AxiosInstance";
 
 const ColorModeContext = React.createContext({ toggleColorMode: () => {} });
 
@@ -183,6 +180,23 @@ const HrDashboard = () => {
       fontFamily: "'Poppins', sans-serif",
     },
   });
+
+  // dashboard data
+  const [dashboard, setDashboard] = useState(null);
+  const [loadingDashboard, setLoadingDashboard] = useState(true);
+  const [dashboardError] = useState(null);
+
+  useEffect(() => {
+    let mounted = true;
+    setLoadingDashboard(true);
+    axiosInstance.get("/dashboard/hr-home").then((res) => {
+      if (mounted) {
+        setDashboard(res.data);
+        setLoadingDashboard(false);
+      }
+    });
+    return () => (mounted = false);
+  }, []);
 
   return (
     <ThemeProvider theme={customTheme}>
@@ -350,8 +364,19 @@ const HrDashboard = () => {
                     color="text.secondary"
                     gutterBottom
                   >
-                    Department: HR • Employee ID: {user?.employeeId || "EMP001"}
+                    Department: {dashboard?.department || "HR"} • Employee ID:{" "}
+                    {dashboard?.employeeId ?? user?.employeeId ?? "-"}
                   </Typography>
+                  {loadingDashboard && (
+                    <Typography variant="caption" color="text.secondary">
+                      Loading dashboard...
+                    </Typography>
+                  )}
+                  {dashboardError && (
+                    <Typography variant="caption" color="error">
+                      Failed to load dashboard.
+                    </Typography>
+                  )}
                   <Divider sx={{ my: 2 }} />
                   <Typography
                     variant="h6"
@@ -367,17 +392,22 @@ const HrDashboard = () => {
                     {[
                       {
                         title: "Total Staff",
-                        value: "247",
+                        value: dashboard?.totalStaff ?? "-",
                         subtitle: "Active employees across departments",
                       },
                       {
                         title: "Attendance Rate",
-                        value: "94.2%",
+                        value:
+                          dashboard?.orgAttendanceRate != null
+                            ? `${(dashboard.orgAttendanceRate * 100).toFixed(
+                                1
+                              )}%`
+                            : "-",
                         subtitle: "Company-wide average for current month",
                       },
                       {
                         title: "Open Positions",
-                        value: "18",
+                        value: dashboard?.openPositions ?? "-",
                         subtitle: "Current vacancies across departments",
                       },
                     ].map((item, idx) => (
@@ -410,16 +440,6 @@ const HrDashboard = () => {
                       </Grid>
                     ))}
                   </Grid>
-
-                  {/* Quick Access Cards */}
-                  <Typography
-                    variant="h6"
-                    fontWeight={700}
-                    gutterBottom
-                    color="#4B49AC"
-                  >
-                    Quick Access
-                  </Typography>
                   <Grid container spacing={3}>
                     {quickActions.map((item) => (
                       <Grid
@@ -559,7 +579,10 @@ const HrDashboard = () => {
                                 Leave Balance
                               </Typography>
                               <Typography variant="h5" fontWeight={600}>
-                                12 Days
+                                {dashboard?.leaveBalances?.find(
+                                  (b) => b.type === "ANNUAL"
+                                )?.remaining ?? "-"}{" "}
+                                Days
                               </Typography>
                               <Typography
                                 variant="caption"
@@ -614,7 +637,11 @@ const HrDashboard = () => {
                                 Attendance Rate
                               </Typography>
                               <Typography variant="h5" fontWeight={600}>
-                                96%
+                                {dashboard?.userAttendanceRate != null
+                                  ? `${(
+                                      dashboard.userAttendanceRate * 100
+                                    ).toFixed(0)}%`
+                                  : "-"}
                               </Typography>
                               <Typography
                                 variant="caption"
@@ -641,23 +668,40 @@ const HrDashboard = () => {
                     </Typography>
                     <Paper sx={{ p: 2, borderRadius: 3 }}>
                       <List>
-                        {[
-                          {
-                            text: "Office Renovation - Nov 12th, Floor 3 closed",
-                          },
-                          { text: "New Benefits Package - Starting Dec 1st" },
-                          { text: "Company Town Hall - Nov 25th, 3:00 PM" },
-                        ].map((item, idx) => (
-                          <ListItem key={idx}>
+                        {(dashboard?.announcements ?? []).map((a, idx) => (
+                          <ListItem key={a.id ?? idx} button>
                             <ListItemIcon>
                               <EventNoteIcon
                                 color="secondary"
                                 fontSize="small"
                               />
                             </ListItemIcon>
-                            <ListItemText primary={item.text} />
+                            <ListItemText
+                              primary={a.title ?? a.summary ?? "Untitled"}
+                              secondary={
+                                a.publishedAt
+                                  ? new Date(a.publishedAt).toLocaleString()
+                                  : null
+                              }
+                            />
                           </ListItem>
                         ))}
+                        {(dashboard?.announcements ?? []).length === 0 &&
+                          [
+                            "Office Renovation - Nov 12th, Floor 3 closed",
+                            "New Benefits Package - Starting Dec 1st",
+                            "Company Town Hall - Nov 25th, 3:00 PM",
+                          ].map((text, idx) => (
+                            <ListItem key={idx}>
+                              <ListItemIcon>
+                                <EventNoteIcon
+                                  color="secondary"
+                                  fontSize="small"
+                                />
+                              </ListItemIcon>
+                              <ListItemText primary={text} />
+                            </ListItem>
+                          ))}
                       </List>
                     </Paper>
                   </Box>
