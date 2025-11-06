@@ -25,8 +25,16 @@ public class AttendanceController {
     /* helper to resolve logged‑in employeeId from email held in JWT */
     private Integer currentEmployeeId(String email) {
         return userRepo.findByEmail(email)
-                .map(u -> u.getEmployee().getEmployeeId())
-                .orElseThrow(() -> new RuntimeException("User not linked to employee record"));
+                .map(u -> {
+                    if (u.getEmployee() == null) {
+                        throw new IllegalStateException(
+                            "User account is not linked to an employee record. " +
+                            "Please contact HR to complete your profile setup."
+                        );
+                    }
+                    return u.getEmployee().getEmployeeId();
+                })
+                .orElseThrow(() -> new RuntimeException("User not found"));
     }
 
     /* ---- clock‑in / clock‑out / break events ---- */
