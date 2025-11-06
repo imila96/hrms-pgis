@@ -42,6 +42,7 @@ const DEPARTMENTS = [
   "Science Education",
   "Statistics and Computer Science",
   "Zoological Sciences",
+  "Human Resources",
   "other",
 ];
 
@@ -147,8 +148,8 @@ const EmployeeRecords = () => {
   const filteredEmployees = useMemo(() => {
     const q = searchQuery.trim().toLowerCase();
     return employees.filter((emp) => {
-      const dept = emp.department || emp.dept || emp.departmentName || "";
-      const des = emp.designation || emp.jobTitle || "";
+      const dept = emp.department || "";
+      const des = emp.designation || "";
       const empType = emp.employmentType || "";
       const stat = emp.status || "";
 
@@ -175,7 +176,7 @@ const EmployeeRecords = () => {
     filterStatus,
   ]);
 
-  // ensure page resets when filters change (so we don't end up on an out-of-range page)
+  // ensure page resets when filters change
   useEffect(() => {
     setPage(0);
   }, [

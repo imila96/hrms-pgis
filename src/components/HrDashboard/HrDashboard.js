@@ -1,218 +1,3 @@
-// // src/components/HrDashboard/HrDashboard.js
-// import React, { useState, useContext } from "react";
-// import {
-//   Box,
-//   Drawer,
-//   Toolbar,
-//   Typography,
-//   AppBar,
-//   List,
-//   ListItem,
-//   ListItemText,
-//   IconButton,
-//   Menu,
-//   MenuItem,
-//   Avatar,
-//   Tooltip,
-//   Badge,
-//   useTheme,
-// } from "@mui/material";
-// import {
-//   Brightness4,
-//   Brightness7,
-//   Notifications as NotificationsIcon,
-// } from "@mui/icons-material";
-// import { useNavigate, Routes, Route, NavLink } from "react-router-dom";
-// import { useAuth } from "../../context/AuthContext";
-// import AccountCircleIcon from "@mui/icons-material/AccountCircle";
-
-// // Components
-// import EmployeeRecords from "./EmployeeRecords";
-// import LeaveManagement from "./LeaveManagement";
-// import AttendanceTracking from "./AttendanceTracking";
-// import RecruitmentManagement from "./RecruitmentManagement";
-// import PolicyManagement from "./PolicyManagement";
-// import Profile from "./Profile";
-// import AnnouncementManagement from "./AnnouncementManagement";
-
-// // Optional: theme context
-// const ColorModeContext = React.createContext({ toggleColorMode: () => {} });
-
-// const drawerWidth = 240;
-
-// const tabItems = [
-//   { label: "Profile", path: "/hr/profile" },
-//   { label: "Employee Records", path: "/hr/records" },
-//   { label: "Leave Management", path: "/hr/leave" },
-//   { label: "Attendance Tracking", path: "/hr/attendance" },
-//   { label: "Recruitment", path: "/hr/recruitment" },
-//   { label: "Policies", path: "/hr/policies" },
-//   { label: "Announcements", path: "/hr/announcements" },
-// ];
-
-// const HrDashboard = () => {
-//   const { logout, user, setActiveRole } = useAuth();
-//   const navigate = useNavigate();
-//   const theme = useTheme();
-//   const colorMode = useContext(ColorModeContext);
-
-//   const [anchorEl, setAnchorEl] = useState(null);
-//   const open = Boolean(anchorEl);
-
-//   const handleMenuOpen = (event) => setAnchorEl(event.currentTarget);
-//   const handleMenuClose = () => setAnchorEl(null);
-
-//   const handleLogout = () => {
-//     handleMenuClose();
-//     logout();
-//     navigate("/");
-//   };
-
-//   const handleProfile = () => {
-//     handleMenuClose();
-//     navigate("/hr/profile");
-//   };
-
-//   const getInitials = (nameOrEmail) => {
-//     if (!nameOrEmail) return "U";
-//     const parts = nameOrEmail.split(" ");
-//     if (parts.length === 1) return parts[0].charAt(0).toUpperCase();
-//     return (parts[0][0] + parts[1][0]).toUpperCase();
-//   };
-
-//   const goToRoleHome = (r) => {
-//     const map = {
-//       admin: "/admin/profile",
-//       hr: "/hr/profile",
-//       director: "/director/profile",
-//       employee: "/employee/profile",
-//     };
-//     return map[r] || "/";
-//   };
-
-//   const switchTo = (role) => {
-//     setActiveRole(role);
-//     handleMenuClose();
-//     setTimeout(() => navigate(goToRoleHome(role)), 0);
-//   };
-
-//   return (
-//     <Box sx={{ display: "flex" }}>
-//       <AppBar position="fixed" sx={{ zIndex: (theme) => theme.zIndex.drawer + 1 }}>
-//         <Toolbar sx={{ display: "flex", justifyContent: "space-between" }}>
-//           <Typography variant="h6" noWrap>
-//             HR Dashboard
-//           </Typography>
-
-//           <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-//             {/* Theme Toggle */}
-//             <IconButton color="inherit" onClick={colorMode.toggleColorMode}>
-//               {theme.palette.mode === "dark" ? <Brightness7 /> : <Brightness4 />}
-//             </IconButton>
-
-//             {/* Notifications */}
-//             <IconButton color="inherit">
-//               <Badge badgeContent={2} color="error">
-//                 <NotificationsIcon />
-//               </Badge>
-//             </IconButton>
-
-//             {/* Avatar */}
-//             <Tooltip title="Account settings">
-//               <IconButton color="inherit" onClick={handleMenuOpen}>
-//                 {user?.photoURL ? (
-//                   <Avatar src={user.photoURL} />
-//                 ) : (
-//                   <Avatar>
-//                     {getInitials(user?.name || user?.email) || (
-//                       <AccountCircleIcon />
-//                     )}
-//                   </Avatar>
-//                 )}
-//               </IconButton>
-//             </Tooltip>
-
-//             <Menu
-//               anchorEl={anchorEl}
-//               open={open}
-//               onClose={handleMenuClose}
-//               anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
-//               transformOrigin={{ vertical: "top", horizontal: "right" }}
-//             >
-//               <MenuItem onClick={handleProfile}>Profile</MenuItem>
-
-//               {/* Role switcher */}
-//               <MenuItem disabled>
-//                 Active: {(user?.activeRole || "").toUpperCase()}
-//               </MenuItem>
-//               {user?.roles
-//                 ?.filter((r) => r !== user?.activeRole)
-//                 .map((r) => (
-//                   <MenuItem key={r} onClick={() => switchTo(r)}>
-//                     Switch to {r.charAt(0).toUpperCase() + r.slice(1)} view
-//                   </MenuItem>
-//                 ))}
-
-//               <MenuItem onClick={handleLogout}>Logout</MenuItem>
-//             </Menu>
-//           </Box>
-//         </Toolbar>
-//       </AppBar>
-
-//       {/* Sidebar Drawer */}
-//       <Drawer
-//         variant="permanent"
-//         sx={{
-//           width: drawerWidth,
-//           flexShrink: 0,
-//           [`& .MuiDrawer-paper`]: {
-//             width: drawerWidth,
-//             boxSizing: "border-box",
-//           },
-//         }}
-//       >
-//         <Toolbar />
-//         <Box sx={{ overflow: "auto" }}>
-//           <List>
-//             {tabItems.map(({ label, path }) => (
-//               <ListItem
-//                 button
-//                 key={path}
-//                 component={NavLink}
-//                 to={path}
-//                 sx={{ "&.active": { backgroundColor: "#e0e0e0" } }}
-//               >
-//                 <ListItemText primary={label} />
-//               </ListItem>
-//             ))}
-//           </List>
-//         </Box>
-//       </Drawer>
-
-//       {/* Main Content */}
-//       <Box component="main" sx={{ flexGrow: 1, p: 3 }}>
-//         <Toolbar />
-//         <Routes>
-//           <Route path="profile" element={<Profile />} />
-//           <Route path="records" element={<EmployeeRecords />} />
-//           <Route path="leave" element={<LeaveManagement />} />
-//           <Route path="attendance" element={<AttendanceTracking />} />
-//           <Route path="recruitment" element={<RecruitmentManagement />} />
-//           <Route path="policies" element={<PolicyManagement />} />
-//           <Route path="announcements" element={<AnnouncementManagement />} />
-//         </Routes>
-//       </Box>
-//     </Box>
-//   );
-// };
-
-// export default HrDashboard;
-// src/components/HrDashboard/HrDashboard.js
-// src/components/HrDashboard/HrDashboard.js
-
-// src/components/HrDashboard/HrDashboard.js
-// src/components/HrDashboard/HrDashboard.js
-// src/components/HrDashboard/HrDashboard.js
 import React, { useState, useContext } from "react";
 import {
   Box,
@@ -232,8 +17,19 @@ import {
   ListItemText,
   AppBar,
   Toolbar,
+  Divider,
+  Card,
+  CardContent,
+  CardActions,
+  Icon,
 } from "@mui/material";
 import {
+  BeachAccess as BeachAccessIcon,
+  AccessTime as AccessTimeIcon,
+  PersonAdd,
+  EventAvailable,
+  Campaign,
+  AccessTime,
   Brightness4,
   Brightness7,
   Notifications as NotificationsIcon,
@@ -245,7 +41,6 @@ import { Routes, Route, NavLink, useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import AccountCircleIcon from "@mui/icons-material/AccountCircle";
 
-// Components
 import EmployeeRecords from "./EmployeeRecords";
 import LeaveManagement from "./LeaveManagement";
 import AttendanceTracking from "./AttendanceTracking";
@@ -256,7 +51,6 @@ import Profile from "../Profile/Profile";
 import CreateEditProfile from "../Profile/CreateEditProfile";
 import ComplainManagement from "../HrDashboard/ComplaintManagement";
 
-// Theme context
 const ColorModeContext = React.createContext({ toggleColorMode: () => {} });
 
 const tabItems = [
@@ -267,6 +61,45 @@ const tabItems = [
   { label: "Policies", path: "/hr/policies" },
   { label: "Announcements", path: "/hr/announcements" },
   { label: "Complaints", path: "/hr/complaints" },
+];
+
+const quickActions = [
+  {
+    title: "Add New Employee",
+    description: "Quickly onboard a new staff member by adding their details.",
+    buttonText: "Create Employee",
+    icon: <PersonAdd />,
+    color: "#1976d2",
+    colorVariant: "primary",
+    path: "/hr/records/newEmployee",
+  },
+  {
+    title: "Approve Pending Leaves",
+    description: "Review and approve or reject employee leave requests.",
+    buttonText: "Review Requests",
+    icon: <EventAvailable />,
+    color: "#2e7d32",
+    colorVariant: "success",
+    path: "/hr/leave",
+  },
+  {
+    title: "Post Announcement",
+    description: "Share announcements and updates with all employees.",
+    buttonText: "Create Announcement",
+    icon: <Campaign />,
+    color: "#ed6c02",
+    colorVariant: "warning",
+    path: "/hr/announcements",
+  },
+  {
+    title: "View Attendance Summary",
+    description: "Check attendance overview for the current month.",
+    buttonText: "Open Attendance",
+    icon: <AccessTime />,
+    color: "#9c27b0",
+    colorVariant: "secondary",
+    path: "/hr/attendance",
+  },
 ];
 
 const HrDashboard = () => {
@@ -325,7 +158,6 @@ const HrDashboard = () => {
     }, 0);
   };
 
-  // Custom theme using your color palette
   const customTheme = createTheme({
     palette: {
       primary: {
@@ -497,7 +329,7 @@ const HrDashboard = () => {
         {/* Main content */}
         <Box
           component="main"
-          sx={{ flexGrow: 1, p: 3, mt: 10, backgroundColor: "#f0f1f5ff" }}
+          sx={{ flexGrow: 1, p: 3, mt: 5, backgroundColor: "#f0f1f5ff" }}
         >
           <Routes>
             {/* Dashboard Home */}
@@ -519,6 +351,15 @@ const HrDashboard = () => {
                     gutterBottom
                   >
                     Department: HR • Employee ID: {user?.employeeId || "EMP001"}
+                  </Typography>
+                  <Divider sx={{ my: 2 }} />
+                  <Typography
+                    variant="h6"
+                    fontWeight={700}
+                    gutterBottom
+                    color="#4B49AC"
+                  >
+                    High-Level Overview
                   </Typography>
 
                   {/* Overview Cards */}
@@ -577,43 +418,85 @@ const HrDashboard = () => {
                     gutterBottom
                     color="#4B49AC"
                   >
-                    Staff Dashboard
+                    Quick Access
                   </Typography>
-                  <Grid container spacing={2} sx={{ mb: 4 }}>
-                    {[
-                      { title: "Employee Records", path: "/hr/records" },
-                      { title: "Leave Management", path: "/hr/leave" },
-                      { title: "Recruitment", path: "/hr/recruitment" },
-                      { title: "Policies", path: "/hr/policies" },
-                    ].map((item, idx) => (
-                      <Grid item xs={12} md={3} key={idx}>
+                  <Grid container spacing={3}>
+                    {quickActions.map((item) => (
+                      <Grid
+                        item
+                        xs={12}
+                        sm={6}
+                        md={3}
+                        key={item.title}
+                        sx={{
+                          width: "22%",
+                          display: "flex",
+                        }}
+                      >
                         <Paper
                           sx={{
-                            p: 2,
+                            p: 3,
                             borderRadius: 3,
                             textAlign: "center",
                             transition: "0.3s",
+                            width: "100%",
+                            minHeight: 240,
+                            display: "flex",
+                            flexDirection: "column",
+                            justifyContent: "space-between",
+                            alignItems: "center",
+                            boxShadow: "0 2px 6px rgba(0,0,0,0.08)",
                             "&:hover": {
-                              boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
+                              boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
                               transform: "scale(1.03)",
                             },
                           }}
                         >
-                          <Typography fontWeight={600}>{item.title}</Typography>
+                          <Box
+                            sx={{
+                              display: "flex",
+                              flexDirection: "column",
+                              alignItems: "center",
+                              flexGrow: 1,
+                            }}
+                          >
+                            {item.icon}
+                            <Typography
+                              variant="h6"
+                              fontWeight={600}
+                              sx={{ mt: 1 }}
+                            >
+                              {item.title}
+                            </Typography>
+                            <Typography
+                              variant="body2"
+                              color="text.secondary"
+                              sx={{ mt: 1, px: 1 }}
+                            >
+                              {item.description}
+                            </Typography>
+                          </Box>
+
                           <Button
                             size="small"
                             sx={{
                               mt: 2,
                               backgroundColor: "#7DA0FA",
                               color: "#fff",
+                              fontWeight: 500,
+                              px: 3,
+                              borderRadius: 2,
+                              textTransform: "none",
+                              transition: "0.3s",
                               "&:hover": {
                                 backgroundColor: "#4B49AC",
+                                transform: "scale(1.05)",
                               },
                             }}
                             variant="contained"
                             onClick={() => navigate(item.path)}
                           >
-                            Open
+                            {item.buttonText}
                           </Button>
                         </Paper>
                       </Grid>
@@ -621,40 +504,8 @@ const HrDashboard = () => {
                   </Grid>
 
                   <Grid container spacing={3}>
-                    {/* Notifications */}
-                    <Grid item xs={12} md={6}>
-                      <Typography
-                        variant="h6"
-                        fontWeight={700}
-                        gutterBottom
-                        color="#4B49AC"
-                      >
-                        Notifications
-                      </Typography>
-                      <Paper sx={{ p: 2, borderRadius: 3 }}>
-                        <List dense>
-                          {[
-                            "Leave Request Pending - 3 requests awaiting approval",
-                            "Upcoming Interviews - 3 interviews tomorrow",
-                            "Complaint Requiring Attention - Workplace issue filed",
-                            "Policy Approval Required - Review pending",
-                          ].map((text, idx) => (
-                            <ListItem key={idx}>
-                              <ListItemIcon>
-                                <NotificationsNoneIcon
-                                  color="info"
-                                  fontSize="small"
-                                />
-                              </ListItemIcon>
-                              <ListItemText primary={text} />
-                            </ListItem>
-                          ))}
-                        </List>
-                      </Paper>
-                    </Grid>
-
                     {/* Stats */}
-                    <Grid item xs={12} md={6}>
+                    <Grid item xs={12} md={6} mt={2}>
                       <Typography
                         variant="h6"
                         fontWeight={700}
@@ -665,66 +516,113 @@ const HrDashboard = () => {
                       </Typography>
                       <Grid container spacing={2}>
                         <Grid item xs={6}>
-                          <Paper sx={{ p: 2, borderRadius: 3 }}>
-                            <Typography variant="body2" color="text.secondary">
-                              Leave Balance
-                            </Typography>
-                            <Typography
-                              variant="h5"
-                              fontWeight={700}
-                              color="#4B49AC"
+                          <Paper
+                            sx={{
+                              p: 3,
+                              borderRadius: 3,
+                              width: "100%",
+                              minHeight: 120,
+                              display: "flex",
+                              alignItems: "center",
+                              justifyContent: "space-between",
+                              boxShadow: "0 2px 6px rgba(0,0,0,0.08)",
+                              transition: "0.3s",
+                              "&:hover": {
+                                boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
+                                transform: "scale(1.03)",
+                              },
+                            }}
+                          >
+                            {/* Icon */}
+                            <Box
+                              sx={{
+                                display: "flex",
+                                alignItems: "center",
+                                justifyContent: "center",
+                                bgcolor: "#E8EAF6",
+                                borderRadius: "50%",
+                                width: 56,
+                                height: 56,
+                              }}
                             >
-                              12 Days
-                            </Typography>
-                            <Typography variant="body2">
-                              Annual leave remaining
-                            </Typography>
+                              <BeachAccessIcon
+                                sx={{ fontSize: 30, color: "#4B49AC" }}
+                              />
+                            </Box>
+
+                            {/* Text */}
+                            <Box sx={{ ml: 2, flexGrow: 1 }}>
+                              <Typography
+                                variant="subtitle2"
+                                color="text.secondary"
+                              >
+                                Leave Balance
+                              </Typography>
+                              <Typography variant="h5" fontWeight={600}>
+                                12 Days
+                              </Typography>
+                              <Typography
+                                variant="caption"
+                                color="text.secondary"
+                              >
+                                Annual leave remaining
+                              </Typography>
+                            </Box>
                           </Paper>
                         </Grid>
                         <Grid item xs={6}>
-                          <Paper sx={{ p: 2, borderRadius: 3 }}>
-                            <Typography variant="body2" color="text.secondary">
-                              Attendance Rate
-                            </Typography>
-                            <Typography
-                              variant="h5"
-                              fontWeight={700}
-                              color="#4B49AC"
-                            >
-                              98%
-                            </Typography>
-                            <Typography variant="body2">
-                              Your attendance this month
-                            </Typography>
-                          </Paper>
-                        </Grid>
-                        <Grid item xs={12}>
-                          <Paper sx={{ p: 2, borderRadius: 3 }}>
-                            <Typography variant="body2" color="text.secondary">
-                              Pending
-                            </Typography>
-                            <Typography
-                              variant="h5"
-                              fontWeight={700}
-                              color="#4B49AC"
-                            >
-                              3 Tasks
-                            </Typography>
-                            <Button
-                              variant="outlined"
-                              size="small"
+                          <Paper
+                            sx={{
+                              p: 3,
+                              borderRadius: 3,
+                              width: "100%",
+                              minHeight: 120,
+                              display: "flex",
+                              alignItems: "center",
+                              justifyContent: "space-between",
+                              boxShadow: "0 2px 6px rgba(0,0,0,0.08)",
+                              transition: "0.3s",
+                              "&:hover": {
+                                boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
+                                transform: "scale(1.03)",
+                              },
+                            }}
+                          >
+                            {/* Icon */}
+                            <Box
                               sx={{
-                                mt: 1,
-                                color: "#4B49AC",
-                                borderColor: "#4B49AC",
-                                "&:hover": {
-                                  backgroundColor: "#98BDFF",
-                                  color: "#fff",
-                                },
+                                display: "flex",
+                                alignItems: "center",
+                                justifyContent: "center",
+                                bgcolor: "#E8F5E9",
+                                borderRadius: "50%",
+                                width: 56,
+                                height: 56,
                               }}
                             >
-                              View Tasks
-                            </Button>
+                              <AccessTimeIcon
+                                sx={{ fontSize: 30, color: "#388E3C" }}
+                              />
+                            </Box>
+
+                            {/* Text */}
+                            <Box sx={{ ml: 2, flexGrow: 1 }}>
+                              <Typography
+                                variant="subtitle2"
+                                color="text.secondary"
+                              >
+                                Attendance Rate
+                              </Typography>
+                              <Typography variant="h5" fontWeight={600}>
+                                96%
+                              </Typography>
+                              <Typography
+                                variant="caption"
+                                color="text.secondary"
+                              >
+                                This month’s attendance
+                              </Typography>
+                            </Box>
                           </Paper>
                         </Grid>
                       </Grid>
@@ -739,7 +637,7 @@ const HrDashboard = () => {
                       gutterBottom
                       color="#4B49AC"
                     >
-                      Upcoming Announcements
+                      Latest Announcements
                     </Typography>
                     <Paper sx={{ p: 2, borderRadius: 3 }}>
                       <List>

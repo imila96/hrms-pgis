@@ -49,6 +49,7 @@ const DEPARTMENTS = [
   "Science Education",
   "Statistics and Computer Science",
   "Zoological Sciences",
+  "Human Resources",
   "other",
 ];
 
