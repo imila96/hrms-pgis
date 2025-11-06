@@ -40,61 +40,8 @@ const COLORS = {
   bg: "#F5F7FF",
 };
 
-const MOCK_POLICIES = [
-  {
-    id: "p1",
-    title: "Remote Work Policy",
-    description: "Guidelines for remote work and home office setup.",
-    effectiveDate: "2025-11-01",
-    status: "Active",
-    createdBy: "Admin",
-    decidedBy: "Director",
-    decidedAt: "2025-10-15T10:00:00",
-  },
-  {
-    id: "p2",
-    title: "Leave Policy Update",
-    description: "Revised leave accruals and carryover rules.",
-    effectiveDate: "2025-12-01",
-    status: "Upcoming",
-    createdBy: "HR",
-    decidedBy: null,
-    decidedAt: null,
-  },
-  {
-    id: "p3",
-    title: "Data Protection Policy",
-    description: "Standards for handling personal and sensitive data.",
-    effectiveDate: "2025-09-01",
-    status: "Archived",
-    createdBy: "Legal",
-    decidedBy: "CEO",
-    decidedAt: "2025-08-20T09:30:00",
-  },
-  {
-    id: "p4",
-    title: "Overtime Compensation",
-    description: "Rules and approval for overtime payments.",
-    effectiveDate: "2025-11-15",
-    status: "Active",
-    createdBy: "Finance",
-    decidedBy: "CFO",
-    decidedAt: "2025-10-20T11:00:00",
-  },
-  {
-    id: "p5",
-    title: "Hybrid Work Hours",
-    description: "Flexible hours for hybrid employees.",
-    effectiveDate: "2026-01-01",
-    status: "Upcoming",
-    createdBy: "HR",
-    decidedBy: null,
-    decidedAt: null,
-  },
-];
-
 export default function PolicyManagement() {
-  const [policies, setPolicies] = useState(MOCK_POLICIES);
+  const [policies, setPolicies] = useState([]);
 
   const [tab, setTab] = useState(0); // 0 Active,1 Upcoming,2 Archived,3 All
   const [search, setSearch] = useState("");
@@ -108,7 +55,9 @@ export default function PolicyManagement() {
     title: "",
     description: "",
     effectiveDate: "",
-    status: "Active",
+    status: "PENDING",
+    createdBy: "",
+    decidedBy: "",
   });
   const [selectedPolicy, setSelectedPolicy] = useState(null);
 
@@ -123,14 +72,43 @@ export default function PolicyManagement() {
     [policies]
   );
 
+  const computeDisplayStatus = (rawStatus, effectiveDate) => {
+    try {
+      const today = new Date();
+      if (rawStatus === "APPROVED") {
+        if (effectiveDate) {
+          const d = new Date(effectiveDate);
+          return d > today ? "Upcoming" : "Active";
+        }
+        return "Active";
+      }
+      if (rawStatus === "REJECTED") return "Archived";
+      return "Pending"; // PENDING or unknown
+    } catch (e) {
+      return "Pending";
+    }
+  };
+
   useEffect(() => {
-    // keep mock for now; attempt to fetch real data and replace if available
     const fetch = async () => {
       try {
         const res = await axiosInstance.get("/policies");
-        if (Array.isArray(res.data) && res.data.length) setPolicies(res.data);
+        if (Array.isArray(res.data)) {
+          const mapped = res.data.map((d) => ({
+            id: d.id,
+            title: d.title,
+            description: d.description || "",
+            effectiveDate: d.effectiveDate || null,
+            rawStatus: d.status,
+            status: computeDisplayStatus(d.status, d.effectiveDate),
+            createdBy: d.createdBy || null,
+            decidedBy: d.decidedBy || null,
+            decidedAt: d.decidedAt || null,
+          }));
+          setPolicies(mapped);
+        }
       } catch (e) {
-        // ignore, keep mock
+        console.error("Failed to fetch policies", e);
       }
     };
     fetch();
@@ -169,17 +147,9 @@ export default function PolicyManagement() {
       title: "",
       description: "",
       effectiveDate: "",
-      status: "Active",
-    });
-    setDialogOpen(true);
-  };
-  const openEdit = (p) => {
-    setEditing(p);
-    setForm({
-      title: p.title || "",
-      description: p.description || "",
-      effectiveDate: p.effectiveDate || "",
-      status: p.status || "Active",
+      status: "PENDING",
+      createdBy: "",
+      decidedBy: "",
     });
     setDialogOpen(true);
   };
@@ -189,33 +159,117 @@ export default function PolicyManagement() {
   };
 
   const openView = (p) => {
-    setSelectedPolicy(p);
+    (async () => {
+      try {
+        const res = await axiosInstance.get(`/policies/${p.id}`);
+        setSelectedPolicy(res.data);
+      } catch (e) {
+        console.error("Failed to fetch policy detail", e);
+        setSelectedPolicy(p);
+      }
+    })();
   };
-  const closeView = () => {
-    setSelectedPolicy(null);
+
+  const closeView = () => setSelectedPolicy(null);
+  const openEdit = (p) => {
+    // fetch detailed policy before editing to get full fields
+    (async () => {
+      try {
+        const res = await axiosInstance.get(`/policies/${p.id}`);
+        const data = res.data;
+        setEditing(p);
+        setForm({
+          title: data.title || "",
+          description: data.description || "",
+          effectiveDate: data.effectiveDate || "",
+          status: data.status || "PENDING",
+          createdBy: data.createdBy || "",
+          decidedBy: data.decidedBy || "",
+        });
+        setDialogOpen(true);
+      } catch (e) {
+        console.error("Failed to fetch policy detail", e);
+        // fallback to shallow edit
+        setEditing(p);
+        setForm({
+          title: p.title || "",
+          description: p.description || "",
+          effectiveDate: p.effectiveDate || "",
+          status: p.rawStatus || "PENDING",
+          createdBy: p.createdBy || "",
+          decidedBy: p.decidedBy || "",
+        });
+        setDialogOpen(true);
+      }
+    })();
   };
 
   const savePolicy = async () => {
     if (!form.title) return alert("Please enter a title");
     try {
       if (editing) {
-        // try api update
+        const payload = {
+          id: editing.id,
+          title: form.title,
+          description: form.description,
+          effectiveDate: form.effectiveDate || null,
+          status: form.status || "PENDING",
+        };
         try {
-          await axiosInstance.put(`/policies/${editing.id}`, form);
+          await axiosInstance.put(`/policies/${editing.id}`, payload);
         } catch (e) {
-          /* ignore */
+          console.error("Failed to update policy", e);
         }
         setPolicies((prev) =>
-          prev.map((p) => (p.id === editing.id ? { ...p, ...form } : p))
+          prev.map((p) =>
+            p.id === editing.id
+              ? {
+                  ...p,
+                  title: payload.title,
+                  description: payload.description,
+                  effectiveDate: payload.effectiveDate,
+                  status: computeDisplayStatus(
+                    payload.status,
+                    payload.effectiveDate
+                  ),
+                  rawStatus: payload.status,
+                }
+              : p
+          )
         );
       } else {
-        const newP = { id: `local-${Date.now()}`, ...form, createdBy: "Local" };
+        const payload = {
+          title: form.title,
+          description: form.description,
+          effectiveDate: form.effectiveDate || null,
+          status: form.status || "PENDING",
+        };
         try {
-          await axiosInstance.post("/policies", newP);
+          await axiosInstance.post("/policies", payload);
+          // refresh list
+          const res = await axiosInstance.get("/policies");
+          if (Array.isArray(res.data)) {
+            const mapped = res.data.map((d) => ({
+              id: d.id,
+              title: d.title,
+              description: d.description || "",
+              effectiveDate: d.effectiveDate || null,
+              rawStatus: d.status,
+              status: computeDisplayStatus(d.status, d.effectiveDate),
+            }));
+            setPolicies(mapped);
+          }
         } catch (e) {
-          /* ignore */
+          console.error("Failed to create policy", e);
+          const newP = {
+            id: `local-${Date.now()}`,
+            ...payload,
+            createdBy: "Local",
+            status: computeDisplayStatus(payload.status, payload.effectiveDate),
+            rawStatus: payload.status,
+          };
+          setPolicies((prev) => [newP, ...prev]);
         }
-        setPolicies((prev) => [newP, ...prev]);
       }
       closeDialog();
     } catch (e) {
@@ -238,8 +292,8 @@ export default function PolicyManagement() {
         rows.map((r) =>
           [
             r.id,
-            `"${(r.title || "").replace(/"/g, '""')}"`,
-            `"${(r.description || "").replace(/"/g, '""')}"`,
+            `"${(r.title || "").replace(/"/g, '""')}`,
+            `"${(r.description || "").replace(/"/g, '""')}`,
             r.effectiveDate || "",
             r.status || "",
             r.createdBy || "",
@@ -542,9 +596,9 @@ export default function PolicyManagement() {
                       setForm({ ...form, status: e.target.value })
                     }
                   >
-                    <MenuItem value="Active">Active</MenuItem>
-                    <MenuItem value="Upcoming">Upcoming</MenuItem>
-                    <MenuItem value="Archived">Archived</MenuItem>
+                    <MenuItem value="PENDING">Pending</MenuItem>
+                    <MenuItem value="APPROVED">Approved</MenuItem>
+                    <MenuItem value="REJECTED">Rejected</MenuItem>
                   </Select>
                 </FormControl>
 
@@ -567,35 +621,41 @@ export default function PolicyManagement() {
 
                 <Divider sx={{ my: 2 }} />
 
-                <Typography variant="subtitle2" color="text.secondary">
-                  Created By
-                </Typography>
-                <TextField
-                  fullWidth
-                  size="small"
-                  value={form.createdBy || ""}
-                  onChange={(e) =>
-                    setForm({ ...form, createdBy: e.target.value })
-                  }
-                  sx={{ mt: 1 }}
-                />
+                {editing ? (
+                  <>
+                    <Typography variant="subtitle2" color="text.secondary">
+                      Created By
+                    </Typography>
+                    <TextField
+                      fullWidth
+                      size="small"
+                      value={form.createdBy || ""}
+                      onChange={(e) =>
+                        setForm({ ...form, createdBy: e.target.value })
+                      }
+                      sx={{ mt: 1 }}
+                      InputProps={{ readOnly: true }}
+                    />
 
-                <Typography
-                  variant="subtitle2"
-                  color="text.secondary"
-                  sx={{ mt: 2 }}
-                >
-                  Decided By
-                </Typography>
-                <TextField
-                  fullWidth
-                  size="small"
-                  value={form.decidedBy || ""}
-                  onChange={(e) =>
-                    setForm({ ...form, decidedBy: e.target.value })
-                  }
-                  sx={{ mt: 1 }}
-                />
+                    <Typography
+                      variant="subtitle2"
+                      color="text.secondary"
+                      sx={{ mt: 2 }}
+                    >
+                      Decided By
+                    </Typography>
+                    <TextField
+                      fullWidth
+                      size="small"
+                      value={form.decidedBy || ""}
+                      onChange={(e) =>
+                        setForm({ ...form, decidedBy: e.target.value })
+                      }
+                      sx={{ mt: 1 }}
+                      InputProps={{ readOnly: true }}
+                    />
+                  </>
+                ) : null}
               </Paper>
             </Grid>
           </Grid>
