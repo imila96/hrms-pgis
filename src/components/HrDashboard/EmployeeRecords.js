@@ -354,10 +354,6 @@ import {
   TableContainer,
   TablePagination,
   IconButton,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
   TextField,
   Paper,
   Snackbar,
@@ -368,7 +364,7 @@ import {
   Select,
   MenuItem,
 } from "@mui/material";
-import { Edit, Delete, Done, Close } from "@mui/icons-material";
+import { Edit, Visibility, Done, Close } from "@mui/icons-material";
 import axiosInstance from "../../AxiosInstance";
 import BackButton from "../common/BackButton";
 
@@ -386,15 +382,14 @@ const EmployeeRecords = () => {
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
 
-  const [confirmDialog, setConfirmDialog] = useState({
-    open: false,
-    empId: null,
-    empName: "",
-  });
+  // removed delete confirmation UI per updated requirements
 
   // Search & filter state
   const [searchQuery, setSearchQuery] = useState("");
-  const [filterJobTitle, setFilterJobTitle] = useState("");
+  const [filterDepartment, setFilterDepartment] = useState("");
+  const [filterDesignation, setFilterDesignation] = useState("");
+  const [filterEmploymentType, setFilterEmploymentType] = useState("");
+  const [filterStatus, setFilterStatus] = useState("");
 
   // Stabilize the fetch function with useCallback so it has a stable identity.
   // This allows us to include it safely in the useEffect dependency array
@@ -403,7 +398,7 @@ const EmployeeRecords = () => {
   // on every render.
   const fetchEmployees = useCallback(async () => {
     try {
-      const response = await axiosInstance.get("/hr/employees");
+      const response = await axiosInstance.get("/hr/employees/summary");
       setEmployees(response.data);
     } catch (error) {
       console.error("Error fetching employees:", error);
@@ -441,29 +436,12 @@ const EmployeeRecords = () => {
 
   // navigation handlers for add/edit (use route-based form)
   const handleAdd = () => navigate("/hr/records/newEmployee");
-  const handleEdit = (emp) => navigate(`/hr/records/edit/${emp.id}`);
-
-  const openDeleteConfirm = (id, name) => {
-    setConfirmDialog({ open: true, empId: id, empName: name });
+  const handleEdit = (emp) => {
+    const id = emp.employeeId || emp.id;
+    navigate(`/hr/records/edit/${id}`);
   };
 
-  const handleDeleteConfirmed = async () => {
-    const { empId } = confirmDialog;
-    try {
-      await axiosInstance.delete(`/hr/employees/${empId}`);
-      showSnackbar("Employee deleted successfully", "success");
-      fetchEmployees();
-    } catch (error) {
-      console.error("Error deleting employee:", error);
-      showSnackbar("Failed to delete employee", "error");
-    } finally {
-      setConfirmDialog({ open: false, empId: null, empName: "" });
-    }
-  };
-
-  const handleDeleteCancel = () => {
-    setConfirmDialog({ open: false, empId: null, empName: "" });
-  };
+  // deletion removed from actions: no delete-related handlers
 
   // Handlers for profile change requests (approve / reject)
   const handleApproveRequest = async (id) => {
@@ -483,10 +461,36 @@ const EmployeeRecords = () => {
   const pendingRequests = 100; // placeholder
 
   // derive unique job titles for the filter dropdown
-  const uniqueJobTitles = useMemo(() => {
+  const uniqueDepartments = useMemo(() => {
     const s = new Set();
     employees.forEach((e) => {
-      if (e.jobTitle) s.add(e.jobTitle);
+      const d = e.department || e.dept || e.departmentName;
+      if (d) s.add(d);
+    });
+    return Array.from(s).sort();
+  }, [employees]);
+
+  const uniqueDesignations = useMemo(() => {
+    const s = new Set();
+    employees.forEach((e) => {
+      const des = e.designation || e.jobTitle;
+      if (des) s.add(des);
+    });
+    return Array.from(s).sort();
+  }, [employees]);
+
+  const uniqueEmploymentTypes = useMemo(() => {
+    const s = new Set();
+    employees.forEach((e) => {
+      if (e.employmentType) s.add(e.employmentType);
+    });
+    return Array.from(s).sort();
+  }, [employees]);
+
+  const uniqueStatuses = useMemo(() => {
+    const s = new Set();
+    employees.forEach((e) => {
+      if (e.status) s.add(e.status);
     });
     return Array.from(s).sort();
   }, [employees]);
@@ -495,20 +499,45 @@ const EmployeeRecords = () => {
   const filteredEmployees = useMemo(() => {
     const q = searchQuery.trim().toLowerCase();
     return employees.filter((emp) => {
-      if (filterJobTitle && emp.jobTitle !== filterJobTitle) return false;
+      const dept = emp.department || emp.dept || emp.departmentName || "";
+      const des = emp.designation || emp.jobTitle || "";
+      const empType = emp.employmentType || "";
+      const stat = emp.status || "";
+
+      if (filterDepartment && dept !== filterDepartment) return false;
+      if (filterDesignation && des !== filterDesignation) return false;
+      if (filterEmploymentType && empType !== filterEmploymentType)
+        return false;
+      if (filterStatus && stat !== filterStatus) return false;
+
       if (!q) return true;
       return (
         (emp.name || "").toLowerCase().includes(q) ||
         (emp.email || "").toLowerCase().includes(q) ||
-        (emp.jobTitle || "").toLowerCase().includes(q)
+        des.toLowerCase().includes(q) ||
+        dept.toLowerCase().includes(q)
       );
     });
-  }, [employees, searchQuery, filterJobTitle]);
+  }, [
+    employees,
+    searchQuery,
+    filterDepartment,
+    filterDesignation,
+    filterEmploymentType,
+    filterStatus,
+  ]);
 
   // ensure page resets when filters change (so we don't end up on an out-of-range page)
   useEffect(() => {
     setPage(0);
-  }, [searchQuery, filterJobTitle, employees.length]);
+  }, [
+    searchQuery,
+    filterDepartment,
+    filterDesignation,
+    filterEmploymentType,
+    filterStatus,
+    employees.length,
+  ]);
 
   const handleChangePage = (_, newPage) => setPage(newPage);
   const handleChangeRowsPerPage = (e) => {
@@ -617,35 +646,96 @@ const EmployeeRecords = () => {
             onChange={(e) => setSearchQuery(e.target.value)}
             fullWidth
             size="small"
+            sx={{ minWidth: 400 }}
           />
         </Grid>
 
-        <Grid item xs={8} md={4}>
-          <FormControl fullWidth size="small">
-            <InputLabel id="job-filter-label">Filter by Position</InputLabel>
+        <Grid item xs={12} md={2}>
+          <FormControl fullWidth size="small" sx={{ minWidth: 160 }}>
+            <InputLabel id="dept-filter-label">Department</InputLabel>
             <Select
-              labelId="job-filter-label"
-              label="Filter by Position"
-              value={filterJobTitle}
-              onChange={(e) => setFilterJobTitle(e.target.value)}
+              labelId="dept-filter-label"
+              label="Department"
+              value={filterDepartment}
+              onChange={(e) => setFilterDepartment(e.target.value)}
             >
-              <MenuItem value="">All Positions</MenuItem>
-              {uniqueJobTitles.map((jt) => (
-                <MenuItem key={jt} value={jt}>
-                  {jt}
+              <MenuItem value="">All Departments</MenuItem>
+              {uniqueDepartments.map((d) => (
+                <MenuItem key={d} value={d}>
+                  {d}
                 </MenuItem>
               ))}
             </Select>
           </FormControl>
         </Grid>
 
-        <Grid item xs={4} md={2}>
+        <Grid item xs={12} md={2}>
+          <FormControl fullWidth size="small" sx={{ minWidth: 160 }}>
+            <InputLabel id="des-filter-label">Designation</InputLabel>
+            <Select
+              labelId="des-filter-label"
+              label="Designation"
+              value={filterDesignation}
+              onChange={(e) => setFilterDesignation(e.target.value)}
+            >
+              <MenuItem value="">All Designations</MenuItem>
+              {uniqueDesignations.map((d) => (
+                <MenuItem key={d} value={d}>
+                  {d}
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+        </Grid>
+
+        <Grid item xs={12} md={2}>
+          <FormControl fullWidth size="small" sx={{ minWidth: 160 }}>
+            <InputLabel id="empType-filter-label">Employment Type</InputLabel>
+            <Select
+              labelId="empType-filter-label"
+              label="Employment Type"
+              value={filterEmploymentType}
+              onChange={(e) => setFilterEmploymentType(e.target.value)}
+            >
+              <MenuItem value="">All Types</MenuItem>
+              {uniqueEmploymentTypes.map((t) => (
+                <MenuItem key={t} value={t}>
+                  {t}
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+        </Grid>
+
+        <Grid item xs={12} md={2}>
+          <FormControl fullWidth size="small" sx={{ minWidth: 160 }}>
+            <InputLabel id="status-filter-label">Status</InputLabel>
+            <Select
+              labelId="status-filter-label"
+              label="Status"
+              value={filterStatus}
+              onChange={(e) => setFilterStatus(e.target.value)}
+            >
+              <MenuItem value="">All Statuses</MenuItem>
+              {uniqueStatuses.map((s) => (
+                <MenuItem key={s} value={s}>
+                  {s}
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+        </Grid>
+
+        <Grid item xs={12} md={2}>
           <Button
             variant="outlined"
             size="small"
             onClick={() => {
               setSearchQuery("");
-              setFilterJobTitle("");
+              setFilterDepartment("");
+              setFilterDesignation("");
+              setFilterEmploymentType("");
+              setFilterStatus("");
             }}
             sx={{ width: "100%" }}
           >
@@ -655,64 +745,69 @@ const EmployeeRecords = () => {
       </Grid>
 
       <TableContainer component={Paper} sx={{ mb: 2 }}>
-        <Table sx={{ minWidth: 800 }}>
+        <Table sx={{ minWidth: 900 }}>
           <TableHead>
             <TableRow>
-              <TableCell sx={{ fontWeight: 700 }}>Employee</TableCell>
-              <TableCell>Email</TableCell>
-              <TableCell>Contact</TableCell>
-              <TableCell>Position</TableCell>
-              <TableCell>Hire Date</TableCell>
-              <TableCell>Address</TableCell>
-              <TableCell align="right">Actions</TableCell>
+              <TableCell sx={{ fontWeight: 700 }}>Employee ID</TableCell>
+              <TableCell sx={{ fontWeight: 700 }}>Name</TableCell>
+              <TableCell sx={{ fontWeight: 700 }}>Email</TableCell>
+              <TableCell sx={{ fontWeight: 700 }}>Department</TableCell>
+              <TableCell sx={{ fontWeight: 700 }}>Designation</TableCell>
+              <TableCell sx={{ fontWeight: 700 }}>Employment Type</TableCell>
+              <TableCell sx={{ fontWeight: 700 }}>Status</TableCell>
+              <TableCell align="right" sx={{ fontWeight: 700 }}>
+                Actions
+              </TableCell>
             </TableRow>
           </TableHead>
 
           <TableBody>
             {filteredEmployees
               .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
-              .map((emp) => (
-                <TableRow key={emp.id} hover>
-                  <TableCell>
-                    <Typography fontWeight={700}>{emp.name}</Typography>
-                    <Typography variant="caption" color="text.secondary">
-                      {emp.id}
-                    </Typography>
-                  </TableCell>
-                  <TableCell>{emp.email}</TableCell>
-                  <TableCell>{emp.contact}</TableCell>
-                  <TableCell>
-                    {/* small visual chip-like feel */}
-                    <Typography>{emp.jobTitle}</Typography>
-                  </TableCell>
-                  <TableCell>{emp.hireDate}</TableCell>
-                  <TableCell
-                    sx={{
-                      maxWidth: 200,
-                      whiteSpace: "nowrap",
-                      overflow: "hidden",
-                      textOverflow: "ellipsis",
-                    }}
-                  >
-                    {emp.address}
-                  </TableCell>
-                  <TableCell align="right">
-                    <IconButton color="primary" onClick={() => handleEdit(emp)}>
-                      <Edit />
-                    </IconButton>
-                    <IconButton
-                      color="error"
-                      onClick={() => openDeleteConfirm(emp.id, emp.name)}
-                    >
-                      <Delete />
-                    </IconButton>
-                  </TableCell>
-                </TableRow>
-              ))}
+              .map((emp) => {
+                const employeeId = emp.employeeId || emp.id || "-";
+                const dept =
+                  emp.department || emp.dept || emp.departmentName || "-";
+                const des = emp.designation || emp.jobTitle || "-";
+                const empType = emp.employmentType || "-";
+                const stat = emp.status || "-";
+
+                return (
+                  <TableRow key={employeeId} hover>
+                    <TableCell>{employeeId}</TableCell>
+                    <TableCell>
+                      <Typography fontWeight={700}>{emp.name}</Typography>
+                    </TableCell>
+                    <TableCell>{emp.email}</TableCell>
+                    <TableCell>{dept}</TableCell>
+                    <TableCell>{des}</TableCell>
+                    <TableCell>{empType}</TableCell>
+                    <TableCell>{stat}</TableCell>
+                    <TableCell align="right">
+                      <IconButton
+                        color="primary"
+                        onClick={() =>
+                          navigate(`/hr/records/view/${employeeId}`)
+                        }
+                        title="View"
+                      >
+                        <Visibility />
+                      </IconButton>
+                      <IconButton
+                        color="primary"
+                        onClick={() => handleEdit(emp)}
+                        title="Edit"
+                      >
+                        <Edit />
+                      </IconButton>
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
 
             {filteredEmployees.length === 0 && (
               <TableRow>
-                <TableCell colSpan={7} align="center">
+                <TableCell colSpan={8} align="center">
                   No employee records.
                 </TableCell>
               </TableRow>
@@ -819,29 +914,7 @@ const EmployeeRecords = () => {
 
       {/* Add/Edit dialog removed — using route-based CreateEditProfile page */}
 
-      {/* Delete Confirmation Dialog */}
-      <Dialog
-        open={confirmDialog.open}
-        onClose={handleDeleteCancel}
-        maxWidth="xs"
-        fullWidth
-      >
-        <DialogTitle>Confirm Delete</DialogTitle>
-        <DialogContent>
-          Are you sure you want to delete{" "}
-          <strong>{confirmDialog.empName}</strong>?
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={handleDeleteCancel}>Cancel</Button>
-          <Button
-            variant="contained"
-            color="error"
-            onClick={handleDeleteConfirmed}
-          >
-            Delete
-          </Button>
-        </DialogActions>
-      </Dialog>
+      {/* Delete flow removed - deletion not available from UI anymore */}
 
       {/* Snackbar */}
       <Snackbar

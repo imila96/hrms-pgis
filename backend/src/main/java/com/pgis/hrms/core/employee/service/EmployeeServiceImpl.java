@@ -3,9 +3,12 @@ package com.pgis.hrms.core.employee.service;
 
 
 import com.pgis.hrms.core.employee.entity.Employee;
+import com.pgis.hrms.core.employee.entity.Employment;
 import com.pgis.hrms.core.employee.mapper.EmployeeMapper;
 import com.pgis.hrms.core.employee.repository.EmployeeRepository;
+import com.pgis.hrms.core.employee.repository.EmploymentRepository;
 import com.pgis.hrms.core.employee.dto.EmployeeDto;
+import com.pgis.hrms.core.employee.dto.EmployeeSummaryDto;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
@@ -19,6 +22,7 @@ public class EmployeeServiceImpl implements EmployeeService {
 
     private final EmployeeRepository employeeRepository;
     private final EmployeeMapper     employeeMapper;
+    private final EmploymentRepository employmentRepository;
 
     @Override
     @org.springframework.transaction.annotation.Transactional
@@ -76,5 +80,34 @@ public class EmployeeServiceImpl implements EmployeeService {
         Employee emp = employeeRepository.findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("Employee not found"));
         return employeeMapper.toDto(emp);
+    }
+
+    @Override
+    public java.util.List<EmployeeSummaryDto> getEmployeeSummaries() {
+        return employeeRepository.findAll()
+                .stream()
+                .map(emp -> {
+                    // Try to fetch the most relevant employment record. We use findFirstByEmployeeEmployeeIdOrderByDateOfJoiningAsc
+                    // as a simple choice; adjust ordering if you want latest instead.
+                    Employment employment = employmentRepository
+                            .findFirstByEmployeeEmployeeIdOrderByDateOfJoiningAsc(emp.getEmployeeId())
+                            .orElse(null);
+
+                    String dept = employment != null ? employment.getDepartment() : null;
+                    String des = employment != null ? employment.getJobTitle() : null;
+                    String empType = employment != null ? employment.getEmploymentStatus() : null;
+                    String stat = employment != null ? employment.getEmploymentStatus() : null;
+
+                    return EmployeeSummaryDto.builder()
+                            .employeeId(emp.getEmployeeId())
+                            .name(emp.getName())
+                            .email(emp.getEmail())
+                            .department(dept)
+                            .designation(des)
+                            .employmentType(empType)
+                            .status(stat)
+                            .build();
+                })
+                .collect(java.util.stream.Collectors.toList());
     }
 }

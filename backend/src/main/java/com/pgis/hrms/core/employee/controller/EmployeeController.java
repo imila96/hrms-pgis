@@ -4,6 +4,7 @@ package com.pgis.hrms.core.employee.controller;
 
 import com.pgis.hrms.core.employee.dto.EmployeeDto;
 import com.pgis.hrms.core.employee.service.EmployeeService;
+import com.pgis.hrms.core.employee.dto.EmployeeSummaryDto;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -27,6 +28,11 @@ public class EmployeeController {
     @GetMapping
     public ResponseEntity<List<EmployeeDto>> getAll() {
         return ResponseEntity.ok(employeeService.getAllEmployees());
+    }
+
+    @GetMapping("/summary")
+    public ResponseEntity<List<EmployeeSummaryDto>> getSummaries() {
+        return ResponseEntity.ok(employeeService.getEmployeeSummaries());
     }
 
     @GetMapping("/{id}")
