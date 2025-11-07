@@ -34,6 +34,7 @@ import Announcements from "./components/EmployeeDashboard/Announcements";
 import Complaints from "./components/EmployeeDashboard/Complaints";
 import Issues from "./components/EmployeeDashboard/Issues";
 import Reports from "./components/EmployeeDashboard/Reports";
+import ResetPassword from "./components/EmployeeDashboard/ResetPassword";
 
 import DirectorDashboard from "./components/DirectorDashboard/DirectorDashboard";
 
@@ -150,6 +151,7 @@ const AppRoutes = () => {
           <Route path="profile" element={<Profile />} />
           <Route path="profile/edit" element={<CreateEditProfile />} />
           <Route path="profile/edit/:id" element={<CreateEditProfile />} />
+          <Route path="reset-password" element={<ResetPassword />} />
           <Route path="salary" element={<Salary />} />
           <Route path="attendance" element={<Attendance />} />
           <Route path="leave" element={<Leave />} />

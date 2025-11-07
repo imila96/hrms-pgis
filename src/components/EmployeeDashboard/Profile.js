@@ -20,7 +20,8 @@ import {
   Avatar,
   Chip,
 } from "@mui/material";
-import { Person, Email, Phone, Home, Work, CalendarToday } from "@mui/icons-material";
+import { Person, Email, Phone, Home, Work, CalendarToday, Lock } from "@mui/icons-material";
+import { useNavigate } from "react-router-dom";
 import axiosInstance from "../../AxiosInstance";
 import BackButton from "../common/BackButton";
 
@@ -37,6 +38,7 @@ const toViewModel = (e) => ({
 });
 
 export default function Profile() {
+  const navigate = useNavigate();
   const [user, setUser] = useState(null);
   const [temp, setTemp] = useState(null);
   const [edit, setEdit] = useState(false);
@@ -202,26 +204,51 @@ export default function Profile() {
               <Typography variant="h5" fontWeight={700} color="#4B49AC">
                 Employee Information
               </Typography>
-              <Button
-                variant="contained"
-                onClick={() => setEdit(true)}
-                sx={{
-                  bgcolor: "#4B49AC",
-                  textTransform: "none",
-                  fontWeight: 600,
-                  px: 3,
-                  py: 1,
-                  borderRadius: 2,
-                  "&:hover": {
-                    bgcolor: "#3d3a8f",
-                    transform: "translateY(-2px)",
-                    boxShadow: "0 4px 12px rgba(75,73,172,0.3)",
-                  },
-                  transition: "all 0.2s ease",
-                }}
-              >
-                Edit Profile
-              </Button>
+              <Box display="flex" gap={2}>
+                <Button
+                  variant="outlined"
+                  onClick={() => navigate("/employee/reset-password")}
+                  startIcon={<Lock />}
+                  sx={{
+                    borderColor: "#7DA0FA",
+                    color: "#7DA0FA",
+                    textTransform: "none",
+                    fontWeight: 600,
+                    px: 3,
+                    py: 1,
+                    borderRadius: 2,
+                    "&:hover": {
+                      borderColor: "#4B49AC",
+                      bgcolor: "#f8f9ff",
+                      transform: "translateY(-2px)",
+                      boxShadow: "0 4px 12px rgba(75,73,172,0.2)",
+                    },
+                    transition: "all 0.2s ease",
+                  }}
+                >
+                  Reset Password
+                </Button>
+                <Button
+                  variant="contained"
+                  onClick={() => setEdit(true)}
+                  sx={{
+                    bgcolor: "#4B49AC",
+                    textTransform: "none",
+                    fontWeight: 600,
+                    px: 3,
+                    py: 1,
+                    borderRadius: 2,
+                    "&:hover": {
+                      bgcolor: "#3d3a8f",
+                      transform: "translateY(-2px)",
+                      boxShadow: "0 4px 12px rgba(75,73,172,0.3)",
+                    },
+                    transition: "all 0.2s ease",
+                  }}
+                >
+                  Edit Profile
+                </Button>
+              </Box>
             </Box>
 
             <Grid container spacing={3}>

@@ -3,7 +3,9 @@ package com.pgis.hrms.core.auth.web;
 import com.pgis.hrms.core.auth.entity.*;
 import com.pgis.hrms.core.auth.repository.*;
 import com.pgis.hrms.core.auth.service.JwtService;
+import com.pgis.hrms.core.auth.service.PasswordService;
 import com.pgis.hrms.core.auth.service.RefreshTokenService;
+import com.pgis.hrms.core.auth.web.dto.ChangePasswordRequest;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.*;
@@ -15,6 +17,7 @@ import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 
+import java.security.Principal;
 import java.util.List;
 
 @RestController
@@ -28,6 +31,7 @@ public class AuthController {
     private final PasswordEncoder encoder;
     private final JwtService jwt;
     private final RefreshTokenService refreshTokenService;
+    private final PasswordService passwordService;
 
     // DEV helper to create one user
     @PostMapping("/register")
@@ -141,6 +145,30 @@ public class AuthController {
             return ResponseEntity.ok(new TokenValidationResponse(!isExpired, isExpired));
         }
         return ResponseEntity.ok(new TokenValidationResponse(false, true));
+    }
+
+    /**
+     * Change password for authenticated user
+     */
+    @PostMapping("/change-password")
+    public ResponseEntity<MessageResponse> changePassword(
+            @Valid @RequestBody ChangePasswordRequest request,
+            Principal principal
+    ) {
+        // Validate that new password and confirm password match
+        if (!request.newPassword().equals(request.confirmPassword())) {
+            return ResponseEntity.badRequest().body(
+                    new MessageResponse("New password and confirmation do not match")
+            );
+        }
+
+        try {
+            String email = principal.getName();
+            passwordService.changePassword(email, request.currentPassword(), request.newPassword());
+            return ResponseEntity.ok(new MessageResponse("Password changed successfully. Please login again."));
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(new MessageResponse(e.getMessage()));
+        }
     }
 
     // DTO records

@@ -12,6 +12,7 @@ import {
   Tabs,
   Tab,
 } from "@mui/material";
+import { Lock } from "@mui/icons-material";
 import axiosInstance from "../../AxiosInstance";
 import { useAuth } from "../../context/AuthContext";
 import PersonalInfo from "./Sections/PersonalInfo";
@@ -125,18 +126,39 @@ export function ProfileSidebar({ user, primaryEmployment, primaryContact }) {
         >
           Employee Details
         </Typography>
-        <Button
-          variant="outlined"
-          size="small"
-          sx={{ borderRadius: 2, mb: 3 }}
-          onClick={() =>
-            isEmployeeRole
-              ? navigate(`/employee/profile/edit/${empId}`)
-              : navigate(`/hr/records/edit/${empId}`)
-          }
-        >
-          Edit Profile
-        </Button>
+        <Stack spacing={1} sx={{ width: "100%", mb: 3 }}>
+          <Button
+            variant="outlined"
+            size="small"
+            sx={{ borderRadius: 2 }}
+            onClick={() =>
+              isEmployeeRole
+                ? navigate(`/employee/profile/edit/${empId}`)
+                : navigate(`/hr/records/edit/${empId}`)
+            }
+          >
+            Edit Profile
+          </Button>
+          {isEmployeeRole && (
+            <Button
+              variant="outlined"
+              size="small"
+              startIcon={<Lock />}
+              sx={{ 
+                borderRadius: 2,
+                borderColor: "#7DA0FA",
+                color: "#7DA0FA",
+                "&:hover": {
+                  borderColor: "#4B49AC",
+                  bgcolor: "#f8f9ff",
+                }
+              }}
+              onClick={() => navigate("/employee/reset-password")}
+            >
+              Reset Password
+            </Button>
+          )}
+        </Stack>
 
         <Stack spacing={1.2} sx={{ width: "100%", color: "text.secondary" }}>
           <Typography>{user?.name || "-"}</Typography>
