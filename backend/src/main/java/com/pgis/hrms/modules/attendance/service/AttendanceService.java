@@ -21,6 +21,7 @@ public class AttendanceService {
 
     private final AttendanceEventRepository evtRepo;
     private final EmployeeRepository        empRepo;
+    private final com.pgis.hrms.core.employee.repository.EmploymentRepository employmentRepository;
 
     /* ------------- write side ------------- */
     @Transactional
@@ -161,8 +162,12 @@ public class AttendanceService {
             m.put("breakMinutes", breakMin);
             m.put("paidMinutes", paidMin);
 
-            // try to resolve employee name if available
-            empRepo.findById(empId).ifPresent(e -> m.put("name", e.getName()));
+            // try to resolve employee name and department if available
+            empRepo.findById(empId).ifPresent(e -> {
+                m.put("name", e.getName());
+                employmentRepository.findFirstByEmployeeEmployeeIdOrderByDateOfJoiningAsc(empId)
+                        .ifPresent(em -> m.put("department", em.getDepartment()));
+            });
 
             out.add(m);
         }

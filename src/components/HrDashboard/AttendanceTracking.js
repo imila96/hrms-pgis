@@ -1,200 +1,3 @@
-// import React, { useState, useEffect } from "react";
-// import {
-//   Box,
-//   Typography,
-//   Paper,
-//   Table,
-//   TableHead,
-//   TableRow,
-//   TableCell,
-//   TableBody,
-//   Select,
-//   MenuItem,
-//   TextField,
-//   Grid,
-//   Avatar,
-//   CircularProgress,
-// } from "@mui/material";
-// import axiosInstance from "../../AxiosInstance";
-// import dayjs from "dayjs";
-// import BackButton from "../common/BackButton";
-
-// const AttendanceTracking = () => {
-//   const [attendanceRecords, setAttendanceRecords] = useState([]);
-//   const [employees, setEmployees] = useState([]);
-//   const [selectedEmployee, setSelectedEmployee] = useState("");
-//   const [selectedMonth, setSelectedMonth] = useState(dayjs().format("YYYY-MM"));
-//   const [loading, setLoading] = useState(false);
-//   const [summary, setSummary] = useState(null);
-
-//   useEffect(() => {
-//     fetchEmployees();
-//   }, []);
-
-//   useEffect(() => {
-//     if (selectedEmployee) {
-//       fetchAttendanceData();
-//     }
-//   }, [selectedEmployee, selectedMonth]);
-
-//   const fetchEmployees = async () => {
-//     try {
-//       const response = await axiosInstance.get(
-//         "http://localhost:8080/hr/employees"
-//       );
-//       setEmployees(response.data);
-//     } catch (error) {
-//       console.error("Error fetching employees:", error);
-//     }
-//   };
-
-//   const fetchAttendanceData = async () => {
-//     setLoading(true);
-//     try {
-//       const response = await axiosInstance.get(
-//         `http://localhost:8080/attendance/${selectedEmployee}`,
-//         {
-//           params: { month: selectedMonth },
-//         }
-//       );
-//       setAttendanceRecords(response.data);
-//       calculateSummary(response.data);
-//     } catch (error) {
-//       console.error("Error fetching attendance data:", error);
-//     } finally {
-//       setLoading(false);
-//     }
-//   };
-
-//   const calculateSummary = (records) => {
-//     const presentDays = records.filter((r) => r.paidMinutes > 0).length;
-//     const absentDays = records.filter((r) => !r.firstIn && !r.lastOut).length;
-//     const totalPaidMinutes = records.reduce((sum, r) => sum + r.paidMinutes, 0);
-//     const avgWorkingMinutes = presentDays
-//       ? Math.round(totalPaidMinutes / presentDays)
-//       : 0;
-
-//     setSummary({
-//       presentDays,
-//       absentDays,
-//       totalPaidMinutes,
-//       avgWorkingMinutes,
-//     });
-//   };
-
-//   const formatTime = (datetime) => {
-//     if (!datetime) return "-";
-//     return dayjs(datetime).format("hh:mm A");
-//   };
-
-//   const formatDate = (date) => {
-//     return dayjs(date).format("MMM D, YYYY");
-//   };
-
-//   return (
-//     <Box sx={{ p: 3 }}>
-//       <BackButton />
-//       <Typography variant="h5" gutterBottom>
-//         Attendance Tracking
-//       </Typography>
-
-//       {/* Filters Section */}
-//       <Paper sx={{ p: 2, mb: 3 }}>
-//         <Grid container spacing={2}>
-//           <Grid item xs={12} md={6}>
-//             <Select
-//               fullWidth
-//               value={selectedEmployee}
-//               onChange={(e) => setSelectedEmployee(e.target.value)}
-//               displayEmpty
-//             >
-//               <MenuItem value="">Select Employee</MenuItem>
-//               {employees.map((emp) => (
-//                 <MenuItem key={emp.id} value={emp.id}>
-//                   <Grid container alignItems="center" spacing={1}>
-//                     <Grid item>
-//                       {emp.name} (EMP{emp.id.toString()})
-//                     </Grid>
-//                   </Grid>
-//                 </MenuItem>
-//               ))}
-//             </Select>
-//           </Grid>
-
-//           <Grid item xs={12} md={6}>
-//             <TextField
-//               label="Select Month"
-//               type="month"
-//               value={selectedMonth}
-//               onChange={(e) => setSelectedMonth(e.target.value)}
-//               fullWidth
-//               InputLabelProps={{ shrink: true }}
-//             />
-//           </Grid>
-//         </Grid>
-//       </Paper>
-
-//       {loading ? (
-//         <Box display="flex" justifyContent="center" mt={5}>
-//           <CircularProgress />
-//         </Box>
-//       ) : (
-//         <>
-//           {/* Summary Panel */}
-//           {summary && (
-//             <Paper sx={{ p: 2, mb: 3 }}>
-//               <Typography variant="subtitle1">Monthly Summary</Typography>
-//               <Grid container spacing={2}>
-//                 <Grid item xs={12} sm={3}>
-//                   Present Days: {summary.presentDays}
-//                 </Grid>
-//                 <Grid item xs={12} sm={3}>
-//                   Absent Days: {summary.absentDays}
-//                 </Grid>
-//                 <Grid item xs={12} sm={3}>
-//                   Total Paid Hours: {(summary.totalPaidMinutes / 60).toFixed(1)}{" "}
-//                   hrs
-//                 </Grid>
-//                 <Grid item xs={12} sm={3}>
-//                   Avg Daily Hours: {(summary.avgWorkingMinutes / 60).toFixed(1)}{" "}
-//                   hrs
-//                 </Grid>
-//               </Grid>
-//             </Paper>
-//           )}
-
-//           {/* Attendance Table */}
-//           <Paper>
-//             <Table>
-//               <TableHead>
-//                 <TableRow>
-//                   <TableCell>Date</TableCell>
-//                   <TableCell>First In</TableCell>
-//                   <TableCell>Last Out</TableCell>
-//                   <TableCell>Break (min)</TableCell>
-//                   <TableCell>Paid (min)</TableCell>
-//                 </TableRow>
-//               </TableHead>
-//               <TableBody>
-//                 {attendanceRecords.map((rec) => (
-//                   <TableRow key={rec.workDate}>
-//                     <TableCell>{formatDate(rec.workDate)}</TableCell>
-//                     <TableCell>{formatTime(rec.firstIn)}</TableCell>
-//                     <TableCell>{formatTime(rec.lastOut)}</TableCell>
-//                     <TableCell>{rec.breakMinutes}</TableCell>
-//                     <TableCell>{rec.paidMinutes}</TableCell>
-//                   </TableRow>
-//                 ))}
-//               </TableBody>
-//             </Table>
-//           </Paper>
-//         </>
-//       )}
-//     </Box>
-//   );
-// };
-
-// export default AttendanceTracking;
 import React, { useMemo, useState, useEffect } from "react";
 import {
   Box,
@@ -247,13 +50,32 @@ import {
 import axiosInstance from "../../AxiosInstance";
 
 // Simplified Attendance Management overview
+// static department master list (preferred for filters)
+const DEPARTMENTS = [
+  "General Administration Division",
+  "Finance Administration Division",
+  "IT & Technical Support Unit",
+  "Maintenance & Facilities Unit",
+  "Biochemistry and Molecular Biology",
+  "Biomedical Sciences",
+  "Chemical Sciences",
+  "Earth Sciences",
+  "Environmental Science",
+  "Mathematics",
+  "Physics",
+  "Plant Sciences",
+  "Science Education",
+  "Statistics and Computer Science",
+  "Zoological Sciences",
+  "Human Resources",
+  "other",
+];
 export default function AttendanceTracking() {
   // runtime stats fetched from backend
   const [stats, setStats] = useState({
     present: 0,
     absent: 0,
     onLeave: 0,
-    late: 0,
   });
 
   const cardSx = {
@@ -268,15 +90,8 @@ export default function AttendanceTracking() {
 
   // Chart tab state: 0 = Weekly, 1 = Monthly, 2 = Overview
   const [chartTab, setChartTab] = useState(0);
-  const chartDepartments = [
-    "All",
-    "Computer Science",
-    "Mathematics",
-    "Physics",
-    "Admin",
-  ];
+  const [chartDept, setChartDept] = useState("All");
   const months = useMemo(() => {
-    // last 6 months as YYYY-MM
     const out = [];
     const now = new Date();
     for (let i = 0; i < 6; i++) {
@@ -286,11 +101,8 @@ export default function AttendanceTracking() {
     }
     return out;
   }, []);
-
-  const [chartDept, setChartDept] = useState("All");
   const [chartMonth, setChartMonth] = useState(months[0]);
-  // department selected for pie chart (All = overall)
-  const [pieDept, setPieDept] = useState("All");
+  
   const [fetchedEmployees, setFetchedEmployees] = useState([]);
   const [employeeAttendanceRecords, setEmployeeAttendanceRecords] = useState(
     []
@@ -298,108 +110,19 @@ export default function AttendanceTracking() {
   const [empLoading, setEmpLoading] = useState(false);
   const [attendanceState, setAttendanceState] = useState(null);
 
-  // deterministic pseudo-random helper based on seed string
-  function seededVal(seed, mod = 10, offset = 0) {
-    let s = 0;
-    for (let i = 0; i < seed.length; i++) s = (s << 5) - s + seed.charCodeAt(i);
-    s = Math.abs(s);
-    return (s % mod) + offset;
-  }
-
-  // build weekly data (days of week)
-  const weeklyData = useMemo(() => {
-    const days = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
-    return days.map((d) => {
-      const seed = `${chartDept}-${chartMonth}-${d}`;
-      const present = seededVal(seed + "p", 40, 20);
-      const onLeave = seededVal(seed + "l", 8, 0);
-      const absent = seededVal(seed + "a", 6, 0);
-      return { day: d, Present: present, OnLeave: onLeave, Absent: absent };
-    });
-  }, [chartDept, chartMonth]);
-
-  // build monthly data (days 1..28 simplified)
-  const monthlyData = useMemo(() => {
-    const days = Array.from({ length: 28 }, (_, i) => i + 1);
-    return days.map((d) => {
-      const seed = `${chartDept}-${chartMonth}-day${d}`;
-      const present = seededVal(seed + "p", 30, 10);
-      const onLeave = seededVal(seed + "l", 5, 0);
-      const absent = seededVal(seed + "a", 4, 0);
-      return {
-        day: String(d),
-        Present: present,
-        OnLeave: onLeave,
-        Absent: absent,
-      };
-    });
-  }, [chartDept, chartMonth]);
+  // Aggregated chart data from backend overview
+  const [monthlyData, setMonthlyData] = useState([]);
 
   // --- Daily / Employee attendance records section state ---
   const [recordsTab, setRecordsTab] = useState(0);
 
-  // Mock data for the attendance records table (November 2025 sample)
-  const dataDepartments = [
-    "IT",
-    "Finance",
-    "Academic",
-    "Admin",
-    "HR",
-    "Operations",
-  ];
+  // department options derived from backend data (populated later)
   const statuses = ["Present", "Absent", "On Leave", "Late"];
+
   const [records, setRecords] = useState([]);
-  // --- compute department totals and pie data for Overview (depends on records) ---
-  const deptTotals = useMemo(() => {
-    const map = new Map();
-    records.forEach((r) => {
-      if (
-        chartMonth &&
-        chartMonth !== "All" &&
-        dayjs(r.date).format("YYYY-MM") !== chartMonth
-      )
-        return;
-      const key = r.department || "Unknown";
-      if (!map.has(key)) map.set(key, new Set());
-      map.get(key).add(r.name);
-    });
-    return Array.from(map.entries()).map(([department, namesSet]) => ({
-      department,
-      count: namesSet.size,
-    }));
-  }, [records, chartMonth]);
-
-  const pieData = useMemo(() => {
-    const counts = { Present: 0, "On Leave": 0, Absent: 0, Late: 0 };
-    records.forEach((r) => {
-      if (
-        chartMonth &&
-        chartMonth !== "All" &&
-        dayjs(r.date).format("YYYY-MM") !== chartMonth
-      )
-        return;
-      if (pieDept !== "All" && r.department !== pieDept) return;
-      if (counts[r.status] !== undefined) counts[r.status] += 1;
-    });
-    const total = Object.values(counts).reduce((a, b) => a + b, 0);
-    if (total === 0) {
-      // fallback seeded mock so the chart isn't empty
-      const statuses = ["Present", "On Leave", "Absent", "Late"];
-      const seedBase = `${chartMonth}-${pieDept}`;
-      return statuses.map((s) => ({
-        name: s,
-        value: seededVal(seedBase + "-" + s, 40, 10),
-      }));
-    }
-    return Object.keys(counts).map((k) => ({ name: k, value: counts[k] }));
-  }, [records, chartMonth, pieDept]);
-
-  const pieColors = {
-    Present: "#4B49AC",
-    Absent: "#F3797E",
-    "On Leave": "#7DA0FA",
-    Late: "#F4C430",
-  };
+  // derived departments for chart filter - use static DEPARTMENTS only
+  const chartDepartments = useMemo(() => ["All", ...DEPARTMENTS], []);
+  
   const [selectedDept, setSelectedDept] = useState("All");
   const [selectedMonth, setSelectedMonth] = useState(dayjs().format("YYYY-MM"));
   const [openEdit, setOpenEdit] = useState(false);
@@ -413,7 +136,7 @@ export default function AttendanceTracking() {
   const [addOpen, setAddOpen] = useState(false);
   const [newRecord, setNewRecord] = useState({
     name: "",
-    department: dataDepartments[0],
+    department: "",
     date: dayjs().format("YYYY-MM-DD"),
     checkIn: "",
     checkOut: "",
@@ -440,7 +163,7 @@ export default function AttendanceTracking() {
     setAddOpen(false);
     setNewRecord({
       name: "",
-      department: dataDepartments[0],
+      department: (tableDepartments && tableDepartments[1]) || "",
       date: dayjs().format("YYYY-MM-DD"),
       checkIn: "",
       checkOut: "",
@@ -471,10 +194,8 @@ export default function AttendanceTracking() {
     }
   };
 
-  const tableDepartments = useMemo(() => {
-    const set = new Set(records.map((r) => r.department));
-    return ["All", ...Array.from(set)];
-  }, [records]);
+  // table department list - use static DEPARTMENTS only
+  const tableDepartments = useMemo(() => ["All", ...DEPARTMENTS], []);
 
   const employees = useMemo(() => {
     // prefer fetchedEmployees (from backend) names; fallback to records
@@ -573,7 +294,7 @@ export default function AttendanceTracking() {
   const fetchTodayCounts = async () => {
     try {
       const res = await axiosInstance.get("/attendance/today");
-      setStats(res.data || { present: 0, absent: 0, onLeave: 0, late: 0 });
+      setStats(res.data || { present: 0, absent: 0, onLeave: 0 });
     } catch (err) {
       console.error("Failed to fetch today counts", err);
     }
@@ -621,6 +342,47 @@ export default function AttendanceTracking() {
       console.error("Failed to fetch employees", err);
     }
   };
+
+  // compute aggregated datasets (monthly) from records + filters
+  useEffect(() => {
+    try {
+      const month = chartMonth;
+      const monthStart = dayjs((month || dayjs().format("YYYY-MM")) + "-01");
+      const daysInMonth = monthStart.daysInMonth();
+
+      const filtered = records.filter((r) => {
+        if (
+          month &&
+          month !== "All" &&
+          dayjs(r.date).format("YYYY-MM") !== month
+        )
+          return false;
+        if (chartDept && chartDept !== "All" && r.department !== chartDept)
+          return false;
+        return true;
+      });
+
+      // monthly aggregates (1..daysInMonth)
+      const mCounts = Array.from({ length: daysInMonth }, (_, i) => ({
+        day: String(i + 1),
+        Present: 0,
+        OnLeave: 0,
+        Absent: 0,
+      }));
+      filtered.forEach((r) => {
+        const dnum = dayjs(r.date).date();
+        const idx = Math.max(0, Math.min(daysInMonth - 1, dnum - 1));
+        if (r.status === "Present") mCounts[idx].Present += 1;
+        else if (r.status === "On Leave") mCounts[idx].OnLeave += 1;
+        else mCounts[idx].Absent += 1;
+      });
+
+      setMonthlyData(mCounts);
+    } catch (e) {
+      console.error("Failed to compute aggregates", e);
+      setMonthlyData([]);
+    }
+  }, [records, chartDept, chartMonth]);
 
   // fetch attendance state for current user (canCheckIn / canCheckOut etc)
   const fetchMyState = async () => {
@@ -778,11 +540,6 @@ export default function AttendanceTracking() {
 
       {/* Quick punch controls for current user (uses attendance state to enable actions) */}
       <Box sx={{ display: "flex", justifyContent: "flex-end", gap: 1, mb: 2 }}>
-        {attendanceState?.canCheckIn && (
-          <Button variant="contained" onClick={() => handlePunch("CHECK_IN")}>
-            Check In
-          </Button>
-        )}
         {attendanceState?.canBreakOut && (
           <Button variant="outlined" onClick={() => handlePunch("BREAK_OUT")}>
             Start Break
@@ -838,16 +595,7 @@ export default function AttendanceTracking() {
           </Paper>
         </Grid>
 
-        <Grid item xs={12} sm={6} md={3}>
-          <Paper sx={{ ...cardSx }} elevation={1}>
-            <Typography variant="body2" color="text.secondary">
-              No of late employees
-            </Typography>
-            <Typography variant="h4" fontWeight={700} sx={{ mt: 1 }}>
-              {stats.late}
-            </Typography>
-          </Paper>
-        </Grid>
+        {/* 'No of late employees' card removed per request */}
       </Grid>
 
       {/* Charts section: Weekly / Monthly / Overview tabs */}
@@ -857,7 +605,6 @@ export default function AttendanceTracking() {
           onChange={(_, v) => setChartTab(v)}
           sx={{ mb: 2 }}
         >
-          <Tab label="Weekly" />
           <Tab label="Monthly" />
           <Tab label="Overview" />
         </Tabs>
@@ -900,24 +647,11 @@ export default function AttendanceTracking() {
         </Grid>
 
         {/* Chart area + legend controls */}
-        <Box sx={{ width: "100%", height: 520 }}>
+        <Box sx={{ width: "100%", height: 420, overflow: "hidden" }}>
           {/* Overview controls removed toggle chips; show department-level charts in Overview tab */}
 
           <ResponsiveContainer width="100%" height="100%">
             {chartTab === 0 ? (
-              <BarChart
-                data={weeklyData}
-                margin={{ top: 20, right: 30, left: 0, bottom: 5 }}
-              >
-                <XAxis dataKey="day" />
-                <YAxis />
-                <Tooltip />
-                <Legend />
-                <Bar dataKey="Present" stackId="a" fill="#4B49AC" />
-                <Bar dataKey="OnLeave" stackId="a" fill="#7DA0FA" />
-                <Bar dataKey="Absent" stackId="a" fill="#F3797E" />
-              </BarChart>
-            ) : chartTab === 1 ? (
               <BarChart
                 data={monthlyData}
                 margin={{ top: 20, right: 30, left: 0, bottom: 5 }}
@@ -932,32 +666,55 @@ export default function AttendanceTracking() {
               </BarChart>
             ) : (
               <Box sx={{ p: 2 }}>
-                {/* Overview: show total employees by department (bar) and a pie chart for status distribution for selected department/month */}
-                <Grid container spacing={2}>
+                <Grid container spacing={2} alignItems="stretch">
+                  {/* Bar chart */}
                   <Grid item xs={12} md={7}>
-                    <Paper sx={{ p: 2, height: 440 }}>
+                    <Paper
+                      sx={{
+                        p: 2,
+                        height: 340,
+                        display: "flex",
+                        flexDirection: "column",
+                        justifyContent: "space-between",
+                        overflow: "hidden",
+                      }}
+                    >
                       <Typography variant="subtitle2" sx={{ mb: 1 }}>
                         Total employees by department ({chartMonth})
                       </Typography>
-                      <ResponsiveContainer width="100%" height={340}>
-                        <BarChart
-                          data={deptTotals}
-                          margin={{ top: 10, right: 10, left: 0, bottom: 5 }}
-                        >
-                          <XAxis dataKey="department" />
-                          <YAxis />
-                          <Tooltip />
-                          <Bar dataKey="count" fill="#4B49AC" />
-                        </BarChart>
-                      </ResponsiveContainer>
+
+                      <Box sx={{ flexGrow: 1, minHeight: 0 }}>
+                        <ResponsiveContainer width="100%" height="100%">
+                          <BarChart
+                            data={deptTotals}
+                            margin={{ top: 10, right: 10, left: 0, bottom: 5 }}
+                          >
+                            <XAxis dataKey="department" />
+                            <YAxis />
+                            <Tooltip />
+                            <Bar dataKey="count" fill="#4B49AC" />
+                          </BarChart>
+                        </ResponsiveContainer>
+                      </Box>
                     </Paper>
                   </Grid>
 
+                  {/* Pie chart */}
                   <Grid item xs={12} md={5}>
-                    <Paper sx={{ p: 2, height: 440 }}>
+                    <Paper
+                      sx={{
+                        p: 2,
+                        height: 340,
+                        display: "flex",
+                        flexDirection: "column",
+                        justifyContent: "space-between",
+                        overflow: "hidden",
+                      }}
+                    >
                       <Typography variant="subtitle2" sx={{ mb: 1 }}>
                         Attendance distribution ({chartMonth})
                       </Typography>
+
                       <FormControl fullWidth size="small" sx={{ mb: 1 }}>
                         <InputLabel>Department</InputLabel>
                         <Select
@@ -976,31 +733,33 @@ export default function AttendanceTracking() {
                         </Select>
                       </FormControl>
 
-                      <ResponsiveContainer width="100%" height={340}>
-                        <PieChart>
-                          <Pie
-                            data={pieData}
-                            dataKey="value"
-                            nameKey="name"
-                            cx="50%"
-                            cy="50%"
-                            outerRadius={80}
-                            label={({ name, percent }) =>
-                              `${name} ${(percent * 100).toFixed(1)}%`
-                            }
-                            labelLine={false}
-                          >
-                            {pieData.map((entry) => (
-                              <Cell
-                                key={entry.name}
-                                fill={pieColors[entry.name] || "#8884d8"}
-                              />
-                            ))}
-                          </Pie>
-                          <Tooltip />
-                          <Legend />
-                        </PieChart>
-                      </ResponsiveContainer>
+                      <Box sx={{ flexGrow: 1, minHeight: 0 }}>
+                        <ResponsiveContainer width="100%" height="100%">
+                          <PieChart>
+                            <Pie
+                              data={pieData}
+                              dataKey="value"
+                              nameKey="name"
+                              cx="50%"
+                              cy="50%"
+                              outerRadius="70%"
+                              label={({ name, percent }) =>
+                                `${name} ${(percent * 100).toFixed(1)}%`
+                              }
+                              labelLine={false}
+                            >
+                              {pieData.map((entry) => (
+                                <Cell
+                                  key={entry.name}
+                                  fill={pieColors[entry.name] || "#8884d8"}
+                                />
+                              ))}
+                            </Pie>
+                            <Tooltip />
+                            <Legend />
+                          </PieChart>
+                        </ResponsiveContainer>
+                      </Box>
                     </Paper>
                   </Grid>
                 </Grid>
@@ -1333,11 +1092,13 @@ export default function AttendanceTracking() {
                       }))
                     }
                   >
-                    {dataDepartments.map((d) => (
-                      <MenuItem key={d} value={d}>
-                        {d}
-                      </MenuItem>
-                    ))}
+                    {tableDepartments
+                      .filter((d) => d !== "All")
+                      .map((d) => (
+                        <MenuItem key={d} value={d}>
+                          {d}
+                        </MenuItem>
+                      ))}
                   </Select>
                 </FormControl>
                 <TextField
