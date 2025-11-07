@@ -29,6 +29,7 @@ import {
 } from "@mui/icons-material";
 import { useAuth } from "../../context/AuthContext";
 import { useNavigate } from "react-router-dom";
+import axiosInstance from "../../AxiosInstance";
 
 // ============ Presentational Components ============
 
@@ -267,6 +268,21 @@ export default function EmployeeOverview() {
 
   const [loading, setLoading] = useState(true);
   const [activeFilter, setActiveFilter] = useState("all");
+  const [employeeName, setEmployeeName] = useState("");
+
+  // Fetch employee name from backend
+  useEffect(() => {
+    const fetchEmployeeName = async () => {
+      try {
+        const { data } = await axiosInstance.get("/hr/employees/me");
+        setEmployeeName(data.name || "");
+      } catch (error) {
+        console.error("Failed to fetch employee name:", error);
+      }
+    };
+    
+    fetchEmployeeName();
+  }, []);
 
   // Simulate data load
   useEffect(() => {
@@ -369,7 +385,7 @@ export default function EmployeeOverview() {
         }}
       >
         <Typography variant="h4" fontWeight={700} gutterBottom>
-          Welcome back, {user?.name || user?.email?.split("@")[0] || "Employee"}!
+          Welcome back, {employeeName || user?.email?.split("@")[0] || "Employee"}!
         </Typography>
         <Typography variant="body1" sx={{ opacity: 0.95 }}>
           Here's your activity overview for today
