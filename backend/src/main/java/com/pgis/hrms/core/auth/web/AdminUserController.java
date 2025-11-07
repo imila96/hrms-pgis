@@ -13,6 +13,7 @@ import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.Size;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
+import org.springframework.web.server.ResponseStatusException;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.transaction.annotation.Transactional;
@@ -84,7 +85,12 @@ public class AdminUserController {
             if (!Collections.disjoint(r.roles(), trigger) && u.getEmployee() == null) {
                 Employee e = new Employee();
                 e.setName(Optional.ofNullable(r.name()).orElse(u.getEmail()));
-                e.setEmail(Optional.ofNullable(r.empEmail()).orElse(u.getEmail()));
+                String empEmail = Optional.ofNullable(r.empEmail()).orElse(u.getEmail());
+                // Prevent creating an employee with an email that already exists
+                if (empRepo.findByEmail(empEmail).isPresent()) {
+                    throw new ResponseStatusException(HttpStatus.CONFLICT, "Employee with this email already exists");
+                }
+                e.setEmail(empEmail);
                 e = empRepo.save(e);
                 u.setEmployee(e);
             }

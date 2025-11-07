@@ -21,6 +21,8 @@ import com.pgis.hrms.core.employee.mapper.CompensationMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
+import org.springframework.http.HttpStatus;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -41,7 +43,14 @@ public class EmployeeServiceImpl implements EmployeeService {
     @Override
     @org.springframework.transaction.annotation.Transactional
     public EmployeeDto createEmployee(EmployeeDto dto) {
-        // existing simple create behaviour preserved
+        // Ensure email uniqueness before creating
+        String email = dto != null ? dto.getEmail() : null;
+        if (email != null && !email.isBlank()) {
+            if (employeeRepository.findByEmail(email).isPresent()) {
+                throw new ResponseStatusException(HttpStatus.CONFLICT, "Email already in use");
+            }
+        }
+
         var e = employeeMapper.toEntity(dto);
         var saved = employeeRepository.save(e);
         return employeeMapper.toDto(saved);
@@ -52,6 +61,13 @@ public class EmployeeServiceImpl implements EmployeeService {
     public EmployeeDto createEmployee(EmployeeRequest request) {
         // Create employee entity
         var empDto = request.getEmployee();
+        // Check email uniqueness if provided
+        if (empDto != null && empDto.getEmail() != null && !empDto.getEmail().isBlank()) {
+            if (employeeRepository.findByEmail(empDto.getEmail()).isPresent()) {
+                throw new ResponseStatusException(HttpStatus.CONFLICT, "Email already in use");
+            }
+        }
+
         var empEntity = employeeMapper.toEntity(empDto == null ? new EmployeeDto() : empDto);
         var savedEmp = employeeRepository.save(empEntity);
 
@@ -100,6 +116,15 @@ public class EmployeeServiceImpl implements EmployeeService {
     public EmployeeDto updateEmployee(Integer id, EmployeeDto dto) {
         Employee existing = employeeRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Employee not found"));
+        // If email is being changed, ensure the new email is not used by another employee
+        if (dto.getEmail() != null && !dto.getEmail().equals(existing.getEmail())) {
+            employeeRepository.findByEmail(dto.getEmail())
+                    .ifPresent(e -> {
+                        if (!e.getEmployeeId().equals(id)) {
+                            throw new ResponseStatusException(HttpStatus.CONFLICT, "Email already in use");
+                        }
+                    });
+        }
 
         existing.setName(dto.getName());
         existing.setEmail(dto.getEmail());
@@ -124,6 +149,16 @@ public class EmployeeServiceImpl implements EmployeeService {
 
         var empDto = request.getEmployee();
         if (empDto != null) {
+            // If email is being changed, ensure the new email is not used by another employee
+            if (empDto.getEmail() != null && !empDto.getEmail().equals(existing.getEmail())) {
+                employeeRepository.findByEmail(empDto.getEmail())
+                        .ifPresent(e -> {
+                            if (!e.getEmployeeId().equals(id)) {
+                                throw new ResponseStatusException(HttpStatus.CONFLICT, "Email already in use");
+                            }
+                        });
+            }
+
             existing.setName(empDto.getName());
             existing.setEmail(empDto.getEmail());
             existing.setGender(empDto.getGender());

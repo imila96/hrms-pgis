@@ -286,6 +286,15 @@ function CreateEditProfile() {
       ...s,
       [section]: { ...s[section], [field]: value },
     }));
+
+    // clear any validation error tied to this field as user edits
+    setErrors((prev) => {
+      if (!prev) return prev;
+      if (!Object.prototype.hasOwnProperty.call(prev, field)) return prev;
+      const copy = { ...prev };
+      delete copy[field];
+      return copy;
+    });
   };
 
   const validateStep = (step) => {
@@ -387,44 +396,52 @@ function CreateEditProfile() {
   const handleImageUpload = (e) => {
     const file = e.target.files && e.target.files[0];
     if (!file) return;
-    
+
     // Validate file type
-    const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/bmp', 'image/webp'];
+    const validTypes = [
+      "image/jpeg",
+      "image/jpg",
+      "image/png",
+      "image/gif",
+      "image/bmp",
+      "image/webp",
+    ];
     if (!validTypes.includes(file.type)) {
       setSnackbar({
         open: true,
-        message: 'Please upload a valid image file (JPEG, PNG, GIF, BMP, or WebP)',
-        severity: 'error'
+        message:
+          "Please upload a valid image file (JPEG, PNG, GIF, BMP, or WebP)",
+        severity: "error",
       });
       return;
     }
-    
+
     // Validate file size (max 5MB)
     const maxSize = 5 * 1024 * 1024; // 5MB in bytes
     if (file.size > maxSize) {
       setSnackbar({
         open: true,
-        message: 'Image size should not exceed 5MB',
-        severity: 'error'
+        message: "Image size should not exceed 5MB",
+        severity: "error",
       });
       return;
     }
-    
+
     const reader = new FileReader();
     reader.onload = (ev) => {
       setProfileImage(ev.target.result);
       setField("personal", "profileImage", ev.target.result);
       setSnackbar({
         open: true,
-        message: 'Image uploaded successfully',
-        severity: 'success'
+        message: "Image uploaded successfully",
+        severity: "success",
       });
     };
     reader.onerror = () => {
       setSnackbar({
         open: true,
-        message: 'Failed to read image file',
-        severity: 'error'
+        message: "Failed to read image file",
+        severity: "error",
       });
     };
     reader.readAsDataURL(file);
@@ -606,7 +623,35 @@ function CreateEditProfile() {
       else navigate("/hr/records");
     } catch (err) {
       console.error("Save failed", err);
-      setSnackbar({ open: true, message: "Save failed", severity: "error" });
+      const status = err?.response?.status;
+      // Try to extract a helpful message from the server response
+      const serverMsg =
+        err?.response?.data?.message ||
+        err?.response?.data?.error ||
+        err?.response?.data ||
+        err?.message;
+
+      // Determine if this is a duplicate-email situation
+      const isDuplicate =
+        status === 409 ||
+        (status === 500 &&
+          typeof serverMsg === "string" &&
+          /unique|duplicate|constraint|email already/i.test(serverMsg));
+
+      if (isDuplicate) {
+        const msg =
+          typeof serverMsg === "string" && serverMsg.length > 0
+            ? serverMsg
+            : "This email already exists. Please use a different email.";
+        setErrors((prev) => ({ ...(prev || {}), email: msg }));
+        setSnackbar({ open: true, message: msg, severity: "error" });
+      } else {
+        const msg =
+          typeof serverMsg === "string" && serverMsg.length > 0
+            ? serverMsg
+            : "Save failed";
+        setSnackbar({ open: true, message: msg, severity: "error" });
+      }
     } finally {
       setIsSubmitting(false);
     }
@@ -675,7 +720,8 @@ function CreateEditProfile() {
             </Box>
 
             <Typography variant="caption" color="text.secondary" align="center">
-              Supported formats: JPEG, PNG, GIF, BMP, WebP<br />
+              Supported formats: JPEG, PNG, GIF, BMP, WebP
+              <br />
               Max size: 5MB | Recommended: 200x200px
             </Typography>
           </Box>

@@ -18,6 +18,8 @@ public class Employee {
     private Integer employeeId;
 
     private String name;
+
+    @Column(unique = true)
     private String email;
     
     // New SSE-specific fields
