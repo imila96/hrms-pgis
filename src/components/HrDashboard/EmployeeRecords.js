@@ -22,7 +22,7 @@ import {
   Select,
   MenuItem,
 } from "@mui/material";
-import { Edit, Visibility, Done, Close } from "@mui/icons-material";
+import { Edit, Visibility } from "@mui/icons-material";
 import axiosInstance from "../../AxiosInstance";
 import BackButton from "../common/BackButton";
 
@@ -87,20 +87,6 @@ const EmployeeRecords = () => {
   }, [fetchEmployees]);
 
   // fetch profile change requests (placeholder endpoint)
-  const [requests, setRequests] = useState([]);
-  const fetchRequests = useCallback(async () => {
-    try {
-      const res = await axiosInstance.get("/hr/profile-change-requests");
-      setRequests(res.data);
-    } catch (err) {
-      // if endpoint not available yet, silently keep requests empty
-      // console.error("Error fetching requests:", err);
-    }
-  }, []);
-
-  useEffect(() => {
-    fetchRequests();
-  }, [fetchRequests]);
 
   const showSnackbar = (message, severity = "info") => {
     setSnackbar({ open: true, message, severity });
@@ -118,21 +104,10 @@ const EmployeeRecords = () => {
   };
 
   // Handlers for profile change requests (approve / reject)
-  const handleApproveRequest = async (id) => {
-    // For now just remove from local list and show snackbar; later call backend
-    setRequests((prev) => prev.filter((r) => r.id !== id));
-    showSnackbar("Request approved", "success");
-  };
-
-  const handleRejectRequest = async (id) => {
-    setRequests((prev) => prev.filter((r) => r.id !== id));
-    showSnackbar("Request rejected", "info");
-  };
 
   // Overview values (total from table for now; other values are placeholders)
   const totalEmployees = employees.length;
   const activeEmployees = 200; // dummy for now
-  const pendingRequests = 100; // placeholder
 
   // derive unique job titles for the filter dropdown
   const uniqueDesignations = useMemo(() => {
@@ -245,29 +220,6 @@ const EmployeeRecords = () => {
             </Typography>
             <Typography variant="h5" fontWeight={700} color="#4B49AC">
               {activeEmployees}
-            </Typography>
-          </Paper>
-        </Grid>
-
-        <Grid item xs={12} md={4} sx={{ display: "flex" }}>
-          <Paper
-            sx={{
-              p: 2,
-              borderRadius: 2,
-              transition: "0.2s",
-              display: "flex",
-              flexDirection: "column",
-              gap: 0.5,
-              minHeight: 120,
-              justifyContent: "center",
-              flex: 1,
-            }}
-          >
-            <Typography variant="body2" color="text.secondary">
-              Pending Requests
-            </Typography>
-            <Typography variant="h5" fontWeight={700} color="#4B49AC">
-              {pendingRequests}
             </Typography>
           </Paper>
         </Grid>
@@ -469,92 +421,6 @@ const EmployeeRecords = () => {
           rowsPerPageOptions={[5, 10, 25]}
         />
       </TableContainer>
-
-      <Typography variant="h6" sx={{ mt: 4, mb: 1 }}>
-        Employee profile change request
-      </Typography>
-
-      <Paper
-        sx={{ overflowX: "auto", maxHeight: 300, overflowY: "auto", mt: 2 }}
-      >
-        <Table sx={{ minWidth: 800 }}>
-          <TableHead
-            sx={{
-              position: "sticky",
-              top: 0,
-              zIndex: 2,
-              backgroundColor: "#fff",
-            }}
-          >
-            <TableRow>
-              <TableCell>
-                <strong>Name</strong>
-              </TableCell>
-              <TableCell>
-                <strong>Email</strong>
-              </TableCell>
-              <TableCell>
-                <strong>Contact</strong>
-              </TableCell>
-              <TableCell>
-                <strong>Position</strong>
-              </TableCell>
-              <TableCell>
-                <strong>Hire Date</strong>
-              </TableCell>
-              <TableCell>
-                <strong>Address</strong>
-              </TableCell>
-              <TableCell>
-                <strong>Actions</strong>
-              </TableCell>
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {requests.length === 0 ? (
-              <TableRow>
-                <TableCell colSpan={7} align="center">
-                  No profile change requests.
-                </TableCell>
-              </TableRow>
-            ) : (
-              requests.map((req) => (
-                <TableRow key={req.id}>
-                  <TableCell>{req.name}</TableCell>
-                  <TableCell>{req.email}</TableCell>
-                  <TableCell>{req.contact}</TableCell>
-                  <TableCell>{req.jobTitle}</TableCell>
-                  <TableCell>{req.hireDate}</TableCell>
-                  <TableCell
-                    sx={{
-                      maxWidth: 200,
-                      whiteSpace: "nowrap",
-                      overflow: "hidden",
-                      textOverflow: "ellipsis",
-                    }}
-                  >
-                    {req.address}
-                  </TableCell>
-                  <TableCell>
-                    <IconButton
-                      color="success"
-                      onClick={() => handleApproveRequest(req.id)}
-                    >
-                      <Done />
-                    </IconButton>
-                    <IconButton
-                      color="error"
-                      onClick={() => handleRejectRequest(req.id)}
-                    >
-                      <Close />
-                    </IconButton>
-                  </TableCell>
-                </TableRow>
-              ))
-            )}
-          </TableBody>
-        </Table>
-      </Paper>
 
       {/* Add/Edit dialog removed — using route-based CreateEditProfile page */}
 
