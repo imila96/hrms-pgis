@@ -155,7 +155,7 @@ export function ProfileSidebar({ user, primaryEmployment, primaryContact }) {
               }}
               onClick={() => navigate("/employee/reset-password")}
             >
-              Reset Password
+              Change Password
             </Button>
           )}
         </Stack>

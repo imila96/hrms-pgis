@@ -226,7 +226,7 @@ export default function Profile() {
                     transition: "all 0.2s ease",
                   }}
                 >
-                  Reset Password
+                  Change Password
                 </Button>
                 <Button
                   variant="contained"

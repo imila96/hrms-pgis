@@ -310,7 +310,7 @@ const DashboardLayout = () => {
               >
                 <MenuItem onClick={handleProfile}>Profile</MenuItem>
                 <MenuItem onClick={() => { handleMenuClose(); navigate("/employee/reset-password"); }}>
-                  Reset Password
+                  Change Password
                 </MenuItem>
 
                 {/* Role switcher */}
