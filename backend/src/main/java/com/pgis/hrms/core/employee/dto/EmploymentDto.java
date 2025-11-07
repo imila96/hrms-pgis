@@ -18,4 +18,5 @@ public class EmploymentDto {
     private LocalDate confirmationDate;
     private LocalDate dateOfRetirement;
     private String employmentStatus;
+    private String employmentType;
 }

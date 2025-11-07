@@ -37,4 +37,7 @@ public class Employment {
 
     @Column(length = 50)
     private String employmentStatus;
+    
+    @Column(length = 50)
+    private String employmentType;
 }

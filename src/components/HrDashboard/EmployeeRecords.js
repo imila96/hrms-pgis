@@ -107,7 +107,15 @@ const EmployeeRecords = () => {
 
   // Overview values (total from table for now; other values are placeholders)
   const totalEmployees = employees.length;
-  const activeEmployees = 200; // dummy for now
+  const activeEmployees = useMemo(() => {
+    if (!employees || employees.length === 0) return 0;
+    return employees.filter((emp) => {
+      const stat = (
+        (emp.status || emp.employmentStatus || "") + ""
+      ).toLowerCase();
+      return stat === "active";
+    }).length;
+  }, [employees]);
 
   // derive unique job titles for the filter dropdown
   const uniqueDesignations = useMemo(() => {

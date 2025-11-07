@@ -212,7 +212,7 @@ public class EmployeeServiceImpl implements EmployeeService {
 
                     String dept = employment != null ? employment.getDepartment() : null;
                     String des = employment != null ? employment.getJobTitle() : null;
-                    String empType = employment != null ? employment.getEmploymentStatus() : null;
+                    String empType = employment != null ? employment.getEmploymentType() : null;
                     String stat = employment != null ? employment.getEmploymentStatus() : null;
 
                     return EmployeeSummaryDto.builder()

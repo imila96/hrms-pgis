@@ -21,6 +21,7 @@ public class EmploymentMapper {
                 .confirmationDate(employment.getConfirmationDate())
                 .dateOfRetirement(employment.getDateOfRetirement())
                 .employmentStatus(employment.getEmploymentStatus())
+                .employmentType(employment.getEmploymentType())
                 .build();
     }
 
@@ -37,6 +38,7 @@ public class EmploymentMapper {
                 .confirmationDate(dto.getConfirmationDate())
                 .dateOfRetirement(dto.getDateOfRetirement())
                 .employmentStatus(dto.getEmploymentStatus())
+                .employmentType(dto.getEmploymentType())
                 .build();
     }
 }

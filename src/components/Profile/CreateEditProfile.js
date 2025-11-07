@@ -58,6 +58,8 @@ const DEPARTMENTS = [
   "other",
 ];
 
+const EMPLOYMENT_TYPES = ["Permanent", "Contract", "Temporary"];
+
 function CreateEditProfile() {
   const navigate = useNavigate();
   const { id } = useParams();
@@ -190,7 +192,7 @@ function CreateEditProfile() {
             employeeId: employment.employeeId || id,
             jobTitle: employment.jobTitle || "",
             department: employment.department || "",
-            employmentType: employment.employmentStatus || "",
+            employmentType: employment.employmentType || "",
             dateOfJoining: employment.dateOfJoining || "",
             probationEndDate: employment.probationEndDate || "",
             confirmationDate: employment.confirmationDate || "",
@@ -261,6 +263,8 @@ function CreateEditProfile() {
       if (!e.jobTitle || !String(e.jobTitle).trim()) errs.jobTitle = "Required";
       if (!e.department || !String(e.department).trim())
         errs.department = "Required";
+      if (!e.employmentType || !String(e.employmentType).trim())
+        errs.employmentType = "Required";
       if (!e.dateOfJoining) errs.dateOfJoining = "Required";
       if (!e.employmentStatus || !String(e.employmentStatus).trim())
         errs.employmentStatus = "Required";
@@ -353,6 +357,7 @@ function CreateEditProfile() {
     employment: {
       jobTitle: employeeData.employment.jobTitle || null,
       department: employeeData.employment.department || null,
+      employmentType: employeeData.employment.employmentType || null,
       dateOfJoining: employeeData.employment.dateOfJoining || null,
       probationEndDate: employeeData.employment.probationEndDate || null,
       confirmationDate: employeeData.employment.confirmationDate || null,
@@ -881,6 +886,35 @@ function CreateEditProfile() {
                         ))}
                       </Select>
                       <FormHelperText>{errors.department}</FormHelperText>
+                    </FormControl>
+                  </Grid>
+
+                  <Grid item>
+                    <FormControl fullWidth required>
+                      <InputLabel>
+                        <span>
+                          Employment Type{" "}
+                          <span style={{ color: "red" }}>*</span>
+                        </span>
+                      </InputLabel>
+                      <Select
+                        value={employeeData.employment.employmentType}
+                        label="Employment Type"
+                        onChange={(e) =>
+                          setField(
+                            "employment",
+                            "employmentType",
+                            e.target.value
+                          )
+                        }
+                      >
+                        {EMPLOYMENT_TYPES.map((t) => (
+                          <MenuItem key={t} value={t}>
+                            {t}
+                          </MenuItem>
+                        ))}
+                      </Select>
+                      <FormHelperText>{errors.employmentType}</FormHelperText>
                     </FormControl>
                   </Grid>
 
