@@ -30,7 +30,6 @@ import { useAuth } from "../../context/AuthContext";
 import AccountCircleIcon from "@mui/icons-material/AccountCircle";
 
 // Admin Subpages
-import Profile from "../Profile/Profile";
 import UserManagement from "./UserManagement/UserManagement";
 import SystemConfig from "./SystemConfig/SystemConfig";
 import Troubleshooting from "./Troubleshooting/Troubleshooting";
@@ -74,11 +73,6 @@ const AdminDashboard = () => {
     navigate("/");
   };
 
-  const handleProfile = () => {
-    handleMenuClose();
-    navigate("/admin/profile");
-  };
-
   const getInitials = (nameOrEmail) => {
     if (!nameOrEmail) return "U";
     const parts = nameOrEmail.split(" ");
@@ -88,10 +82,10 @@ const AdminDashboard = () => {
 
   const goToRoleHome = (r) => {
     const map = {
-      admin: "/admin/profile",
-      hr: "/hr/profile",
-      director: "/director/profile",
-      employee: "/employee/profile",
+      admin: "/admin/users",
+      hr: "/hr/records",
+      director: "/director/enhanced",
+      employee: "/employee",
     };
     return map[r] || "/";
   };
@@ -241,7 +235,6 @@ const AdminDashboard = () => {
                 anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
                 transformOrigin={{ vertical: "top", horizontal: "right" }}
               >
-                <MenuItem onClick={handleProfile}>Profile</MenuItem>
                 <MenuItem disabled>
                   Active: {(user?.activeRole || "").toUpperCase()}
                 </MenuItem>
@@ -416,7 +409,6 @@ const AdminDashboard = () => {
             />
 
             {/* Routes */}
-            <Route path="profile" element={<Profile />} />
             <Route path="users" element={<UserManagement />} />
             <Route path="system" element={<SystemConfig />} />
             <Route path="troubleshoot" element={<Troubleshooting />} />

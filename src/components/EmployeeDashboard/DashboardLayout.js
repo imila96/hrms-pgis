@@ -40,7 +40,6 @@ import { createTheme, ThemeProvider } from "@mui/material/styles";
 const ColorModeContext = React.createContext({ toggleColorMode: () => {} });
 
 const menuItems = [
-  { label: "Overview", path: "/employee" },
   { label: "Profile", path: "/employee/profile" },
   { label: "Attendance", path: "/employee/attendance" },
   { label: "My Leaves", path: "/employee/leave" },
@@ -92,9 +91,9 @@ const DashboardLayout = () => {
 
   const goToRoleHome = (r) => {
     const map = {
-      admin: "/admin/profile",
-      hr: "/hr/profile",
-      director: "/director/profile",
+      admin: "/admin/users",
+      hr: "/hr/records",
+      director: "/director/enhanced",
       employee: "/employee",
     };
     return map[r] || "/";

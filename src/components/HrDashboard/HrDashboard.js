@@ -43,7 +43,6 @@ import AttendanceTracking from "./AttendanceTracking";
 import RecruitmentManagement from "./RecruitmentManagement";
 import PolicyManagement from "./PolicyManagement";
 import AnnouncementManagement from "./AnnouncementManagement";
-import Profile from "../Profile/Profile";
 import CreateEditProfile from "../Profile/CreateEditProfile";
 import ComplainManagement from "../HrDashboard/ComplaintManagement";
 import axiosInstance from "../../AxiosInstance";
@@ -123,11 +122,6 @@ const HrDashboard = () => {
     navigate("/");
   };
 
-  const handleProfile = () => {
-    handleMenuClose();
-    navigate("/hr/profile");
-  };
-
   const getInitials = (nameOrEmail) => {
     if (!nameOrEmail) return "U";
     const parts = nameOrEmail.split(" ");
@@ -137,10 +131,10 @@ const HrDashboard = () => {
 
   const goToRoleHome = (r) => {
     const map = {
-      admin: "/admin/profile",
-      hr: "/hr/profile",
-      director: "/director/profile",
-      employee: "/employee/profile",
+      admin: "/admin/users",
+      hr: "/hr/records",
+      director: "/director/enhanced",
+      employee: "/employee",
     };
     return map[r] || "/";
   };
@@ -323,7 +317,6 @@ const HrDashboard = () => {
                 anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
                 transformOrigin={{ vertical: "top", horizontal: "right" }}
               >
-                <MenuItem onClick={handleProfile}>Profile</MenuItem>
                 <MenuItem disabled>
                   Active: {(user?.activeRole || "").toUpperCase()}
                 </MenuItem>
@@ -708,7 +701,6 @@ const HrDashboard = () => {
                 </Box>
               }
             />
-            <Route path="profile" element={<Profile />} />
             <Route path="records" element={<EmployeeRecords />} />
             <Route path="records/newEmployee" element={<CreateEditProfile />} />
             <Route path="records/edit/:id" element={<CreateEditProfile />} />

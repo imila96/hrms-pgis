@@ -25,14 +25,12 @@ import {
   Notifications as NotificationsIcon,
 } from "@mui/icons-material";
 import EventNoteIcon from "@mui/icons-material/EventNote";
-import NotificationsNoneIcon from "@mui/icons-material/NotificationsNone";
 import { useTheme, createTheme, ThemeProvider } from "@mui/material/styles";
 import { Routes, Route, NavLink, useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import AccountCircleIcon from "@mui/icons-material/AccountCircle";
 
 // Components
-import Profile from "../Profile/Profile";
 import PersonnelOversight from "../DirectorDashboard/PersonnelOversight";
 import EnhancedPersonnelOversight from "../DirectorDashboard/EnhancedPersonnelOversight";
 import PolicyOversight from "../DirectorDashboard/PolicyOversight";
@@ -47,13 +45,10 @@ import EmployeeDetail from "../DirectorDashboard/EmployeeDetail";
 const ColorModeContext = React.createContext({ toggleColorMode: () => {} });
 
 const tabItems = [
-  { label: "Profile", path: "/director/profile" },
   { label: "Personnel Oversight", path: "/director/enhanced" },
-
   { label: "Policies", path: "/director/policies" },
   { label: "Announcements", path: "/director/announcements" },
   { label: "Attendance", path: "/director/attendance" },
-
   { label: "Leave", path: "/director/leave" },
   { label: "Complaints", path: "/director/complaints" },
   { label: "Reports", path: "/director/reports" },
@@ -83,11 +78,6 @@ const DirectorDashboard = () => {
     navigate("/");
   };
 
-  const handleProfile = () => {
-    handleMenuClose();
-    navigate("/director/profile");
-  };
-
   const getInitials = (nameOrEmail) => {
     if (!nameOrEmail) return "U";
     const parts = nameOrEmail.split(" ");
@@ -97,10 +87,10 @@ const DirectorDashboard = () => {
 
   const goToRoleHome = (r) => {
     const map = {
-      admin: "/admin/profile",
-      hr: "/hr/profile",
-      director: "/director/profile",
-      employee: "/employee/profile",
+      admin: "/admin/users",
+      hr: "/hr/records",
+      director: "/director/enhanced",
+      employee: "/employee",
     };
     return map[r] || "/";
   };
@@ -250,7 +240,6 @@ const DirectorDashboard = () => {
                 anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
                 transformOrigin={{ vertical: "top", horizontal: "right" }}
               >
-                <MenuItem onClick={handleProfile}>Profile</MenuItem>
                 <MenuItem disabled>
                   Active: {(user?.activeRole || "").toUpperCase()}
                 </MenuItem>
@@ -476,7 +465,6 @@ const DirectorDashboard = () => {
             />
 
             {/* Routes */}
-            <Route path="profile" element={<Profile />} />
             <Route path="personnel" element={<PersonnelOversight />} />
             <Route path="enhanced" element={<EnhancedPersonnelOversight />} />
             <Route path="policies" element={<PolicyOversight />} />
