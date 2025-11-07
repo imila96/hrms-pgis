@@ -4,6 +4,7 @@ package com.pgis.hrms.core.employee.controller;
 
 import com.pgis.hrms.core.employee.dto.EmployeeDto;
 import com.pgis.hrms.core.employee.service.EmployeeService;
+import com.pgis.hrms.core.employee.dto.EmployeeRequest;
 import com.pgis.hrms.core.employee.dto.EmployeeSummaryDto;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -23,6 +24,13 @@ public class EmployeeController {
     @PreAuthorize("hasAnyRole('HR','ADMIN')")
     public ResponseEntity<EmployeeDto> create(@RequestBody EmployeeDto dto) {
         return ResponseEntity.ok(employeeService.createEmployee(dto));
+    }
+
+    // New: create an employee together with contact, employment and compensation in a single request
+    @PostMapping("/create")
+    @PreAuthorize("hasAnyRole('HR','ADMIN')")
+    public ResponseEntity<EmployeeDto> createFull(@RequestBody EmployeeRequest request) {
+        return ResponseEntity.ok(employeeService.createEmployee(request));
     }
 
     @GetMapping
@@ -45,6 +53,14 @@ public class EmployeeController {
             @PathVariable Integer id,
             @RequestBody EmployeeDto dto) {
         return ResponseEntity.ok(employeeService.updateEmployee(id, dto));
+    }
+
+    // New: update full employee payload (employee + contact + employment + compensation)
+    @PutMapping("/{id}/full")
+    public ResponseEntity<EmployeeDto> updateFull(
+            @PathVariable Integer id,
+            @RequestBody EmployeeRequest request) {
+        return ResponseEntity.ok(employeeService.updateEmployee(id, request));
     }
 
     @DeleteMapping("/{id}")
