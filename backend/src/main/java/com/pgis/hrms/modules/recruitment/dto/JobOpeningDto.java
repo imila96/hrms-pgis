@@ -11,6 +11,6 @@ public record JobOpeningDto(
 	String description,
 	String department,
 	LocalDate postedDate,
-	Boolean active
+	String status
 ) {
 }

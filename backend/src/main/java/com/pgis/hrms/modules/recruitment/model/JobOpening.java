@@ -20,5 +20,5 @@ public class JobOpening {
     private String description;
     private String department;
     private LocalDate postedDate;
-    private boolean active;
+        private String status;
 }

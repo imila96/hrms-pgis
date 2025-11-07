@@ -31,6 +31,15 @@ import {
 
 import axiosInstance from "../../AxiosInstance";
 
+// job status constants (frontend)
+const [Closed, Open, Urgent, Accepted, Rejected] = [
+  "Closed",
+  "Open",
+  "Urgent",
+  "Accepted",
+  "Rejected",
+];
+
 const RecruitmentManagement = () => {
   const [jobs, setJobs] = useState([]);
   const [formData, setFormData] = useState({
@@ -58,7 +67,7 @@ const RecruitmentManagement = () => {
 
   const vacanciesSummary = React.useMemo(() => {
     const total = jobs.length;
-    const active = jobs.filter((j) => j && j.active).length;
+    const active = jobs.filter((j) => j && j.status === Open).length;
     const urgent = jobs.filter((j) => j && j.urgent).length;
     // positions per department
     const map = new Map();
@@ -109,7 +118,7 @@ const RecruitmentManagement = () => {
             title: job.title || "",
             description: job.description || "",
             department: job.department || "",
-            status: job.active ? "Open" : "Closed",
+            status: job.status === Open ? Open : Closed,
           }
         : {
             title: "",
@@ -163,7 +172,7 @@ const RecruitmentManagement = () => {
                   title: formData.title,
                   description: formData.description,
                   department: formData.department,
-                  active: formData.status === "Open",
+                  status: formData.status,
                   location: formData.location,
                   jobType: formData.jobType,
                   positions: Number(formData.positions) || 1,
@@ -176,7 +185,7 @@ const RecruitmentManagement = () => {
         );
 
         // if closing now and job was active, call close endpoint
-        if (formData.status === "Closed" && editJobOpening.active) {
+        if (formData.status === Closed && editJobOpening.status === Open) {
           try {
             await axiosInstance.put(
               `/hr/recruitment/close/${editJobOpening.id}`
@@ -205,7 +214,7 @@ const RecruitmentManagement = () => {
             title: formData.title,
             description: formData.description,
             department: formData.department,
-            active: formData.status === "Open",
+            status: formData.status,
             location: formData.location,
             jobType: formData.jobType,
             positions: Number(formData.positions) || 1,
@@ -446,7 +455,7 @@ const RecruitmentManagement = () => {
                     "location",
                     "jobType",
                     "positions",
-                    "active",
+                    "status",
                     "urgent",
                     "postedDate",
                     "startDate",
@@ -458,14 +467,14 @@ const RecruitmentManagement = () => {
                     if (jobTab === 0)
                       list = list.filter(
                         (j) =>
-                          j.active === true &&
+                          j.status === Open &&
                           (!j.startDate || new Date(j.startDate) <= now)
                       );
                     else if (jobTab === 1)
                       list = list.filter(
                         (j) => j.startDate && new Date(j.startDate) > now
                       );
-                    else list = list.filter((j) => !j.active);
+                    else list = list.filter((j) => j.status !== Open);
                     if (search && search.trim()) {
                       const q = search.toLowerCase();
                       list = list.filter((j) =>
@@ -522,7 +531,7 @@ const RecruitmentManagement = () => {
                     // current: active jobs whose startDate is not in future
                     list = list.filter(
                       (j) =>
-                        j.active === true &&
+                        j.status === Open &&
                         (!j.startDate || new Date(j.startDate) <= now)
                     );
                   } else if (jobTab === 1) {
@@ -532,7 +541,7 @@ const RecruitmentManagement = () => {
                     );
                   } else {
                     // history: closed jobs
-                    list = list.filter((j) => !j.active);
+                    list = list.filter((j) => j.status !== Open);
                   }
                   if (search && search.trim()) {
                     const q = search.toLowerCase();
@@ -572,9 +581,9 @@ const RecruitmentManagement = () => {
                       <TableCell>
                         <Stack direction="row" spacing={1} alignItems="center">
                           <Chip
-                            label={j.active ? "Open" : "Closed"}
+                            label={j.status === Open ? Open : Closed}
                             size="small"
-                            color={j.active ? "success" : "default"}
+                            color={j.status === Open ? "success" : "default"}
                           />
                           {j.urgent && (
                             <Chip label="Urgent" size="small" color="error" />
@@ -614,14 +623,14 @@ const RecruitmentManagement = () => {
               if (jobTab === 0)
                 list = list.filter(
                   (j) =>
-                    j.active === true &&
+                    j.status === Open &&
                     (!j.startDate || new Date(j.startDate) <= now)
                 );
               else if (jobTab === 1)
                 list = list.filter(
                   (j) => j.startDate && new Date(j.startDate) > now
                 );
-              else list = list.filter((j) => !j.active);
+              else list = list.filter((j) => j.status !== Open);
               if (search && search.trim()) {
                 const q = search.toLowerCase();
                 list = list.filter(
@@ -693,8 +702,8 @@ const RecruitmentManagement = () => {
             <MenuItem value="">
               <em>Select status</em>
             </MenuItem>
-            <MenuItem value="Open">Open</MenuItem>
-            <MenuItem value="Closed">Closed</MenuItem>
+            <MenuItem value={Open}>{Open}</MenuItem>
+            <MenuItem value={Closed}>{Closed}</MenuItem>
           </Select>
         </DialogContent>
 

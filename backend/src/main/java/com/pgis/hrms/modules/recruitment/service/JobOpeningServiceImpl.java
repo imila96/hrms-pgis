@@ -29,17 +29,17 @@ public class JobOpeningServiceImpl implements JobOpeningService {
         entity.setTitle(jobOpeningDto.title());
         entity.setDescription(jobOpeningDto.description());
         entity.setDepartment(jobOpeningDto.department());
-        // postedDate & active are set by the service
+        // postedDate & status are set by the service
         entity.setPostedDate(LocalDate.now());
-        entity.setActive(true);
+        entity.setStatus("Open");
         JobOpening saved = jobOpeningRepository.save(entity);
         return toDto(saved);
     }
 
     @Override
     public void closeOpening(Long id) {
-        JobOpening opening = jobOpeningRepository.findById(id).orElseThrow();
-        opening.setActive(false);
+    JobOpening opening = jobOpeningRepository.findById(id).orElseThrow();
+    opening.setStatus("Closed");
         jobOpeningRepository.save(opening);
     }
 
@@ -50,7 +50,7 @@ public class JobOpeningServiceImpl implements JobOpeningService {
                 j.getDescription(),
                 j.getDepartment(),
                 j.getPostedDate(),
-                j.isActive()
+        j.getStatus()
         );
     }
 
