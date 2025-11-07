@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   Box,
   Paper,
   Typography,
   CircularProgress,
-  Snackbar,
   Alert,
   Button,
   Avatar,
@@ -13,6 +13,7 @@ import {
   Tab,
 } from "@mui/material";
 import axiosInstance from "../../AxiosInstance";
+import { useAuth } from "../../context/AuthContext";
 import PersonalInfo from "./Sections/PersonalInfo";
 import ContactInfo from "./Sections/ContactInfo";
 import CompensationPayroll from "./Sections/CompensationPayroll";
@@ -81,6 +82,10 @@ export function SectionTabs(props) {
 
 // ProfileSidebar component
 export function ProfileSidebar({ user, primaryEmployment, primaryContact }) {
+  const navigate = useNavigate();
+  const { user: authUser } = useAuth();
+  const isEmployeeRole =
+    (authUser && authUser.activeRole === "employee") || false;
   const initials = (user?.name || "")
     .split(" ")
     .map((s) => s[0])
@@ -119,7 +124,16 @@ export function ProfileSidebar({ user, primaryEmployment, primaryContact }) {
         >
           Employee Details
         </Typography>
-        <Button variant="outlined" size="small" sx={{ borderRadius: 2, mb: 3 }}>
+        <Button
+          variant="outlined"
+          size="small"
+          sx={{ borderRadius: 2, mb: 3 }}
+          onClick={() =>
+            isEmployeeRole
+              ? navigate(`/employee/profile/edit/${empId}`)
+              : navigate(`/hr/records/edit/${empId}`)
+          }
+        >
           Edit Profile
         </Button>
 
@@ -159,14 +173,12 @@ export default function Profile() {
       if (empId) {
         try {
           const [cRes, eRes, compRes] = await Promise.all([
+            axiosInstance.get(`/profile/contacts`).catch(() => ({ data: [] })),
             axiosInstance
-              .get(`/hr/employees/${empId}/contacts`)
+              .get(`/profile/employments`)
               .catch(() => ({ data: [] })),
             axiosInstance
-              .get(`/hr/employees/${empId}/employments`)
-              .catch(() => ({ data: [] })),
-            axiosInstance
-              .get(`/hr/employees/${empId}/compensations`)
+              .get(`/profile/compensations`)
               .catch(() => ({ data: [] })),
           ]);
           setContacts(cRes.data || []);

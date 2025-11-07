@@ -25,6 +25,7 @@ import PolicyManagement from "./components/HrDashboard/PolicyManagement";
 import EmployeeDashboardLayout from "./components/EmployeeDashboard/DashboardLayout";
 import EmployeeOverview from "./components/EmployeeDashboard/EmployeeOverview";
 import Profile from "./components/Profile/Profile";
+import CreateEditProfile from "./components/Profile/CreateEditProfile";
 import Salary from "./components/EmployeeDashboard/Salary";
 import Attendance from "./components/EmployeeDashboard/Attendance";
 import Leave from "./components/EmployeeDashboard/Leave";
@@ -93,73 +94,75 @@ const AppRoutes = () => {
         role={roleTransition?.role}
       />
       <Routes>
-          {/* public */}
-          <Route path="/" element={<Login />} />
-          <Route path="/register" element={<Register />} />
-          <Route path="/forgot-password" element={<ForgetPassword />} />
-          <Route path="/logout" element={<Logout />} />
+        {/* public */}
+        <Route path="/" element={<Login />} />
+        <Route path="/register" element={<Register />} />
+        <Route path="/forgot-password" element={<ForgetPassword />} />
+        <Route path="/logout" element={<Logout />} />
 
-          {/* admin */}
-          <Route
-            path="/admin/*"
-            element={
-              <AdminRoute>
-                <AdminDashboard />
-              </AdminRoute>
-            }
-          />
+        {/* admin */}
+        <Route
+          path="/admin/*"
+          element={
+            <AdminRoute>
+              <AdminDashboard />
+            </AdminRoute>
+          }
+        />
 
-          {/* HR */}
-          <Route
-            path="/hr/*"
-            element={
-              <HrRoute>
-                <HrDashboard />
-              </HrRoute>
-            }
-          >
-            <Route path="records" element={<EmployeeRecords />} />
-            <Route path="leave-management" element={<LeaveManagement />} />
-            <Route path="attendance-tracking" element={<AttendanceTracking />} />
-            <Route path="recruitment" element={<RecruitmentManagement />} />
-            <Route path="policies" element={<PolicyManagement />} />
-            <Route path="" element={<Navigate to="records" replace />} />
-          </Route>
+        {/* HR */}
+        <Route
+          path="/hr/*"
+          element={
+            <HrRoute>
+              <HrDashboard />
+            </HrRoute>
+          }
+        >
+          <Route path="records" element={<EmployeeRecords />} />
+          <Route path="leave-management" element={<LeaveManagement />} />
+          <Route path="attendance-tracking" element={<AttendanceTracking />} />
+          <Route path="recruitment" element={<RecruitmentManagement />} />
+          <Route path="policies" element={<PolicyManagement />} />
+          <Route path="" element={<Navigate to="records" replace />} />
+        </Route>
 
-          {/* director */}
-          <Route
-            path="/director/*"
-            element={
-              <DirectorRoute>
-                <DirectorDashboard />
-              </DirectorRoute>
-            }
-          />
+        {/* director */}
+        <Route
+          path="/director/*"
+          element={
+            <DirectorRoute>
+              <DirectorDashboard />
+            </DirectorRoute>
+          }
+        />
 
-          {/* employee */}
-          <Route
-            path="/employee/*"
-            element={
-              <EmployeeRoute>
-                <EmployeeDashboardLayout />
-              </EmployeeRoute>
-            }
-          >
-            <Route index element={<EmployeeOverview />} />
-            <Route path="profile" element={<Profile />} />
-            <Route path="salary" element={<Salary />} />
-            <Route path="attendance" element={<Attendance />} />
-            <Route path="leave" element={<Leave />} />
-            <Route path="policies" element={<Policies />} />
-            <Route path="announcements" element={<Announcements />} />
-            <Route path="complaints" element={<Complaints />} />
-            <Route path="issues" element={<Issues />} />
-            <Route path="reports" element={<Reports />} />
-          </Route>
+        {/* employee */}
+        <Route
+          path="/employee/*"
+          element={
+            <EmployeeRoute>
+              <EmployeeDashboardLayout />
+            </EmployeeRoute>
+          }
+        >
+          <Route index element={<EmployeeOverview />} />
+          <Route path="profile" element={<Profile />} />
+          <Route path="profile/edit" element={<CreateEditProfile />} />
+          <Route path="profile/edit/:id" element={<CreateEditProfile />} />
+          <Route path="salary" element={<Salary />} />
+          <Route path="attendance" element={<Attendance />} />
+          <Route path="leave" element={<Leave />} />
+          <Route path="policies" element={<Policies />} />
+          <Route path="announcements" element={<Announcements />} />
+          <Route path="complaints" element={<Complaints />} />
+          <Route path="issues" element={<Issues />} />
+          <Route path="reports" element={<Reports />} />
+        </Route>
 
-          {/* catch-all */}
-          <Route path="*" element={<Navigate to="/" replace />} />
-        </Routes>
+        {/* catch-all */}
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
     </>
   );
 };

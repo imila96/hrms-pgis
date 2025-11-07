@@ -27,6 +27,7 @@ import HomeIcon from "@mui/icons-material/Home";
 import WorkIcon from "@mui/icons-material/Work";
 import AccountBalanceIcon from "@mui/icons-material/AccountBalance";
 import axiosInstance from "../../AxiosInstance";
+import { useAuth } from "../../context/AuthContext";
 
 const COLORS = {
   primary: "#4B49AC",
@@ -83,6 +84,7 @@ function CreateEditProfile() {
       profileImage: null,
     },
     contact: {
+      id: "",
       permanentAddress: "",
       currentAddress: "",
       mobileNumber: "",
@@ -94,6 +96,7 @@ function CreateEditProfile() {
       emergencyPhone: "",
     },
     employment: {
+      id: "",
       employeeId: "",
       jobTitle: "",
       department: "",
@@ -105,6 +108,7 @@ function CreateEditProfile() {
       employmentStatus: "",
     },
     compensation: {
+      id: "",
       basicSalary: "",
       bankName: "",
       branch: "",
@@ -132,32 +136,89 @@ function CreateEditProfile() {
     { label: "Employment", icon: <WorkIcon /> },
     { label: "Compensation", icon: <AccountBalanceIcon /> },
   ];
+  const { user } = useAuth();
+  const isEmployeeRole = (user && user.activeRole === "employee") || false;
+
+  // fields that should be locked for employee self-editing
+  const lockedFields = new Set([
+    // personal
+    "firstName",
+    "lastName",
+    "gender",
+    "dateOfBirth",
+    "nationality",
+    "nic",
+    "email",
+    // employment
+    "jobTitle",
+    "department",
+    "employmentType",
+    "dateOfJoining",
+    "probationEndDate",
+    "confirmationDate",
+    "dateOfRetirement",
+    "employmentStatus",
+    // compensation
+    "basicSalary",
+    "pensionScheme",
+  ]);
+
+  const isLocked = (fieldName) => isEmployeeRole && lockedFields.has(fieldName);
 
   useEffect(() => {
     if (!id) return;
     let mounted = true;
     (async () => {
       try {
-        const empRes = await axiosInstance.get(`/hr/employees/${id}`);
-        const emp = empRes.data || {};
+        let emp = {};
+        let contact = {};
+        let employment = {};
+        let compensation = {};
 
-        const contactRes = await axiosInstance.get(
-          `/hr/employees/${id}/contacts`
-        );
-        const contacts = contactRes.data || [];
-        const contact = contacts.length > 0 ? contacts[0] : {};
+        if (isEmployeeRole) {
+          // employee users fetch their own profile and sub-resources via /profile
+          const empRes = await axiosInstance.get(`/profile/me`);
+          emp = empRes.data || {};
 
-        const employmentRes = await axiosInstance.get(
-          `/hr/employees/${id}/employments`
-        );
-        const emps = employmentRes.data || [];
-        const employment = emps.length > 0 ? emps[0] : {};
+          const [cRes, eRes, compRes] = await Promise.all([
+            axiosInstance.get(`/profile/contacts`).catch(() => ({ data: [] })),
+            axiosInstance
+              .get(`/profile/employments`)
+              .catch(() => ({ data: [] })),
+            axiosInstance
+              .get(`/profile/compensations`)
+              .catch(() => ({ data: [] })),
+          ]);
 
-        const compRes = await axiosInstance.get(
-          `/hr/employees/${id}/compensations`
-        );
-        const comps = compRes.data || [];
-        const compensation = comps.length > 0 ? comps[0] : {};
+          const contacts = cRes.data || [];
+          contact = contacts.length > 0 ? contacts[0] : {};
+          const emps = eRes.data || [];
+          employment = emps.length > 0 ? emps[0] : {};
+          const comps = compRes.data || [];
+          compensation = comps.length > 0 ? comps[0] : {};
+        } else {
+          // HR/admin fetch full employee via /hr endpoints
+          const empRes = await axiosInstance.get(`/hr/employees/${id}`);
+          emp = empRes.data || {};
+
+          const contactRes = await axiosInstance.get(
+            `/hr/employees/${id}/contacts`
+          );
+          const contacts = contactRes.data || [];
+          contact = contacts.length > 0 ? contacts[0] : {};
+
+          const employmentRes = await axiosInstance.get(
+            `/hr/employees/${id}/employments`
+          );
+          const emps = employmentRes.data || [];
+          employment = emps.length > 0 ? emps[0] : {};
+
+          const compRes = await axiosInstance.get(
+            `/hr/employees/${id}/compensations`
+          );
+          const comps = compRes.data || [];
+          compensation = comps.length > 0 ? comps[0] : {};
+        }
 
         if (!mounted) return;
 
@@ -178,6 +239,7 @@ function CreateEditProfile() {
             profileImage: emp.profileImage || null,
           },
           contact: {
+            id: contact.id || contact.contactId || "",
             permanentAddress: contact.permanentAddress || "",
             currentAddress: contact.currentAddress || "",
             mobileNumber: contact.mobileNumber || "",
@@ -189,6 +251,7 @@ function CreateEditProfile() {
             emergencyPhone: contact.emergencyPhone || "",
           },
           employment: {
+            id: employment.id || employment.employmentId || "",
             employeeId: employment.employeeId || id,
             jobTitle: employment.jobTitle || "",
             department: employment.department || "",
@@ -200,6 +263,7 @@ function CreateEditProfile() {
             employmentStatus: employment.employmentStatus || "",
           },
           compensation: {
+            id: compensation.id || compensation.compensationId || "",
             basicSalary: compensation.basicSalary || "",
             bankName: compensation.bankName || "",
             branch: compensation.branch || "",
@@ -215,7 +279,7 @@ function CreateEditProfile() {
       }
     })();
     return () => (mounted = false);
-  }, [id]);
+  }, [id, isEmployeeRole]);
 
   const setField = (section, field, value) => {
     setEmployeeData((s) => ({
@@ -228,46 +292,54 @@ function CreateEditProfile() {
     const errs = {};
     if (step === 0) {
       const p = employeeData.personal;
-      if (!p.firstName || !String(p.firstName).trim())
-        errs.firstName = "Required";
-      if (!p.lastName || !String(p.lastName).trim()) errs.lastName = "Required";
-      if (!p.gender) errs.gender = "Required";
-      if (!p.dateOfBirth) errs.dateOfBirth = "Required";
-      if (!p.nationality || !String(p.nationality).trim())
-        errs.nationality = "Required";
-      // Email is required for creating an employee
-      if (!p.email || !emailRegex.test(p.email))
-        errs.email = "Required / Invalid";
+      if (!isEmployeeRole) {
+        if (!p.firstName || !String(p.firstName).trim())
+          errs.firstName = "Required";
+        if (!p.lastName || !String(p.lastName).trim())
+          errs.lastName = "Required";
+        if (!p.gender) errs.gender = "Required";
+        if (!p.dateOfBirth) errs.dateOfBirth = "Required";
+        if (!p.nationality || !String(p.nationality).trim())
+          errs.nationality = "Required";
+        // Email is required for creating an employee
+        if (!p.email || !emailRegex.test(p.email))
+          errs.email = "Required / Invalid";
+      }
       if (p.nic && !nicRegex.test(String(p.nic))) errs.nic = "Invalid NIC";
     }
     if (step === 1) {
       const c = employeeData.contact;
-      if (!c.permanentAddress || !String(c.permanentAddress).trim())
-        errs.permanentAddress = "Required";
-      // mobile number is required per request
-      if (!c.mobileNumber || !phoneRegex.test(c.mobileNumber))
-        errs.mobileNumber = "Required / Invalid";
+      if (!isEmployeeRole) {
+        if (!c.permanentAddress || !String(c.permanentAddress).trim())
+          errs.permanentAddress = "Required";
+        // mobile number is required per request
+        if (!c.mobileNumber || !phoneRegex.test(c.mobileNumber))
+          errs.mobileNumber = "Required / Invalid";
+        if (!c.emergencyName || !String(c.emergencyName).trim())
+          errs.emergencyName = "Required";
+        if (!c.emergencyRelationship || !String(c.emergencyRelationship).trim())
+          errs.emergencyRelationship = "Required";
+        if (!c.emergencyPhone || !phoneRegex.test(c.emergencyPhone))
+          errs.emergencyPhone = "Required / Invalid";
+      }
       if (c.workEmail && !emailRegex.test(c.workEmail))
         errs.workEmail = "Invalid";
       if (c.personalEmail && !emailRegex.test(c.personalEmail))
         errs.personalEmail = "Invalid";
-      if (!c.emergencyName || !String(c.emergencyName).trim())
-        errs.emergencyName = "Required";
-      if (!c.emergencyRelationship || !String(c.emergencyRelationship).trim())
-        errs.emergencyRelationship = "Required";
-      if (!c.emergencyPhone || !phoneRegex.test(c.emergencyPhone))
-        errs.emergencyPhone = "Required / Invalid";
     }
     if (step === 2) {
       const e = employeeData.employment;
-      if (!e.jobTitle || !String(e.jobTitle).trim()) errs.jobTitle = "Required";
-      if (!e.department || !String(e.department).trim())
-        errs.department = "Required";
-      if (!e.employmentType || !String(e.employmentType).trim())
-        errs.employmentType = "Required";
-      if (!e.dateOfJoining) errs.dateOfJoining = "Required";
-      if (!e.employmentStatus || !String(e.employmentStatus).trim())
-        errs.employmentStatus = "Required";
+      if (!isEmployeeRole) {
+        if (!e.jobTitle || !String(e.jobTitle).trim())
+          errs.jobTitle = "Required";
+        if (!e.department || !String(e.department).trim())
+          errs.department = "Required";
+        if (!e.employmentType || !String(e.employmentType).trim())
+          errs.employmentType = "Required";
+        if (!e.dateOfJoining) errs.dateOfJoining = "Required";
+        if (!e.employmentStatus || !String(e.employmentStatus).trim())
+          errs.employmentStatus = "Required";
+      }
 
       // if dateOfJoining present, ensure other employment dates (if provided) are after it
       const doj = e.dateOfJoining ? new Date(e.dateOfJoining) : null;
@@ -291,10 +363,12 @@ function CreateEditProfile() {
     }
     if (step === 3) {
       const c = employeeData.compensation;
-      if (c.basicSalary === "" || c.basicSalary == null)
-        errs.basicSalary = "Required";
-      else if (isNaN(Number(c.basicSalary)) || Number(c.basicSalary) <= 0)
-        errs.basicSalary = "Must be a positive number";
+      if (!isEmployeeRole) {
+        if (c.basicSalary === "" || c.basicSalary == null)
+          errs.basicSalary = "Required";
+        else if (isNaN(Number(c.basicSalary)) || Number(c.basicSalary) <= 0)
+          errs.basicSalary = "Must be a positive number";
+      }
       if (c.accountNo && !/^[0-9]+$/.test(String(c.accountNo)))
         errs.accountNo = "Numbers only";
     }
@@ -386,18 +460,115 @@ function CreateEditProfile() {
     setIsSubmitting(true);
     try {
       const payload = buildPayload();
-      if (id) {
-        await axiosInstance.put(`/hr/employees/${id}/full`, payload);
+      if (isEmployeeRole) {
+        // employee users may update their profile and sub-resources via /profile
+        const profilePayload = {
+          gender: employeeData.personal.gender || null,
+          dateOfBirth: employeeData.personal.dateOfBirth || null,
+          nationality: employeeData.personal.nationality || null,
+          maritalStatus: employeeData.personal.maritalStatus || null,
+          religion: employeeData.personal.religion || null,
+          bloodGroup: employeeData.personal.bloodGroup || null,
+          profileImage: employeeData.personal.profileImage || null,
+        };
+        // save main profile
+        await axiosInstance.put(`/profile/me`, profilePayload);
+
+        // helper to check if any meaningful contact fields provided
+        const contact = employeeData.contact || {};
+        const contactPayload = {
+          permanentAddress: contact.permanentAddress || null,
+          currentAddress: contact.currentAddress || null,
+          mobileNumber: contact.mobileNumber || null,
+          homeTelephone: contact.homeTelephone || null,
+          workEmail: contact.workEmail || null,
+          personalEmail: contact.personalEmail || null,
+          emergencyName: contact.emergencyName || null,
+          emergencyRelationship: contact.emergencyRelationship || null,
+          emergencyPhone: contact.emergencyPhone || null,
+        };
+        const hasContactData = Object.values(contactPayload).some(
+          (v) => v !== null && v !== ""
+        );
+        if (hasContactData) {
+          if (contact.id) {
+            await axiosInstance.put(
+              `/profile/contacts/${contact.id}`,
+              contactPayload
+            );
+          } else {
+            await axiosInstance.post(`/profile/contacts`, contactPayload);
+          }
+        }
+
+        // employment
+        const e = employeeData.employment || {};
+        const employmentPayload = {
+          employeeId: e.employeeId || id,
+          jobTitle: e.jobTitle || null,
+          department: e.department || null,
+          employmentType: e.employmentType || null,
+          dateOfJoining: e.dateOfJoining || null,
+          probationEndDate: e.probationEndDate || null,
+          confirmationDate: e.confirmationDate || null,
+          dateOfRetirement: e.dateOfRetirement || null,
+          employmentStatus: e.employmentStatus || null,
+        };
+        const hasEmploymentData = Object.values(employmentPayload).some(
+          (v) => v !== null && v !== ""
+        );
+        if (hasEmploymentData) {
+          if (e.id) {
+            await axiosInstance.put(
+              `/profile/employments/${e.id}`,
+              employmentPayload
+            );
+          } else {
+            await axiosInstance.post(`/profile/employments`, employmentPayload);
+          }
+        }
+
+        // compensation
+        const comp = employeeData.compensation || {};
+        const compensationPayload = {
+          basicSalary: comp.basicSalary || null,
+          bankName: comp.bankName || null,
+          branch: comp.branch || null,
+          accountNo: comp.accountNo || null,
+          tin: comp.tin || null,
+          pensionScheme: comp.pensionScheme || null,
+        };
+        const hasCompensationData = Object.values(compensationPayload).some(
+          (v) => v !== null && v !== ""
+        );
+        if (hasCompensationData) {
+          if (comp.id) {
+            await axiosInstance.put(
+              `/profile/compensations/${comp.id}`,
+              compensationPayload
+            );
+          } else {
+            await axiosInstance.post(
+              `/profile/compensations`,
+              compensationPayload
+            );
+          }
+        }
       } else {
-        await axiosInstance.post(`/hr/employees/create`, payload);
+        if (id) {
+          await axiosInstance.put(`/hr/employees/${id}/full`, payload);
+        } else {
+          await axiosInstance.post(`/hr/employees/create`, payload);
+        }
       }
       setSnackbar({
         open: true,
         message: "Saved successfully",
         severity: "success",
       });
-      // redirect to records
-      navigate("/hr/records");
+      // redirect appropriately
+      if (isEmployeeRole) navigate("/employee/profile");
+      else navigate("/hr/records");
     } catch (err) {
       console.error("Save failed", err);
       setSnackbar({ open: true, message: "Save failed", severity: "error" });
@@ -409,11 +580,19 @@ function CreateEditProfile() {
   return (
     <Box sx={{ p: 3, bgcolor: COLORS.background, minHeight: "100vh" }}>
       <Box sx={{ mb: 3, display: "flex", alignItems: "center", gap: 2 }}>
-        <IconButton onClick={() => navigate("/hr/records")}>
+        <IconButton
+          onClick={() =>
+            navigate(isEmployeeRole ? "/employee/profile" : "/hr/records")
+          }
+        >
           <ArrowBack />
         </IconButton>
         <Typography variant="h5" sx={{ color: COLORS.primary }}>
-          {id ? "Edit Employee" : "Add New Employee"}
+          {id
+            ? isEmployeeRole
+              ? "Edit Profile"
+              : "Edit Employee"
+            : "Add New Employee"}
         </Typography>
       </Box>
 
@@ -529,6 +708,7 @@ function CreateEditProfile() {
                       onChange={(e) =>
                         setField("personal", "firstName", e.target.value)
                       }
+                      disabled={isLocked("firstName")}
                       fullWidth
                       required
                       error={!!errors.firstName}
@@ -547,6 +727,7 @@ function CreateEditProfile() {
                       onChange={(e) =>
                         setField("personal", "lastName", e.target.value)
                       }
+                      disabled={isLocked("lastName")}
                       fullWidth
                       required
                       error={!!errors.lastName}
@@ -570,6 +751,7 @@ function CreateEditProfile() {
                         onChange={(e) =>
                           setField("personal", "gender", e.target.value)
                         }
+                        disabled={isLocked("gender")}
                       >
                         <MenuItem value="male">Male</MenuItem>
                         <MenuItem value="female">Female</MenuItem>
@@ -592,6 +774,7 @@ function CreateEditProfile() {
                       onChange={(e) =>
                         setField("personal", "dateOfBirth", e.target.value)
                       }
+                      disabled={isLocked("dateOfBirth")}
                       InputLabelProps={{ shrink: true }}
                       error={!!errors.dateOfBirth}
                       helperText={errors.dateOfBirth || ""}
@@ -610,6 +793,7 @@ function CreateEditProfile() {
                       onChange={(e) =>
                         setField("personal", "nationality", e.target.value)
                       }
+                      disabled={isLocked("nationality")}
                       error={!!errors.nationality}
                       helperText={errors.nationality || ""}
                     />
@@ -627,6 +811,7 @@ function CreateEditProfile() {
                       onChange={(e) =>
                         setField("personal", "nic", e.target.value)
                       }
+                      disabled={isLocked("nic")}
                       error={!!errors.nic}
                       helperText={errors.nic || ""}
                     />
@@ -644,6 +829,7 @@ function CreateEditProfile() {
                       onChange={(e) =>
                         setField("personal", "email", e.target.value)
                       }
+                      disabled={isLocked("email")}
                       error={!!errors.email}
                       helperText={errors.email || ""}
                     />
@@ -730,6 +916,7 @@ function CreateEditProfile() {
                       onChange={(e) =>
                         setField("contact", "permanentAddress", e.target.value)
                       }
+                      disabled={isLocked("permanentAddress")}
                       error={!!errors.permanentAddress}
                       helperText={errors.permanentAddress || ""}
                     />
@@ -760,6 +947,7 @@ function CreateEditProfile() {
                       onChange={(e) =>
                         setField("contact", "mobileNumber", e.target.value)
                       }
+                      disabled={isLocked("mobileNumber")}
                       error={!!errors.mobileNumber}
                       helperText={errors.mobileNumber || ""}
                     />
@@ -794,6 +982,7 @@ function CreateEditProfile() {
                       onChange={(e) =>
                         setField("contact", "emergencyName", e.target.value)
                       }
+                      disabled={isLocked("emergencyName")}
                       error={!!errors.emergencyName}
                       helperText={errors.emergencyName || ""}
                       sx={{ mt: 1 }}
@@ -816,6 +1005,7 @@ function CreateEditProfile() {
                           e.target.value
                         )
                       }
+                      disabled={isLocked("emergencyRelationship")}
                       error={!!errors.emergencyRelationship}
                       helperText={errors.emergencyRelationship || ""}
                       sx={{ mt: 1 }}
@@ -834,6 +1024,7 @@ function CreateEditProfile() {
                       onChange={(e) =>
                         setField("contact", "emergencyPhone", e.target.value)
                       }
+                      disabled={isLocked("emergencyPhone")}
                       error={!!errors.emergencyPhone}
                       helperText={errors.emergencyPhone || ""}
                       sx={{ mt: 1 }}
@@ -862,6 +1053,7 @@ function CreateEditProfile() {
                       onChange={(e) =>
                         setField("employment", "jobTitle", e.target.value)
                       }
+                      disabled={isLocked("jobTitle")}
                       error={!!errors.jobTitle}
                       helperText={errors.jobTitle || ""}
                     />
@@ -878,6 +1070,7 @@ function CreateEditProfile() {
                         onChange={(e) =>
                           setField("employment", "department", e.target.value)
                         }
+                        disabled={isLocked("department")}
                       >
                         {DEPARTMENTS.map((d) => (
                           <MenuItem key={d} value={d}>
@@ -907,6 +1100,7 @@ function CreateEditProfile() {
                             e.target.value
                           )
                         }
+                        disabled={isLocked("employmentType")}
                       >
                         {EMPLOYMENT_TYPES.map((t) => (
                           <MenuItem key={t} value={t}>
@@ -933,6 +1127,7 @@ function CreateEditProfile() {
                       onChange={(e) =>
                         setField("employment", "dateOfJoining", e.target.value)
                       }
+                      disabled={isLocked("dateOfJoining")}
                       InputLabelProps={{ shrink: true }}
                       error={!!errors.dateOfJoining}
                       helperText={errors.dateOfJoining || ""}
@@ -953,6 +1148,7 @@ function CreateEditProfile() {
                           e.target.value
                         )
                       }
+                      disabled={isLocked("probationEndDate")}
                       InputLabelProps={{ shrink: true }}
                       error={!!errors.probationEndDate}
                       helperText={errors.probationEndDate || ""}
@@ -973,6 +1169,7 @@ function CreateEditProfile() {
                           e.target.value
                         )
                       }
+                      disabled={isLocked("confirmationDate")}
                       InputLabelProps={{ shrink: true }}
                       error={!!errors.confirmationDate}
                       helperText={errors.confirmationDate || ""}
@@ -993,6 +1190,7 @@ function CreateEditProfile() {
                           e.target.value
                         )
                       }
+                      disabled={isLocked("dateOfRetirement")}
                       InputLabelProps={{ shrink: true }}
                       error={!!errors.dateOfRetirement}
                       helperText={errors.dateOfRetirement || ""}
@@ -1015,6 +1213,7 @@ function CreateEditProfile() {
                             e.target.value
                           )
                         }
+                        disabled={isLocked("employmentStatus")}
                       >
                         <MenuItem value="active">Active</MenuItem>
                         <MenuItem value="on_leave">On Leave</MenuItem>
@@ -1049,6 +1248,7 @@ function CreateEditProfile() {
                       onChange={(e) =>
                         setField("compensation", "basicSalary", e.target.value)
                       }
+                      disabled={isLocked("basicSalary")}
                       inputProps={{ inputMode: "numeric", pattern: "[0-9]*" }}
                       error={!!errors.basicSalary}
                       helperText={errors.basicSalary || ""}
@@ -1103,6 +1303,7 @@ function CreateEditProfile() {
                           e.target.value
                         )
                       }
+                      disabled={isLocked("pensionScheme")}
                     />
                   </Grid>
                 </Grid>
@@ -1114,7 +1315,9 @@ function CreateEditProfile() {
             >
               <Button
                 variant="outlined"
-                onClick={() => navigate("/hr/records")}
+                onClick={() =>
+                  navigate(isEmployeeRole ? "/employee/profile" : "/hr/records")
+                }
               >
                 Cancel
               </Button>
