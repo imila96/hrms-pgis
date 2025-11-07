@@ -45,10 +45,10 @@ import RoleTransitionOverlay from "./components/common/RoleTransitionOverlay";
 
 const roleHomePath = (role) => {
   const map = {
-    admin: "/admin/profile",
-    hr: "/hr/profile",
+    admin: "/admin",
+    hr: "/hr",
     employee: "/employee",
-    director: "/director/profile",
+    director: "/director",
   };
   return map[role] || "/";
 };

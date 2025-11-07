@@ -21,7 +21,6 @@ import {
   VisibilityOff, 
   Email, 
   Lock,
-  Business,
   ArrowForward,
   CheckCircle,
 } from "@mui/icons-material";
@@ -205,10 +204,10 @@ const Login = () => {
       // Redirect after success animation
       setTimeout(() => {
         const home = {
-          admin: "/admin/profile",
+          admin: "/admin",
           hr: "/hr",
-          director: "/director/profile",
-          employee: "/employee/profile",
+          director: "/director",
+          employee: "/employee",
         };
         navigate(home[activeRole] || "/");
       }, 1200);

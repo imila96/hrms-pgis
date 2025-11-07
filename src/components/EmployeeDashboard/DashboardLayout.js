@@ -91,9 +91,9 @@ const DashboardLayout = () => {
 
   const goToRoleHome = (r) => {
     const map = {
-      admin: "/admin/users",
-      hr: "/hr/records",
-      director: "/director/enhanced",
+      admin: "/admin",
+      hr: "/hr",
+      director: "/director",
       employee: "/employee",
     };
     return map[r] || "/";

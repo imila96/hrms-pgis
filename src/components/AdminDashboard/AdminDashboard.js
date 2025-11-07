@@ -20,14 +20,12 @@ import {
 } from "@mui/material";
 import {
   Brightness4,
-  Brightness7,
   Notifications as NotificationsIcon,
 } from "@mui/icons-material";
 import EventNoteIcon from "@mui/icons-material/EventNote";
-import { useTheme, createTheme, ThemeProvider } from "@mui/material/styles";
+import { createTheme, ThemeProvider } from "@mui/material/styles";
 import { Routes, Route, NavLink, useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
-import AccountCircleIcon from "@mui/icons-material/AccountCircle";
 
 // Admin Subpages
 import UserManagement from "./UserManagement/UserManagement";
@@ -58,7 +56,6 @@ const AdminDashboard = () => {
     endRoleTransition,
   } = useAuth();
   const navigate = useNavigate();
-  const theme = useTheme();
   const colorMode = useContext(ColorModeContext);
 
   const [anchorEl, setAnchorEl] = useState(null);
@@ -82,9 +79,9 @@ const AdminDashboard = () => {
 
   const goToRoleHome = (r) => {
     const map = {
-      admin: "/admin/users",
-      hr: "/hr/records",
-      director: "/director/enhanced",
+      admin: "/admin",
+      hr: "/hr",
+      director: "/director",
       employee: "/employee",
     };
     return map[r] || "/";
@@ -125,11 +122,15 @@ const AdminDashboard = () => {
       >
         {/* AppBar */}
         <AppBar
-          position="fixed"
+          position="sticky"
           elevation={3}
-          sx={{ backgroundColor: "#4B49AC", color: "#fff" }}
+          sx={{
+            background: "linear-gradient(135deg, #4B49AC 0%, #7DA0FA 100%)",
+            color: "#FFFFFF",
+            boxShadow: "0 4px 20px rgba(75,73,172,0.25)",
+          }}
         >
-          <Toolbar sx={{ display: "flex", justifyContent: "space-between" }}>
+          <Toolbar sx={{ display: "flex", justifyContent: "space-between", py: 1 }}>
             {/* Title */}
             <Typography
               variant="h6"
@@ -137,6 +138,8 @@ const AdminDashboard = () => {
               sx={{
                 cursor: "pointer",
                 fontWeight: 700,
+                letterSpacing: 0.5,
+                fontSize: { xs: "1rem", sm: "1.25rem" },
                 "&:hover": { color: "#98BDFF", transform: "scale(1.05)" },
                 transition: "all 0.3s ease",
               }}
@@ -146,7 +149,7 @@ const AdminDashboard = () => {
             </Typography>
 
             {/* Tabs */}
-            <Box sx={{ display: "flex", gap: 2 }}>
+            <Box sx={{ display: "flex", gap: 0.5 }}>
               {tabItems.map(({ label, path }) => (
                 <Button
                   key={path}
@@ -156,18 +159,21 @@ const AdminDashboard = () => {
                   sx={{
                     textTransform: "none",
                     fontWeight: 600,
+                    fontSize: "0.85rem",
                     color: "#E6E9FF",
                     borderRadius: "8px",
-                    px: 2,
+                    px: 1.5,
+                    py: 0.8,
+                    minWidth: "auto",
                     "&.active": {
                       backgroundColor: "#F3797E",
                       color: "#fff",
+                      boxShadow: "0 2px 8px rgba(243,121,126,0.4)",
                     },
                     "&:hover": {
-                      backgroundColor: "#7DA0FA",
-                      color: "#fff",
-                      transform: "scale(1.05)",
-                      transition: "all 0.3s ease",
+                      backgroundColor: "rgba(255,255,255,0.15)",
+                      transform: "translateY(-2px)",
+                      transition: "all 0.2s ease",
                     },
                   }}
                 >
@@ -182,25 +188,31 @@ const AdminDashboard = () => {
               <IconButton
                 sx={{
                   color: "#E6E9FF",
-                  "&:hover": { color: "#98BDFF", transform: "scale(1.1)" },
+                  "&:hover": {
+                    color: "#98BDFF",
+                    transform: "scale(1.1)",
+                    bgcolor: "rgba(255,255,255,0.1)",
+                  },
                   transition: "0.2s",
                 }}
                 onClick={colorMode.toggleColorMode}
+                aria-label="Toggle theme"
               >
-                {theme.palette.mode === "dark" ? (
-                  <Brightness7 />
-                ) : (
-                  <Brightness4 />
-                )}
+                <Brightness4 />
               </IconButton>
 
               {/* Notifications */}
               <IconButton
                 sx={{
                   color: "#E6E9FF",
-                  "&:hover": { color: "#F3797E", transform: "scale(1.1)" },
+                  "&:hover": {
+                    color: "#F3797E",
+                    transform: "scale(1.1)",
+                    bgcolor: "rgba(255,255,255,0.1)",
+                  },
                   transition: "0.2s",
                 }}
+                aria-label="Notifications"
               >
                 <Badge badgeContent={4} color="error">
                   <NotificationsIcon />
@@ -211,18 +223,31 @@ const AdminDashboard = () => {
               <Tooltip title="Account settings">
                 <IconButton
                   sx={{
-                    "&:hover": { transform: "scale(1.1)" },
+                    "&:hover": {
+                      transform: "scale(1.1)",
+                      bgcolor: "rgba(255,255,255,0.1)",
+                    },
                     transition: "0.2s",
                   }}
                   onClick={handleMenuOpen}
+                  aria-label="Account menu"
                 >
                   {user?.photoURL ? (
-                    <Avatar src={user.photoURL} />
+                    <Avatar
+                      src={user.photoURL}
+                      sx={{ width: 36, height: 36, border: "2px solid #98BDFF" }}
+                    />
                   ) : (
-                    <Avatar sx={{ bgcolor: "#98BDFF" }}>
-                      {getInitials(user?.name || user?.email) || (
-                        <AccountCircleIcon />
-                      )}
+                    <Avatar
+                      sx={{
+                        bgcolor: "#98BDFF",
+                        width: 36,
+                        height: 36,
+                        fontWeight: 700,
+                        border: "2px solid #E6E9FF",
+                      }}
+                    >
+                      {getInitials(user?.name || user?.email)}
                     </Avatar>
                   )}
                 </IconButton>
@@ -234,8 +259,16 @@ const AdminDashboard = () => {
                 onClose={handleMenuClose}
                 anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
                 transformOrigin={{ vertical: "top", horizontal: "right" }}
+                PaperProps={{
+                  sx: {
+                    mt: 1,
+                    borderRadius: 2,
+                    minWidth: 200,
+                    boxShadow: "0 4px 20px rgba(0,0,0,0.15)",
+                  },
+                }}
               >
-                <MenuItem disabled>
+                <MenuItem disabled sx={{ opacity: 0.6, fontWeight: 600 }}>
                   Active: {(user?.activeRole || "").toUpperCase()}
                 </MenuItem>
                 {user?.roles
@@ -245,14 +278,16 @@ const AdminDashboard = () => {
                       Switch to {r.charAt(0).toUpperCase() + r.slice(1)} view
                     </MenuItem>
                   ))}
-                <MenuItem onClick={handleLogout}>Logout</MenuItem>
+                <MenuItem onClick={handleLogout} sx={{ color: "#F3797E" }}>
+                  Logout
+                </MenuItem>
               </Menu>
             </Box>
           </Toolbar>
         </AppBar>
 
         {/* Main content */}
-        <Box component="main" sx={{ flexGrow: 1, p: 3, mt: 10 }}>
+        <Box component="main" sx={{ flexGrow: 1, p: 3 }}>
           <Routes>
             {/* Default Dashboard Overview */}
             <Route
