@@ -30,6 +30,6 @@ public class Employee {
     private String bloodGroup;
     
     @Lob
-    @Column(length = 255)
+    @Column(columnDefinition = "LONGTEXT")
     private String profileImage;
 }

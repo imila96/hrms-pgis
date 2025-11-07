@@ -387,10 +387,45 @@ function CreateEditProfile() {
   const handleImageUpload = (e) => {
     const file = e.target.files && e.target.files[0];
     if (!file) return;
+    
+    // Validate file type
+    const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/bmp', 'image/webp'];
+    if (!validTypes.includes(file.type)) {
+      setSnackbar({
+        open: true,
+        message: 'Please upload a valid image file (JPEG, PNG, GIF, BMP, or WebP)',
+        severity: 'error'
+      });
+      return;
+    }
+    
+    // Validate file size (max 5MB)
+    const maxSize = 5 * 1024 * 1024; // 5MB in bytes
+    if (file.size > maxSize) {
+      setSnackbar({
+        open: true,
+        message: 'Image size should not exceed 5MB',
+        severity: 'error'
+      });
+      return;
+    }
+    
     const reader = new FileReader();
     reader.onload = (ev) => {
       setProfileImage(ev.target.result);
       setField("personal", "profileImage", ev.target.result);
+      setSnackbar({
+        open: true,
+        message: 'Image uploaded successfully',
+        severity: 'success'
+      });
+    };
+    reader.onerror = () => {
+      setSnackbar({
+        open: true,
+        message: 'Failed to read image file',
+        severity: 'error'
+      });
     };
     reader.readAsDataURL(file);
   };
@@ -625,7 +660,7 @@ function CreateEditProfile() {
                 Upload
                 <input
                   hidden
-                  accept="image/*"
+                  accept="image/jpeg,image/jpg,image/png,image/gif,image/bmp,image/webp"
                   type="file"
                   onChange={handleImageUpload}
                 />
@@ -640,7 +675,8 @@ function CreateEditProfile() {
             </Box>
 
             <Typography variant="caption" color="text.secondary" align="center">
-              Upload a profile picture (recommended size: 200x200px)
+              Supported formats: JPEG, PNG, GIF, BMP, WebP<br />
+              Max size: 5MB | Recommended: 200x200px
             </Typography>
           </Box>
 

@@ -108,6 +108,7 @@ export function ProfileSidebar({ user, primaryEmployment, primaryContact }) {
         sx={{ display: "flex", alignItems: "center", flexDirection: "column" }}
       >
         <Avatar
+          src={user?.profileImage || undefined}
           sx={{
             width: 120,
             height: 120,
@@ -116,7 +117,7 @@ export function ProfileSidebar({ user, primaryEmployment, primaryContact }) {
             color: "#222",
           }}
         >
-          {initials || "OB"}
+          {!user?.profileImage && (initials || "OB")}
         </Avatar>
         <Typography
           variant="h6"
