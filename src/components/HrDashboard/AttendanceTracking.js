@@ -195,7 +195,7 @@
 // };
 
 // export default AttendanceTracking;
-import React, { useMemo, useState } from "react";
+import React, { useMemo, useState, useEffect } from "react";
 import {
   Box,
   Grid,
@@ -213,6 +213,7 @@ import {
   TableRow,
   TableCell,
   TableBody,
+  CircularProgress,
   IconButton,
   Dialog,
   DialogTitle,
@@ -243,15 +244,17 @@ import {
   Cell,
 } from "recharts";
 
+import axiosInstance from "../../AxiosInstance";
+
 // Simplified Attendance Management overview
 export default function AttendanceTracking() {
-  // TODO: replace the mock numbers with real calculations from your backend or context
-  const stats = {
-    present: 120,
-    absent: 12,
-    onLeave: 8,
-    late: 5,
-  };
+  // runtime stats fetched from backend
+  const [stats, setStats] = useState({
+    present: 0,
+    absent: 0,
+    onLeave: 0,
+    late: 0,
+  });
 
   const cardSx = {
     p: 2,
@@ -288,6 +291,12 @@ export default function AttendanceTracking() {
   const [chartMonth, setChartMonth] = useState(months[0]);
   // department selected for pie chart (All = overall)
   const [pieDept, setPieDept] = useState("All");
+  const [fetchedEmployees, setFetchedEmployees] = useState([]);
+  const [employeeAttendanceRecords, setEmployeeAttendanceRecords] = useState(
+    []
+  );
+  const [empLoading, setEmpLoading] = useState(false);
+  const [attendanceState, setAttendanceState] = useState(null);
 
   // deterministic pseudo-random helper based on seed string
   function seededVal(seed, mod = 10, offset = 0) {
@@ -338,56 +347,8 @@ export default function AttendanceTracking() {
     "HR",
     "Operations",
   ];
-  const names = [
-    "John Doe",
-    "Jane Smith",
-    "Dr. Alex Brown",
-    "Emma Johnson",
-    "Carlos Vega",
-    "Maya Patel",
-    "Liam Nguyen",
-    "Olivia Chen",
-  ];
   const statuses = ["Present", "Absent", "On Leave", "Late"];
-
-  const generateInitialData = () => {
-    const arr = [];
-    let idCounter = 1;
-    for (let d = 1; d <= 30; d++) {
-      const day = d < 10 ? `2025-11-0${d}` : `2025-11-${d}`;
-      for (let i = 0; i < names.length; i++) {
-        const dept = dataDepartments[i % dataDepartments.length];
-        const name = names[i];
-        const rand = Math.random();
-        let status = "Present";
-        if (rand > 0.95) status = "On Leave";
-        else if (rand > 0.9) status = "Absent";
-        else if (rand > 0.85) status = "Late";
-
-        const checkIn =
-          status === "Present" || status === "Late"
-            ? `08:${30 + (i % 30)}`
-            : "-";
-        const checkOut =
-          status === "Present" || status === "Late"
-            ? `16:${10 + (i % 40)}`
-            : "-";
-
-        arr.push({
-          id: idCounter++,
-          name,
-          department: dept,
-          date: day,
-          checkIn,
-          checkOut,
-          status,
-        });
-      }
-    }
-    return arr;
-  };
-
-  const [records, setRecords] = useState(() => generateInitialData());
+  const [records, setRecords] = useState([]);
   // --- compute department totals and pie data for Overview (depends on records) ---
   const deptTotals = useMemo(() => {
     const map = new Map();
@@ -516,9 +477,13 @@ export default function AttendanceTracking() {
   }, [records]);
 
   const employees = useMemo(() => {
+    // prefer fetchedEmployees (from backend) names; fallback to records
+    if (fetchedEmployees && fetchedEmployees.length > 0) {
+      return fetchedEmployees.map((e) => e.name).sort();
+    }
     const set = new Set(records.map((r) => r.name));
     return Array.from(set).sort();
-  }, [records]);
+  }, [records, fetchedEmployees]);
 
   const filteredRecords = useMemo(() => {
     return records.filter((r) => {
@@ -586,6 +551,132 @@ export default function AttendanceTracking() {
     months[0] || dayjs().format("YYYY-MM")
   );
   const [viewMode, setViewMode] = useState("monthly");
+
+  // helpers to format backend DTOs
+  const formatTime = (datetime) => {
+    if (!datetime) return "-";
+    return dayjs(datetime).format("hh:mm A");
+  };
+
+  const formatDate = (date) => {
+    if (!date) return "-";
+    return dayjs(date).format("MMM D, YYYY");
+  };
+
+  useEffect(() => {
+    fetchEmployees();
+    fetchMyState();
+    fetchOverviewMonth(chartMonth);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const fetchTodayCounts = async () => {
+    try {
+      const res = await axiosInstance.get("/attendance/today");
+      setStats(res.data || { present: 0, absent: 0, onLeave: 0, late: 0 });
+    } catch (err) {
+      console.error("Failed to fetch today counts", err);
+    }
+  };
+
+  useEffect(() => {
+    fetchTodayCounts();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  useEffect(() => {
+    fetchOverviewMonth(chartMonth);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [chartMonth]);
+
+  const fetchOverviewMonth = async (month) => {
+    try {
+      const res = await axiosInstance.get("/attendance/overview", {
+        params: { month },
+      });
+      const data = res.data || [];
+      // map backend maps to UI rows: employeeId, name, workDate, firstIn, lastOut, breakMinutes, paidMinutes
+      const mapped = data.map((d, idx) => ({
+        id: idx,
+        name: d.name || `EMP${d.employeeId}`,
+        department: d.department || "",
+        date: d.workDate,
+        checkIn: d.firstIn,
+        checkOut: d.lastOut,
+        status: d.paidMinutes && d.paidMinutes > 0 ? "Present" : "Absent",
+      }));
+      setRecords(mapped);
+    } catch (err) {
+      console.error("Failed to fetch monthly overview", err);
+      setRecords([]);
+    }
+  };
+
+  // fetch all employees for selection
+  const fetchEmployees = async () => {
+    try {
+      const res = await axiosInstance.get("/hr/employees");
+      setFetchedEmployees(res.data || []);
+    } catch (err) {
+      console.error("Failed to fetch employees", err);
+    }
+  };
+
+  // fetch attendance state for current user (canCheckIn / canCheckOut etc)
+  const fetchMyState = async () => {
+    try {
+      const res = await axiosInstance.get("/attendance/me/state");
+      setAttendanceState(res.data || null);
+    } catch (err) {
+      console.error("Failed to fetch attendance state", err);
+    }
+  };
+
+  // fetch attendance summary (daily dtos) for an employee id
+  const fetchEmployeeAttendance = async (empId, month) => {
+    if (!empId) return;
+    setEmpLoading(true);
+    try {
+      const res = await axiosInstance.get(`/attendance/${empId}`, {
+        params: { month },
+      });
+      const data = res.data || [];
+      const mapped = data.map((d, idx) => ({
+        id: idx,
+        date: d.workDate,
+        checkIn: d.firstIn,
+        checkOut: d.lastOut,
+        breakMinutes: d.breakMinutes,
+        paidMinutes: d.paidMinutes,
+        status: d.paidMinutes && d.paidMinutes > 0 ? "Present" : "Absent",
+      }));
+      setEmployeeAttendanceRecords(mapped);
+    } catch (err) {
+      console.error("Failed to fetch attendance for employee", err);
+      setEmployeeAttendanceRecords([]);
+    } finally {
+      setEmpLoading(false);
+    }
+  };
+
+  const handlePunch = async (type) => {
+    try {
+      await axiosInstance.post(`/attendance/punch`, null, { params: { type } });
+      await fetchMyState();
+      await fetchTodayCounts();
+      await fetchOverviewMonth(chartMonth);
+    } catch (err) {
+      console.error("Punch failed", err);
+    }
+  };
+
+  // refetch employee attendance when selected employee or month changes
+  useEffect(() => {
+    if (!selectedEmployee) return;
+    const emp = fetchedEmployees.find((x) => x.name === selectedEmployee);
+    if (emp) fetchEmployeeAttendance(emp.id, summaryMonth);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [summaryMonth, selectedEmployee, fetchedEmployees]);
 
   // summary metrics for selected employee + month
   const summaryMetrics = useMemo(() => {
@@ -684,6 +775,34 @@ export default function AttendanceTracking() {
       <Typography variant="h5" gutterBottom>
         Attendance Management
       </Typography>
+
+      {/* Quick punch controls for current user (uses attendance state to enable actions) */}
+      <Box sx={{ display: "flex", justifyContent: "flex-end", gap: 1, mb: 2 }}>
+        {attendanceState?.canCheckIn && (
+          <Button variant="contained" onClick={() => handlePunch("CHECK_IN")}>
+            Check In
+          </Button>
+        )}
+        {attendanceState?.canBreakOut && (
+          <Button variant="outlined" onClick={() => handlePunch("BREAK_OUT")}>
+            Start Break
+          </Button>
+        )}
+        {attendanceState?.canBreakIn && (
+          <Button variant="outlined" onClick={() => handlePunch("BREAK_IN")}>
+            End Break
+          </Button>
+        )}
+        {attendanceState?.canCheckOut && (
+          <Button
+            variant="contained"
+            color="secondary"
+            onClick={() => handlePunch("CHECK_OUT")}
+          >
+            Check Out
+          </Button>
+        )}
+      </Box>
 
       <Grid container spacing={2}>
         <Grid item xs={12} sm={6} md={3}>
@@ -1294,11 +1413,19 @@ export default function AttendanceTracking() {
             <Grid container spacing={2} alignItems="center" sx={{ mb: 2 }}>
               <Grid item xs={12} md={6}>
                 <Autocomplete
-                  options={employees}
+                  options={fetchedEmployees.map((e) => e.name)}
                   value={selectedEmployee}
                   onChange={(_, newVal) => {
                     setSelectedEmployee(newVal || null);
                     setEmpPage(0);
+                    if (newVal) {
+                      const emp = fetchedEmployees.find(
+                        (x) => x.name === newVal
+                      );
+                      if (emp) fetchEmployeeAttendance(emp.id, summaryMonth);
+                    } else {
+                      setEmployeeAttendanceRecords([]);
+                    }
                   }}
                   renderInput={(params) => (
                     <TextField
@@ -1349,65 +1476,88 @@ export default function AttendanceTracking() {
                 {subTab === 0 && (
                   // Attendance Records: table similar to Daily Attendance Record with edit action
                   <>
-                    <Paper sx={{ borderRadius: "8px", p: 1, mb: 2 }}>
-                      <Table size="small">
-                        <TableHead>
-                          <TableRow>
-                            <TableCell>Date</TableCell>
-                            <TableCell>Department</TableCell>
-                            <TableCell>Check-In</TableCell>
-                            <TableCell>Check-Out</TableCell>
-                            <TableCell>Status</TableCell>
-                            <TableCell align="center">Actions</TableCell>
-                          </TableRow>
-                        </TableHead>
-                        <TableBody>
-                          {employeeFilteredRecords
-                            .slice(
-                              empPage * empRowsPerPage,
-                              empPage * empRowsPerPage + empRowsPerPage
-                            )
-                            .map((r) => (
-                              <TableRow key={r.id}>
-                                <TableCell>{r.date}</TableCell>
-                                <TableCell>{r.department}</TableCell>
-                                <TableCell>{r.checkIn}</TableCell>
-                                <TableCell>{r.checkOut}</TableCell>
-                                <TableCell>
-                                  <Typography
-                                    sx={{
-                                      fontWeight: 600,
-                                      color: getStatusColor(r.status),
-                                    }}
-                                  >
-                                    {r.status}
-                                  </Typography>
-                                </TableCell>
-                                <TableCell align="center">
-                                  <IconButton
-                                    sx={{ color: "#4B49AC" }}
-                                    onClick={() => handleEdit(r)}
-                                  >
-                                    <EditIcon />
-                                  </IconButton>
-                                </TableCell>
-                              </TableRow>
-                            ))}
-                        </TableBody>
-                      </Table>
-                      <TablePagination
-                        component="div"
-                        count={employeeFilteredRecords.length}
-                        page={empPage}
-                        onPageChange={(e, newPage) => setEmpPage(newPage)}
-                        rowsPerPage={empRowsPerPage}
-                        onRowsPerPageChange={(e) => {
-                          setEmpRowsPerPage(parseInt(e.target.value, 10));
-                          setEmpPage(0);
+                    {empLoading ? (
+                      <Box
+                        sx={{
+                          display: "flex",
+                          justifyContent: "center",
+                          py: 4,
                         }}
-                        rowsPerPageOptions={[5, 10, 25]}
-                      />
-                    </Paper>
+                      >
+                        <CircularProgress />
+                      </Box>
+                    ) : (
+                      <Paper sx={{ borderRadius: "8px", p: 1, mb: 2 }}>
+                        <Table size="small">
+                          <TableHead>
+                            <TableRow>
+                              <TableCell>Date</TableCell>
+                              <TableCell>Department</TableCell>
+                              <TableCell>Check-In</TableCell>
+                              <TableCell>Check-Out</TableCell>
+                              <TableCell>Status</TableCell>
+                              <TableCell align="center">Actions</TableCell>
+                            </TableRow>
+                          </TableHead>
+                          <TableBody>
+                            {(employeeAttendanceRecords &&
+                            employeeAttendanceRecords.length > 0
+                              ? employeeAttendanceRecords
+                              : employeeFilteredRecords
+                            )
+                              .slice(
+                                empPage * empRowsPerPage,
+                                empPage * empRowsPerPage + empRowsPerPage
+                              )
+                              .map((r) => (
+                                <TableRow key={r.id}>
+                                  <TableCell>{formatDate(r.date)}</TableCell>
+                                  <TableCell>{r.department || ""}</TableCell>
+                                  <TableCell>{formatTime(r.checkIn)}</TableCell>
+                                  <TableCell>
+                                    {formatTime(r.checkOut)}
+                                  </TableCell>
+                                  <TableCell>
+                                    <Typography
+                                      sx={{
+                                        fontWeight: 600,
+                                        color: getStatusColor(r.status),
+                                      }}
+                                    >
+                                      {r.status}
+                                    </Typography>
+                                  </TableCell>
+                                  <TableCell align="center">
+                                    <IconButton
+                                      sx={{ color: "#4B49AC" }}
+                                      onClick={() => handleEdit(r)}
+                                    >
+                                      <EditIcon />
+                                    </IconButton>
+                                  </TableCell>
+                                </TableRow>
+                              ))}
+                          </TableBody>
+                        </Table>
+                        <TablePagination
+                          component="div"
+                          count={
+                            employeeAttendanceRecords &&
+                            employeeAttendanceRecords.length > 0
+                              ? employeeAttendanceRecords.length
+                              : employeeFilteredRecords.length
+                          }
+                          page={empPage}
+                          onPageChange={(e, newPage) => setEmpPage(newPage)}
+                          rowsPerPage={empRowsPerPage}
+                          onRowsPerPageChange={(e) => {
+                            setEmpRowsPerPage(parseInt(e.target.value, 10));
+                            setEmpPage(0);
+                          }}
+                          rowsPerPageOptions={[5, 10, 25]}
+                        />
+                      </Paper>
+                    )}
                   </>
                 )}
 

@@ -13,6 +13,7 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 import java.time.*;
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/attendance")
@@ -68,5 +69,17 @@ public class AttendanceController {
     public AttendanceStateDto myState(@AuthenticationPrincipal UserDetails ud) {
         Integer empId = currentEmployeeId(ud.getUsername());
         return svc.stateForToday(empId);
+    }
+
+    @GetMapping("/overview")
+    @PreAuthorize("hasAnyRole('HR','ADMIN','DIRECTOR')")
+    public List<?> overview(@RequestParam @DateTimeFormat(pattern="yyyy-MM") YearMonth month) {
+        return svc.monthlyOverview(month);
+    }
+
+    @GetMapping("/today")
+    @PreAuthorize("hasAnyRole('HR','ADMIN','DIRECTOR','EMPLOYEE')")
+    public Map<String, Long> todayCounts() {
+        return svc.todaysCounts();
     }
 }

@@ -63,6 +63,42 @@ public interface AttendanceEventRepository
                                     @Param("from") LocalDate from,
                                     @Param("to")   LocalDate to);
 
+    @Query(value = """
+            SELECT  e.employee_id                                       AS empId,
+                    e.evt_date                                          AS workDate,
+                    MIN(CASE WHEN e.event_type='CHECK_IN'  THEN e.evt_ts END) AS firstIn,
+                    MAX(CASE WHEN e.event_type='CHECK_OUT' THEN e.evt_ts END) AS lastOut,
+                    COALESCE(SUM(
+                        CASE WHEN e.event_type='BREAK_OUT' THEN
+                            TIMESTAMPDIFF(MINUTE, e.evt_ts,
+                                (SELECT be.evt_ts FROM attendance_event be
+                                  WHERE be.employee_id=e.employee_id
+                                    AND be.evt_date    =e.evt_date
+                                    AND be.event_type  ='BREAK_IN'
+                                    AND be.evt_ts      > e.evt_ts
+                                  ORDER BY be.evt_ts
+                                  LIMIT 1))
+                        END),0)                                          AS breakMin,
+                    (TIMESTAMPDIFF(MINUTE,
+                        MIN(CASE WHEN e.event_type='CHECK_IN'  THEN e.evt_ts END),
+                        MAX(CASE WHEN e.event_type='CHECK_OUT' THEN e.evt_ts END))
+                      - COALESCE(SUM(
+                        CASE WHEN e.event_type='BREAK_OUT' THEN
+                            TIMESTAMPDIFF(MINUTE, e.evt_ts,
+                                (SELECT be.evt_ts FROM attendance_event be
+                                  WHERE be.employee_id=e.employee_id
+                                    AND be.evt_date    =e.evt_date
+                                    AND be.event_type  ='BREAK_IN'
+                                    AND be.evt_ts      > e.evt_ts
+                                  ORDER BY be.evt_ts
+                                  LIMIT 1)) END),0))                     AS paidMin
+            FROM attendance_event e
+            WHERE e.evt_date   BETWEEN :from AND :to
+            GROUP BY e.employee_id, e.evt_date
+            ORDER BY e.evt_date""", nativeQuery = true)
+    List<Object[]> findDailySummaryForAll(@Param("from") LocalDate from,
+                                          @Param("to")   LocalDate to);
+
   @Query("SELECT COUNT(DISTINCT a.employee.employeeId) FROM com.pgis.hrms.modules.attendance.model.AttendanceEvent a WHERE a.eventDate = :date AND a.eventType = :type")
   long countDistinctEmployeesByEventDateAndEventType(@Param("date") LocalDate date, @Param("type") com.pgis.hrms.modules.attendance.model.AttendanceEventType type);
 }
