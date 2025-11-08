@@ -43,6 +43,13 @@ public class JobOpeningServiceImpl implements JobOpeningService {
         jobOpeningRepository.save(opening);
     }
 
+    @Override
+    public void decideOpening(Long id, boolean approve) {
+        JobOpening opening = jobOpeningRepository.findById(id).orElseThrow();
+        opening.setStatus(approve ? "Approved" : "Rejected");
+        jobOpeningRepository.save(opening);
+    }
+
     private JobOpeningDto toDto(JobOpening j) {
         return new JobOpeningDto(
                 j.getId(),

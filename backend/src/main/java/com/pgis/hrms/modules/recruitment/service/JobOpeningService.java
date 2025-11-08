@@ -10,4 +10,10 @@ public interface JobOpeningService {
     JobOpeningDto createOpening(JobOpeningDto jobOpeningDto);
 
     void closeOpening(Long id);
+    
+    /**
+     * Decide a job opening — approve or reject. Implementations should set the status
+     * to "Approved" when approve is true, or "Rejected" otherwise.
+     */
+    void decideOpening(Long id, boolean approve);
 }

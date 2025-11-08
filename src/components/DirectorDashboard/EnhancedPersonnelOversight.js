@@ -21,6 +21,10 @@ import {
   InputLabel,
   Select,
   MenuItem,
+  Stack,
+  Chip,
+  Tabs,
+  Tab,
 } from "@mui/material";
 import { Visibility } from "@mui/icons-material";
 import axiosInstance from "../../AxiosInstance";
@@ -49,6 +53,9 @@ const DEPARTMENTS = [
 const EMPLOYMENT_TYPES = ["Permanent", "Contract", "Temporary"];
 
 const STATUS = ["Active", "Inactive", "Hold"];
+// statuses that should appear in Vacancies History
+const HISTORY_STATUSES = ["Closed", "Approved", "Rejected"];
+const HISTORY_STATUSES_LOWER = HISTORY_STATUSES.map((s) => s.toLowerCase());
 
 export default function EnhancedPersonnelOversight() {
   const navigate = useNavigate();
@@ -63,6 +70,16 @@ export default function EnhancedPersonnelOversight() {
   // pagination for employee table
   const [empPage, setEmpPage] = useState(0);
   const [rowsPerPageEmp, setRowsPerPageEmp] = useState(10);
+
+  // Job management state (cloned from RecruitmentManagement.js)
+  const [jobs, setJobs] = useState([]);
+  const [jobTab, setJobTab] = useState(0);
+  const [searchJob, setSearchJob] = useState("");
+  const [jobPage, setJobPage] = useState(0);
+  const [rowsPerPageJob, setRowsPerPageJob] = useState(5);
+  const [filterJobDept, setFilterJobDept] = useState("All");
+  const [filterJobType, setFilterJobType] = useState("All");
+  const [filterJobLocation, setFilterJobLocation] = useState("All");
 
   // Search & filter state
   const [searchEmp, setSearchEmp] = useState("");
@@ -90,6 +107,86 @@ export default function EnhancedPersonnelOversight() {
   useEffect(() => {
     fetchEmployees();
   }, [fetchEmployees]);
+
+  // fetch job openings for director view (uses HR recruitment endpoint as source)
+  const fetchJobOpenings = useCallback(async () => {
+    try {
+      const resp = await axiosInstance.get("/hr/recruitment/openings");
+      setJobs(resp.data || []);
+    } catch (err) {
+      console.error("Error fetching job openings", err);
+      setJobs([]);
+      setSnackbar({
+        open: true,
+        message: "Failed to load job openings",
+        severity: "error",
+      });
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchJobOpenings();
+  }, [fetchJobOpenings]);
+
+  const vacanciesSummary = useMemo(() => {
+    // total: count of Open vacancies
+    const total = jobs.filter(
+      (j) => ((j.status || "") + "").toLowerCase() === "open"
+    ).length;
+    // active: count of Approved vacancies
+    const active = jobs.filter(
+      (j) => ((j.status || "") + "").toLowerCase() === "approved"
+    ).length;
+    // urgent: count of jobs marked urgent OR with status 'urgent'
+    const urgent = jobs.filter(
+      (j) =>
+        j && (j.urgent || ((j.status || "") + "").toLowerCase() === "urgent")
+    ).length;
+    const map = new Map();
+    jobs.forEach((j) => {
+      const dept = j.department || "Unknown";
+      const pos = j.positions ? Number(j.positions) : 1;
+      map.set(dept, (map.get(dept) || 0) + pos);
+    });
+    const positionsPerDept = Array.from(map.entries()).map(
+      ([department, positions]) => ({ department, positions })
+    );
+    return { total, active, urgent, positionsPerDept };
+  }, [jobs]);
+
+  // Approve / Reject handler for jobs - optimistic update + backend call
+  const handleJobDecision = async (jobId, approve) => {
+    // optimistic update
+    const prev = jobs.slice();
+    setJobs((s) =>
+      s.map((j) =>
+        j.id === jobId ? { ...j, status: approve ? "Approved" : "Rejected" } : j
+      )
+    );
+
+    try {
+      // director decision endpoint (best-effort guess). If your backend uses a different path, we can change it.
+      await axiosInstance.patch(
+        `/hr/recruitment/decision/${jobId}?approve=${approve}`
+      );
+      setSnackbar({
+        open: true,
+        message: `Job ${approve ? "approved" : "rejected"}`,
+        severity: "success",
+      });
+      // refresh list
+      fetchJobOpenings();
+    } catch (err) {
+      console.error("Decision call failed", err);
+      // revert optimistic
+      setJobs(prev);
+      setSnackbar({
+        open: true,
+        message: `Failed to ${approve ? "approve" : "reject"} job`,
+        severity: "error",
+      });
+    }
+  };
 
   const handleSnackbarClose = () => {
     setSnackbar({ ...snackbar, open: false });
@@ -416,6 +513,329 @@ export default function EnhancedPersonnelOversight() {
           rowsPerPageOptions={[5, 10, 25]}
         />
       </TableContainer>
+
+      {/* ----------------- Job Management (cloned/adapted) ----------------- */}
+      <Typography variant="h5" gutterBottom sx={{ mt: 4 }}>
+        Job Management
+      </Typography>
+
+      <Grid container spacing={2} sx={{ mb: 2 }}>
+        <Grid item xs={12} sm={6} md={3}>
+          <Paper sx={{ p: 2, borderRadius: 2, minHeight: 90 }} elevation={1}>
+            <Typography variant="caption">Total vacancies</Typography>
+            <Typography variant="h4" fontWeight={700} sx={{ mt: 1 }}>
+              {vacanciesSummary.total}
+            </Typography>
+          </Paper>
+        </Grid>
+        <Grid item xs={12} sm={6} md={3}>
+          <Paper sx={{ p: 2, borderRadius: 2, minHeight: 90 }} elevation={1}>
+            <Typography variant="caption">Active vacancies</Typography>
+            <Typography variant="h4" fontWeight={700} sx={{ mt: 1 }}>
+              {vacanciesSummary.active}
+            </Typography>
+          </Paper>
+        </Grid>
+        <Grid item xs={12} sm={6} md={3}>
+          <Paper sx={{ p: 2, borderRadius: 2, minHeight: 90 }} elevation={1}>
+            <Typography variant="caption">Urgent hires</Typography>
+            <Typography variant="h4" fontWeight={700} sx={{ mt: 1 }}>
+              {vacanciesSummary.urgent}
+            </Typography>
+          </Paper>
+        </Grid>
+      </Grid>
+
+      <Paper sx={{ p: 2, mb: 4 }}>
+        <Tabs
+          value={jobTab}
+          onChange={(_, v) => {
+            setJobTab(v);
+            setJobPage(0);
+          }}
+          sx={{ mb: 2 }}
+        >
+          <Tab label="Current Vacancies" />
+          <Tab label="Vacancies History" />
+        </Tabs>
+
+        <Box sx={{ p: 1 }}>
+          <Grid container spacing={2} alignItems="center" sx={{ mb: 2 }}>
+            <Grid item xs={12} md={3}>
+              <TextField
+                fullWidth
+                size="small"
+                placeholder="Search by title"
+                value={searchJob}
+                onChange={(e) => {
+                  setSearchJob(e.target.value);
+                  setJobPage(0);
+                }}
+              />
+            </Grid>
+
+            <Grid item xs={12} md={2}>
+              <FormControl fullWidth size="small">
+                <InputLabel>Department</InputLabel>
+                <Select
+                  value={filterJobDept}
+                  label="Department"
+                  onChange={(e) => {
+                    setFilterJobDept(e.target.value);
+                    setJobPage(0);
+                  }}
+                >
+                  <MenuItem value="All">All</MenuItem>
+                  {Array.from(
+                    new Set(jobs.map((j) => j.department).filter(Boolean))
+                  ).map((d) => (
+                    <MenuItem key={d} value={d}>
+                      {d}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+            </Grid>
+
+            <Grid item xs={12} md={2}>
+              <FormControl fullWidth size="small">
+                <InputLabel>Job Type</InputLabel>
+                <Select
+                  value={filterJobType}
+                  label="Job Type"
+                  onChange={(e) => {
+                    setFilterJobType(e.target.value);
+                    setJobPage(0);
+                  }}
+                >
+                  <MenuItem value="All">All</MenuItem>
+                  {Array.from(
+                    new Set(jobs.map((j) => j.jobType).filter(Boolean))
+                  ).map((t) => (
+                    <MenuItem key={t} value={t}>
+                      {t}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+            </Grid>
+
+            <Grid item xs={12} md={2}>
+              <FormControl fullWidth size="small">
+                <InputLabel>Location</InputLabel>
+                <Select
+                  value={filterJobLocation}
+                  label="Location"
+                  onChange={(e) => {
+                    setFilterJobLocation(e.target.value);
+                    setJobPage(0);
+                  }}
+                >
+                  <MenuItem value="All">All</MenuItem>
+                  {Array.from(
+                    new Set(jobs.map((j) => j.location).filter(Boolean))
+                  ).map((l) => (
+                    <MenuItem key={l} value={l}>
+                      {l}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+            </Grid>
+
+            <Grid item xs={12} md={3} textAlign="right">
+              <Button
+                variant="outlined"
+                onClick={() => {
+                  setSearchJob("");
+                  setJobTab(0);
+                  setFilterJobDept("All");
+                  setFilterJobType("All");
+                  setFilterJobLocation("All");
+                  setJobPage(0);
+                }}
+              >
+                Reset
+              </Button>
+            </Grid>
+          </Grid>
+
+          <TableContainer>
+            <Table>
+              <TableHead>
+                <TableRow>
+                  <TableCell sx={{ fontWeight: 700 }}>Job Title</TableCell>
+                  <TableCell>Description</TableCell>
+                  <TableCell>Department</TableCell>
+                  <TableCell>Posted</TableCell>
+                  <TableCell>Status</TableCell>
+                  {jobTab === 0 && <TableCell align="right">Actions</TableCell>}
+                </TableRow>
+              </TableHead>
+
+              <TableBody>
+                {(() => {
+                  const now = new Date();
+                  let list = jobs.slice();
+                  if (jobTab === 0) {
+                    // Current: everything except explicit history statuses
+                    list = list.filter(
+                      (j) =>
+                        !HISTORY_STATUSES_LOWER.includes(
+                          ((j.status || "") + "").toLowerCase()
+                        )
+                    );
+                    // also exclude future start dates
+                    list = list.filter(
+                      (j) => !j.startDate || new Date(j.startDate) <= now
+                    );
+                  } else {
+                    // History: only jobs whose status is Closed, Approved or Rejected
+                    list = list.filter((j) =>
+                      HISTORY_STATUSES_LOWER.includes(
+                        ((j.status || "") + "").toLowerCase()
+                      )
+                    );
+                  }
+                  if (searchJob && searchJob.trim()) {
+                    const q = searchJob.toLowerCase();
+                    list = list.filter(
+                      (j) =>
+                        (j.title || "").toLowerCase().includes(q) ||
+                        (j.department || "").toLowerCase().includes(q)
+                    );
+                  }
+                  if (filterJobDept !== "All")
+                    list = list.filter((j) => j.department === filterJobDept);
+                  if (filterJobType !== "All")
+                    list = list.filter((j) => j.jobType === filterJobType);
+                  if (filterJobLocation !== "All")
+                    list = list.filter((j) => j.location === filterJobLocation);
+
+                  const paged = list.slice(
+                    jobPage * rowsPerPageJob,
+                    jobPage * rowsPerPageJob + rowsPerPageJob
+                  );
+                  if (paged.length === 0) {
+                    return (
+                      <TableRow>
+                        <TableCell
+                          colSpan={jobTab === 0 ? 6 : 5}
+                          align="center"
+                        >
+                          No job vacancies found.
+                        </TableCell>
+                      </TableRow>
+                    );
+                  }
+
+                  return paged.map((j) => (
+                    <TableRow key={j.id} hover>
+                      <TableCell>
+                        <Typography fontWeight={700}>{j.title}</Typography>
+                      </TableCell>
+                      <TableCell>{j.description}</TableCell>
+                      <TableCell>{j.department}</TableCell>
+                      <TableCell>
+                        {j.postedDate
+                          ? new Date(j.postedDate).toLocaleDateString()
+                          : "-"}
+                      </TableCell>
+                      <TableCell>
+                        <Stack direction="row" spacing={1} alignItems="center">
+                          <Chip
+                            label={j.status}
+                            size="small"
+                            color={
+                              (j.status || "") === "Open"
+                                ? "success"
+                                : "default"
+                            }
+                          />
+                          {j.urgent && (
+                            <Chip label="Urgent" size="small" color="error" />
+                          )}
+                        </Stack>
+                      </TableCell>
+                      {jobTab === 0 && (
+                        <TableCell align="right">
+                          <Stack
+                            direction="row"
+                            spacing={1}
+                            justifyContent="flex-end"
+                          >
+                            <Button
+                              size="small"
+                              variant="contained"
+                              color="success"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleJobDecision(j.id, true);
+                              }}
+                            >
+                              Approve
+                            </Button>
+                            <Button
+                              size="small"
+                              variant="outlined"
+                              color="error"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleJobDecision(j.id, false);
+                              }}
+                            >
+                              Reject
+                            </Button>
+                          </Stack>
+                        </TableCell>
+                      )}
+                    </TableRow>
+                  ));
+                })()}
+              </TableBody>
+            </Table>
+          </TableContainer>
+
+          <TablePagination
+            component="div"
+            count={(() => {
+              const now = new Date();
+              let list = jobs.slice();
+              if (jobTab === 0)
+                list = list.filter(
+                  (j) =>
+                    !HISTORY_STATUSES.includes(j.status) &&
+                    (!j.startDate || new Date(j.startDate) <= now)
+                );
+              else
+                list = list.filter((j) => HISTORY_STATUSES.includes(j.status));
+              if (searchJob && searchJob.trim()) {
+                const q = searchJob.toLowerCase();
+                list = list.filter(
+                  (j) =>
+                    (j.title || "").toLowerCase().includes(q) ||
+                    (j.department || "").toLowerCase().includes(q)
+                );
+              }
+              if (filterJobDept !== "All")
+                list = list.filter((j) => j.department === filterJobDept);
+              if (filterJobType !== "All")
+                list = list.filter((j) => j.jobType === filterJobType);
+              if (filterJobLocation !== "All")
+                list = list.filter((j) => j.location === filterJobLocation);
+              return list.length;
+            })()}
+            page={jobPage}
+            onPageChange={(_, newPage) => setJobPage(newPage)}
+            rowsPerPage={rowsPerPageJob}
+            onRowsPerPageChange={(e) => {
+              setRowsPerPageJob(parseInt(e.target.value, 10));
+              setJobPage(0);
+            }}
+            rowsPerPageOptions={[5, 10, 25]}
+          />
+        </Box>
+      </Paper>
 
       <Snackbar
         open={snackbar.open}

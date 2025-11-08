@@ -31,4 +31,10 @@ public class RecruitmentController {
         jobOpeningService.closeOpening(id);
         return ResponseEntity.ok("Job closed");
     }
+
+    @PatchMapping("/decision/{id}")
+    public ResponseEntity<String> decideOpening(@PathVariable Long id, @RequestParam boolean approve) {
+        jobOpeningService.decideOpening(id, approve);
+        return ResponseEntity.ok(approve ? "Job approved" : "Job rejected");
+    }
 }
