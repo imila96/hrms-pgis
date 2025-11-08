@@ -7,6 +7,7 @@ import java.time.LocalDate;
 public record LeaveSummaryDto(
         Integer id,
         String  employee,
+        String  department,
         LeaveType type,
         LocalDate start,
         LocalDate end,

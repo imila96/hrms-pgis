@@ -92,7 +92,7 @@ export default function DirectorLeave() {
         id: item.id,
         employeeId: `EMP${String(item.id).padStart(3, "0")}`,
         employeeName: item.employee || "Unknown",
-        dept: "N/A", // Department not in backend DTO
+        dept: item.department || "N/A", // Now using department from backend
         type: toTitleCase(item.type),
         startDate: item.start,
         endDate: item.end,

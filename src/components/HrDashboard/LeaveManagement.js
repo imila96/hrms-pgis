@@ -357,7 +357,7 @@ export default function LeaveManagement() {
           id: item.id,
           employeeId: `EMP${String(item.id).padStart(3, "0")}`, // Generate ID if not provided
           employeeName: item.employee || "Unknown",
-          dept: "N/A", // Department not in backend DTO, can be added later
+          dept: item.department || "N/A", // Now using department from backend
           type: toTitleCase(item.type), // ANNUAL -> Annual, SICK -> Sick, CASUAL -> Casual
           startDate: item.start, // ISO date string
           endDate: item.end, // ISO date string
