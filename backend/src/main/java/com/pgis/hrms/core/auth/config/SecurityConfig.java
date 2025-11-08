@@ -79,7 +79,7 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.PATCH, "/policies/*/approve").hasRole("DIRECTOR")
 
                         // HR specific endpoints
-                        .requestMatchers("/hr/**").hasAnyRole("HR", "ADMIN")
+                        .requestMatchers("/hr/**").hasAnyRole("HR", "ADMIN","DIRECTOR")
 
                         // Admin specific endpoints
                         .requestMatchers("/admin/**").hasRole("ADMIN")

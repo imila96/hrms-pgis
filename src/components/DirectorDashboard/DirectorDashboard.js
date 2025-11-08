@@ -1,4 +1,3 @@
-
 import React, { useState, useContext } from "react";
 import {
   Box,
@@ -29,7 +28,6 @@ import { Routes, Route, NavLink, useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 
 // Components
-import PersonnelOversight from "../DirectorDashboard/PersonnelOversight";
 import EnhancedPersonnelOversight from "../DirectorDashboard/EnhancedPersonnelOversight";
 import PolicyOversight from "../DirectorDashboard/PolicyOversight";
 import AnnouncementManagement from "../DirectorDashboard/AnnouncementManagement";
@@ -135,7 +133,9 @@ const DirectorDashboard = () => {
             boxShadow: "0 4px 20px rgba(75,73,172,0.25)",
           }}
         >
-          <Toolbar sx={{ display: "flex", justifyContent: "space-between", py: 1 }}>
+          <Toolbar
+            sx={{ display: "flex", justifyContent: "space-between", py: 1 }}
+          >
             {/* Title */}
             <Typography
               variant="h6"
@@ -240,7 +240,11 @@ const DirectorDashboard = () => {
                   {user?.photoURL ? (
                     <Avatar
                       src={user.photoURL}
-                      sx={{ width: 36, height: 36, border: "2px solid #98BDFF" }}
+                      sx={{
+                        width: 36,
+                        height: 36,
+                        border: "2px solid #98BDFF",
+                      }}
                     />
                   ) : (
                     <Avatar
@@ -500,7 +504,6 @@ const DirectorDashboard = () => {
             />
 
             {/* Routes */}
-            <Route path="personnel" element={<PersonnelOversight />} />
             <Route path="enhanced" element={<EnhancedPersonnelOversight />} />
             <Route path="policies" element={<PolicyOversight />} />
             <Route path="announcements" element={<AnnouncementManagement />} />
