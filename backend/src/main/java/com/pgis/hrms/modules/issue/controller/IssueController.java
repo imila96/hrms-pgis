@@ -46,7 +46,7 @@ public class IssueController {
 
     // HR: list all complaints
     @GetMapping("/complaints")
-    @PreAuthorize("hasRole('HR')")
+    @PreAuthorize("hasAnyRole('HR','DIRECTOR')")
     public List<IssueRes> complaints(@RequestParam(required = false) Status status) {
         return service.getByType(IssueType.COMPLAINT, status);
     }

@@ -1,4 +1,3 @@
-// src/components/DirectorDashboard/AnnouncementManagement.js
 import React, { useEffect, useState } from "react";
 import {
   Box,
@@ -14,7 +13,6 @@ import {
   DialogActions,
   Tooltip,
   Chip,
-  MenuItem,
   InputAdornment,
   Pagination,
   TextField,
@@ -33,7 +31,6 @@ const AnnouncementManagement = () => {
   const [filteredAnnouncements, setFilteredAnnouncements] = useState([]);
   const [selectedAnnouncement, setSelectedAnnouncement] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
-  const [filterStatus, setFilterStatus] = useState("ALL");
   const [currentPage, setCurrentPage] = useState(1);
   const [loading, setLoading] = useState(false);
   const itemsPerPage = 5;
@@ -45,9 +42,12 @@ const AnnouncementManagement = () => {
   const fetchAnnouncements = async () => {
     setLoading(true);
     try {
-      const res = await axiosInstance.get("/announcements");
-      setAnnouncements(res.data);
-      setFilteredAnnouncements(res.data);
+      const res = await axiosInstance.get("/announcements/public");
+      const published = Array.isArray(res.data)
+        ? res.data.filter((a) => a.status === "PUBLISHED")
+        : [];
+      setAnnouncements(published);
+      setFilteredAnnouncements(published);
     } catch (err) {
       console.error("Failed to fetch announcements", err);
     } finally {
@@ -73,26 +73,11 @@ const AnnouncementManagement = () => {
   const handleSearchChange = (e) => {
     const term = e.target.value.toLowerCase();
     setSearchTerm(term);
-    filterAnnouncements(term, filterStatus);
-  };
-
-  const handleFilterChange = (e) => {
-    const status = e.target.value;
-    setFilterStatus(status);
-    filterAnnouncements(searchTerm, status);
-  };
-
-  const filterAnnouncements = (term, status) => {
-    let filtered = announcements.filter((a) => {
+    const filtered = announcements.filter((a) => {
       const title = a.title?.toLowerCase() || "";
       const description = a.description?.toLowerCase() || "";
       return title.includes(term) || description.includes(term);
     });
-
-    if (status !== "ALL") {
-      filtered = filtered.filter((a) => a.status === status);
-    }
-
     setFilteredAnnouncements(filtered);
     setCurrentPage(1);
   };
@@ -101,20 +86,6 @@ const AnnouncementManagement = () => {
     return dateTime ? new Date(dateTime).toLocaleString() : "N/A";
   };
 
-  const getStatusColor = (status) => {
-    switch (status) {
-      case "DRAFT":
-        return "default";
-      case "PUBLISHED":
-        return "success";
-      case "ARCHIVED":
-        return "warning";
-      default:
-        return "default";
-    }
-  };
-
-  // Pagination
   const indexOfLastItem = currentPage * itemsPerPage;
   const indexOfFirstItem = indexOfLastItem - itemsPerPage;
   const currentItems = filteredAnnouncements.slice(
@@ -126,14 +97,7 @@ const AnnouncementManagement = () => {
     setCurrentPage(value);
   };
 
-  // Counters
-  const publishedCount = announcements.filter(
-    (a) => a.status === "PUBLISHED"
-  ).length;
-  const draftCount = announcements.filter((a) => a.status === "DRAFT").length;
-  const archivedCount = announcements.filter(
-    (a) => a.status === "ARCHIVED"
-  ).length;
+  const publishedCount = announcements.length;
 
   return (
     <Paper sx={{ p: 3 }}>
@@ -145,13 +109,15 @@ const AnnouncementManagement = () => {
         mb={2}
       >
         <Typography variant="h5" fontWeight="bold" color="#4B49AC">
-          Announcement Overview
+          Published Announcements
         </Typography>
 
         <Box display="flex" alignItems="center" gap={2}>
-          <Chip label={`Published: ${publishedCount}`} color="success" />
-          <Chip label={`Drafts: ${draftCount}`} color="warning" />
-          <Chip label={`Archived: ${archivedCount}`} color="default" />
+          <Chip
+            label={`Total Published: ${publishedCount}`}
+            color="success"
+            sx={{ fontWeight: 600 }}
+          />
           <Button
             startIcon={
               loading ? (
@@ -174,11 +140,11 @@ const AnnouncementManagement = () => {
         </Box>
       </Box>
 
-      {/* Search + Filter */}
+      {/* Search */}
       <Box display="flex" gap={2} mb={2}>
         <TextField
           fullWidth
-          placeholder="Search announcements..."
+          placeholder="Search published announcements..."
           value={searchTerm}
           onChange={handleSearchChange}
           InputProps={{
@@ -189,21 +155,9 @@ const AnnouncementManagement = () => {
             ),
           }}
         />
-        <TextField
-          select
-          label="Filter by Status"
-          value={filterStatus}
-          onChange={handleFilterChange}
-          sx={{ minWidth: 200 }}
-        >
-          <MenuItem value="ALL">All</MenuItem>
-          <MenuItem value="DRAFT">Draft</MenuItem>
-          <MenuItem value="PUBLISHED">Published</MenuItem>
-          <MenuItem value="ARCHIVED">Archived</MenuItem>
-        </TextField>
       </Box>
 
-      {/* Announcements List */}
+      {/* List */}
       <List>
         {currentItems.map((announcement) => (
           <ListItem
@@ -229,26 +183,22 @@ const AnnouncementManagement = () => {
               primary={
                 <Box display="flex" alignItems="center" gap={1}>
                   <Typography fontWeight={600}>{announcement.title}</Typography>
-                  <Chip
-                    label={announcement.status}
-                    size="small"
-                    color={getStatusColor(announcement.status)}
-                  />
+                  <Chip label="PUBLISHED" size="small" color="success" />
                 </Box>
               }
               secondary={
                 <Typography variant="body2" color="text.secondary">
-                  Created At: {formatDateTime(announcement.createdAt)} •
-                  Published At: {formatDateTime(announcement.publishedAt)}
+                  Published At: {formatDateTime(announcement.publishedAt)} • By:{" "}
+                  {announcement.publishedBy || "N/A"}
                 </Typography>
               }
             />
           </ListItem>
         ))}
 
-        {currentItems.length === 0 && !loading && (
+        {!loading && currentItems.length === 0 && (
           <Typography align="center" color="text.secondary" sx={{ mt: 2 }}>
-            No announcements found.
+            No published announcements found.
           </Typography>
         )}
       </List>
@@ -288,16 +238,6 @@ const AnnouncementManagement = () => {
               Description:
             </Typography>
             <Typography paragraph>{selectedAnnouncement.description}</Typography>
-            <Typography>
-              <strong>Status:</strong> {selectedAnnouncement.status}
-            </Typography>
-            <Typography>
-              <strong>Created At:</strong>{" "}
-              {formatDateTime(selectedAnnouncement.createdAt)}
-            </Typography>
-            <Typography>
-              <strong>Created By:</strong> {selectedAnnouncement.createdBy}
-            </Typography>
             <Typography>
               <strong>Published At:</strong>{" "}
               {formatDateTime(selectedAnnouncement.publishedAt)}

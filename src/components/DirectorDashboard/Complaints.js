@@ -26,7 +26,6 @@ import {
   InputLabel,
   Select,
   Stack,
-  Divider,
   List,
   ListItem,
   ListItemText,
@@ -44,28 +43,39 @@ const COLORS = {
 
 export default function Complaints() {
   const [complaints, setComplaints] = useState([]);
-  const [tab, setTab] = useState(0); // 0 Open,1 In Progress,2 Resolved,3 All
+  const [tab, setTab] = useState(0); // 0 Pending, 1 In Progress, 2 Resolved, 3 All
   const [search, setSearch] = useState("");
   const [filterStatus, setFilterStatus] = useState("All");
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(5);
-  const [selected, setSelected] = useState(null); // view dialog
+  const [selected, setSelected] = useState(null);
 
   const summary = useMemo(
     () => ({
       total: complaints.length,
-      open: complaints.filter((c) => c.status === "Open").length,
+      pending: complaints.filter((c) => c.status === "Pending").length,
       inProgress: complaints.filter((c) => c.status === "In Progress").length,
       resolved: complaints.filter((c) => c.status === "Resolved").length,
     }),
     [complaints]
   );
 
+  // ✅ Normalize backend status values (OPEN, PENDING, IN_PROGRESS, RESOLVED)
   useEffect(() => {
     const fetch = async () => {
       try {
-        const res = await axiosInstance.get("/complaints");
-        if (Array.isArray(res.data) && res.data.length) setComplaints(res.data);
+        const res = await axiosInstance.get("/issues/complaints");
+        if (Array.isArray(res.data) && res.data.length) {
+          const normalized = res.data.map((c) => {
+            const status = c.status?.toUpperCase();
+            let label = c.status;
+            if (status === "OPEN" || status === "PENDING") label = "Pending";
+            else if (status === "IN_PROGRESS") label = "In Progress";
+            else if (status === "RESOLVED") label = "Resolved";
+            return { ...c, status: label };
+          });
+          setComplaints(normalized);
+        }
       } catch (e) {
         console.error("Failed to fetch complaints", e);
       }
@@ -75,7 +85,7 @@ export default function Complaints() {
 
   const filtered = useMemo(() => {
     let list = complaints.slice();
-    if (tab === 0) list = list.filter((c) => c.status === "Open");
+    if (tab === 0) list = list.filter((c) => c.status === "Pending");
     if (tab === 1) list = list.filter((c) => c.status === "In Progress");
     if (tab === 2) list = list.filter((c) => c.status === "Resolved");
     if (filterStatus !== "All")
@@ -172,10 +182,10 @@ export default function Complaints() {
         <Grid item xs={12} sm={6} md={3}>
           <Paper sx={{ p: 2, borderRadius: 2 }}>
             <Typography variant="body2" color="text.secondary">
-              Open
+              Pending
             </Typography>
             <Typography variant="h4" fontWeight={700} color={COLORS.alt}>
-              {summary.open}
+              {summary.pending}
             </Typography>
             <Typography variant="caption">Awaiting action</Typography>
           </Paper>
@@ -215,7 +225,7 @@ export default function Complaints() {
           indicatorColor="primary"
           textColor="primary"
         >
-          <Tab label={`Open (${summary.open})`} />
+          <Tab label={`Pending (${summary.pending})`} />
           <Tab label={`In Progress (${summary.inProgress})`} />
           <Tab label={`Resolved (${summary.resolved})`} />
           <Tab label={`All (${summary.total})`} />
@@ -249,7 +259,7 @@ export default function Complaints() {
                 }}
               >
                 <MenuItem value="All">All</MenuItem>
-                <MenuItem value="Open">Open</MenuItem>
+                <MenuItem value="Pending">Pending</MenuItem>
                 <MenuItem value="In Progress">In Progress</MenuItem>
                 <MenuItem value="Resolved">Resolved</MenuItem>
               </Select>
@@ -353,7 +363,7 @@ export default function Complaints() {
         />
       </Paper>
 
-      {/* ===== View dialog only ===== */}
+      {/* ===== View dialog ===== */}
       <Dialog open={!!selected} onClose={closeView} fullWidth maxWidth="sm">
         <DialogTitle>Complaint Details</DialogTitle>
         <DialogContent dividers>
