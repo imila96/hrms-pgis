@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import {
   Box,
@@ -66,6 +66,8 @@ function CreateEditProfile() {
   const { id } = useParams();
   const [activeStep, setActiveStep] = useState(0); //current step index in the 4-step wizard
   const [profileImage, setProfileImage] = useState(null);
+
+  const fileInputRef = useRef(null);
 
   const [employeeData, setEmployeeData] = useState({
     personal: {
@@ -460,6 +462,10 @@ function CreateEditProfile() {
         message: "Image uploaded successfully",
         severity: "success",
       });
+
+      try {
+        if (fileInputRef.current) fileInputRef.current.value = null;
+      } catch (e) {}
     };
     reader.onerror = () => {
       setSnackbar({
@@ -467,6 +473,9 @@ function CreateEditProfile() {
         message: "Failed to read image file",
         severity: "error",
       });
+      try {
+        if (fileInputRef.current) fileInputRef.current.value = null;
+      } catch (e) {}
     };
     reader.readAsDataURL(file);
   };
@@ -475,6 +484,9 @@ function CreateEditProfile() {
   const handleRemoveImage = () => {
     setProfileImage(null);
     setField("personal", "profileImage", null);
+    try {
+      if (fileInputRef.current) fileInputRef.current.value = null;
+    } catch (e) {}
   };
 
   // build employee request object to create/update employee
@@ -730,7 +742,11 @@ function CreateEditProfile() {
                 sx={{ bgcolor: COLORS.primary }}
               >
                 Upload
+                {/* Hidden file input. We attach a ref so we can clear its value
+                    programmatically (enables re-selecting the same file in the
+                    same session). */}
                 <input
+                  ref={fileInputRef}
                   hidden
                   accept="image/jpeg,image/jpg,image/png,image/gif,image/bmp,image/webp"
                   type="file"
