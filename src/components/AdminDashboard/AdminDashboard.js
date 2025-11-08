@@ -1,4 +1,4 @@
-import React, { useState, useContext } from "react";
+import React, { useState, useContext, useEffect } from "react";
 import {
   Box,
   Paper,
@@ -26,6 +26,7 @@ import EventNoteIcon from "@mui/icons-material/EventNote";
 import { createTheme, ThemeProvider } from "@mui/material/styles";
 import { Routes, Route, NavLink, useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
+import axiosInstance from "../../AxiosInstance";
 
 // Admin Subpages
 import UserManagement from "./UserManagement/UserManagement";
@@ -60,6 +61,28 @@ const AdminDashboard = () => {
 
   const [anchorEl, setAnchorEl] = useState(null);
   const open = Boolean(anchorEl);
+
+  // Dashboard data state
+  const [dashboard, setDashboard] = useState(null);
+  const [loadingDashboard, setLoadingDashboard] = useState(true);
+
+  // Fetch dashboard data
+  useEffect(() => {
+    let mounted = true;
+    setLoadingDashboard(true);
+    axiosInstance.get("/dashboard/admin-home").then((res) => {
+      if (mounted) {
+        setDashboard(res.data);
+        setLoadingDashboard(false);
+      }
+    }).catch(err => {
+      if (mounted) {
+        console.error("Failed to load admin dashboard:", err);
+        setLoadingDashboard(false);
+      }
+    });
+    return () => (mounted = false);
+  }, []);
 
   const handleMenuOpen = (event) => setAnchorEl(event.currentTarget);
   const handleMenuClose = () => setAnchorEl(null);
@@ -314,22 +337,27 @@ const AdminDashboard = () => {
                   <Grid container spacing={2} sx={{ my: 3 }}>
                     {[
                       {
-                        title: "Active Users",
-                        value: "312",
-                        subtitle: "Currently managed accounts",
+                        title: "Total Employees",
+                        value: loadingDashboard ? "..." : (dashboard?.totalEmployees ?? "-"),
+                        subtitle: "Active employees in the system",
+                      },
+                      {
+                        title: "Total Users",
+                        value: loadingDashboard ? "..." : (dashboard?.totalUsers ?? "-"),
+                        subtitle: "Registered user accounts",
                       },
                       {
                         title: "System Logs",
-                        value: "1289",
+                        value: loadingDashboard ? "..." : (dashboard?.systemLogs ?? "-"),
                         subtitle: "Latest activity records",
                       },
                       {
                         title: "Pending Issues",
-                        value: "8",
+                        value: loadingDashboard ? "..." : (dashboard?.pendingIssues ?? "-"),
                         subtitle: "Requires troubleshooting",
                       },
                     ].map((item, idx) => (
-                      <Grid item xs={12} md={4} key={idx}>
+                      <Grid item xs={12} md={3} key={idx}>
                         <Paper
                           sx={{
                             p: 2,
