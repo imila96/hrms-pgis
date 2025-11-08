@@ -32,12 +32,27 @@ import {
 import axiosInstance from "../../AxiosInstance";
 
 // job status constants (frontend)
-const [Closed, Open, Urgent, Accepted, Rejected] = [
-  "Closed",
-  "Open",
-  "Urgent",
-  "Accepted",
-  "Rejected",
+const [Closed, Open] = ["Closed", "Open"];
+
+// Departments list for new job opening dialog
+const DEPARTMENTS = [
+  "General Administration Division",
+  "Finance Administration Division",
+  "IT & Technical Support Unit",
+  "Maintenance & Facilities Unit",
+  "Biochemistry and Molecular Biology",
+  "Biomedical Sciences",
+  "Chemical Sciences",
+  "Earth Sciences",
+  "Environmental Science",
+  "Mathematics",
+  "Physics",
+  "Plant Sciences",
+  "Science Education",
+  "Statistics and Computer Science",
+  "Zoological Sciences",
+  "Human Resources",
+  "other",
 ];
 
 const RecruitmentManagement = () => {
@@ -66,9 +81,19 @@ const RecruitmentManagement = () => {
   const [filterLocation, setFilterLocation] = useState("All");
 
   const vacanciesSummary = React.useMemo(() => {
-    const total = jobs.length;
-    const active = jobs.filter((j) => j && j.status === Open).length;
-    const urgent = jobs.filter((j) => j && j.urgent).length;
+    // total: count of Open vacancies (case-insensitive)
+    const total = jobs.filter(
+      (j) => ((j.status || "") + "").toLowerCase() === "open"
+    ).length;
+    // active: count of Approved vacancies
+    const active = jobs.filter(
+      (j) => ((j.status || "") + "").toLowerCase() === "approved"
+    ).length;
+    // urgent: count of explicit urgent flag or status === 'urgent'
+    const urgent = jobs.filter(
+      (j) =>
+        j && (j.urgent || ((j.status || "") + "").toLowerCase() === "urgent")
+    ).length;
     // positions per department
     const map = new Map();
     jobs.forEach((j) => {
@@ -344,7 +369,7 @@ const RecruitmentManagement = () => {
           sx={{ mb: 2 }}
         >
           <Tab label="Current Vacancies" />
-          <Tab label="Upcoming Vacancies" />
+          <Tab label="Approved/Rejected Vacancies" />
           <Tab label="Vacancies History" />
         </Tabs>
 
@@ -519,7 +544,7 @@ const RecruitmentManagement = () => {
                   <TableCell>Department</TableCell>
                   <TableCell>Posted</TableCell>
                   <TableCell>Status</TableCell>
-                  <TableCell align="right">Actions</TableCell>
+                  {jobTab !== 2 && <TableCell align="right">Actions</TableCell>}
                 </TableRow>
               </TableHead>
 
@@ -528,20 +553,26 @@ const RecruitmentManagement = () => {
                   const now = new Date();
                   let list = jobs.slice();
                   if (jobTab === 0) {
-                    // current: active jobs whose startDate is not in future
+                    // current: only Open status and not starting in future
                     list = list.filter(
                       (j) =>
-                        j.status === Open &&
+                        ((j.status || "") + "").toLowerCase() ===
+                          Open.toLowerCase() &&
                         (!j.startDate || new Date(j.startDate) <= now)
                     );
                   } else if (jobTab === 1) {
-                    // upcoming: have a startDate in future
-                    list = list.filter(
-                      (j) => j.startDate && new Date(j.startDate) > now
-                    );
+                    // Approved/Rejected tab: include items with status approved or rejected
+                    list = list.filter((j) => {
+                      const s = ((j.status || "") + "").toLowerCase();
+                      return s === "approved" || s === "rejected";
+                    });
                   } else {
-                    // history: closed jobs
-                    list = list.filter((j) => j.status !== Open);
+                    // history: only Closed status
+                    list = list.filter(
+                      (j) =>
+                        ((j.status || "") + "").toLowerCase() ===
+                        Closed.toLowerCase()
+                    );
                   }
                   if (search && search.trim()) {
                     const q = search.toLowerCase();
@@ -559,57 +590,79 @@ const RecruitmentManagement = () => {
                   if (paged.length === 0) {
                     return (
                       <TableRow>
-                        <TableCell colSpan={6} align="center">
+                        <TableCell
+                          colSpan={jobTab !== 2 ? 6 : 5}
+                          align="center"
+                        >
                           No job vacancies found.
                         </TableCell>
                       </TableRow>
                     );
                   }
 
-                  return paged.map((j) => (
-                    <TableRow key={j.id} hover>
-                      <TableCell>
-                        <Typography fontWeight={700}>{j.title}</Typography>
-                      </TableCell>
-                      <TableCell>{j.description}</TableCell>
-                      <TableCell>{j.department}</TableCell>
-                      <TableCell>
-                        {j.postedDate
-                          ? new Date(j.postedDate).toLocaleDateString()
-                          : "-"}
-                      </TableCell>
-                      <TableCell>
-                        <Stack direction="row" spacing={1} alignItems="center">
-                          <Chip
-                            label={j.status === Open ? Open : Closed}
-                            size="small"
-                            color={j.status === Open ? "success" : "default"}
-                          />
-                          {j.urgent && (
-                            <Chip label="Urgent" size="small" color="error" />
-                          )}
-                        </Stack>
-                      </TableCell>
-                      <TableCell align="right">
-                        <Stack
-                          direction="row"
-                          spacing={1}
-                          justifyContent="flex-end"
-                        >
-                          <Button
-                            size="small"
-                            variant="outlined"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              openDialog(j);
-                            }}
+                  return paged.map((j) => {
+                    const s = ((j.status || "") + "").toLowerCase();
+                    const chipColor =
+                      s === Open.toLowerCase()
+                        ? "success"
+                        : s === "approved"
+                        ? "primary"
+                        : s === "rejected"
+                        ? "error"
+                        : s === "urgent"
+                        ? "error"
+                        : "default";
+                    return (
+                      <TableRow key={j.id} hover>
+                        <TableCell>
+                          <Typography fontWeight={700}>{j.title}</Typography>
+                        </TableCell>
+                        <TableCell>{j.description}</TableCell>
+                        <TableCell>{j.department}</TableCell>
+                        <TableCell>
+                          {j.postedDate
+                            ? new Date(j.postedDate).toLocaleDateString()
+                            : "-"}
+                        </TableCell>
+                        <TableCell>
+                          <Stack
+                            direction="row"
+                            spacing={1}
+                            alignItems="center"
                           >
-                            Edit
-                          </Button>
-                        </Stack>
-                      </TableCell>
-                    </TableRow>
-                  ));
+                            <Chip
+                              label={j.status || "-"}
+                              size="small"
+                              color={chipColor}
+                            />
+                            {j.urgent && (
+                              <Chip label="Urgent" size="small" color="error" />
+                            )}
+                          </Stack>
+                        </TableCell>
+                        {jobTab !== 2 && (
+                          <TableCell align="right">
+                            <Stack
+                              direction="row"
+                              spacing={1}
+                              justifyContent="flex-end"
+                            >
+                              <Button
+                                size="small"
+                                variant="outlined"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  openDialog(j);
+                                }}
+                              >
+                                Edit
+                              </Button>
+                            </Stack>
+                          </TableCell>
+                        )}
+                      </TableRow>
+                    );
+                  });
                 })()}
               </TableBody>
             </Table>
@@ -623,14 +676,21 @@ const RecruitmentManagement = () => {
               if (jobTab === 0)
                 list = list.filter(
                   (j) =>
-                    j.status === Open &&
+                    ((j.status || "") + "").toLowerCase() ===
+                      Open.toLowerCase() &&
                     (!j.startDate || new Date(j.startDate) <= now)
                 );
               else if (jobTab === 1)
+                list = list.filter((j) => {
+                  const s = ((j.status || "") + "").toLowerCase();
+                  return s === "approved" || s === "rejected";
+                });
+              else
                 list = list.filter(
-                  (j) => j.startDate && new Date(j.startDate) > now
+                  (j) =>
+                    ((j.status || "") + "").toLowerCase() ===
+                    Closed.toLowerCase()
                 );
-              else list = list.filter((j) => j.status !== Open);
               if (search && search.trim()) {
                 const q = search.toLowerCase();
                 list = list.filter(
@@ -679,15 +739,25 @@ const RecruitmentManagement = () => {
             onChange={handleChange}
             required
           />
-          <TextField
-            label="Department"
-            name="department"
-            fullWidth
-            margin="dense"
-            value={formData.department}
-            onChange={handleChange}
-            required
-          />
+          <FormControl fullWidth margin="dense" size="small">
+            <InputLabel id="department-label">Department</InputLabel>
+            <Select
+              labelId="department-label"
+              label="Department"
+              name="department"
+              value={formData.department}
+              onChange={handleChange}
+            >
+              <MenuItem value="">
+                <em>None</em>
+              </MenuItem>
+              {DEPARTMENTS.map((d) => (
+                <MenuItem key={d} value={d}>
+                  {d}
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
 
           <Select
             fullWidth
