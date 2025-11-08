@@ -43,7 +43,7 @@ const AnnouncementManagement = () => {
 
   const fetchAnnouncements = async () => {
     try {
-      const res = await axiosInstance.get("/announcements");
+      const res = await axiosInstance.get("/announcements/public");
       setAnnouncements(res.data);
       setFilteredAnnouncements(res.data);
     } catch (err) {
