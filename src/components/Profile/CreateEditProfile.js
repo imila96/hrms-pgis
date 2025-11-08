@@ -127,9 +127,7 @@ function CreateEditProfile() {
   });
 
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  //const phoneRegex = /^(?:\+94|0)\d{9}$/;
-
-  const phoneRegex = /^\+?[0-9\s-]{7,}$/;
+  const phoneRegex = /^(?:\+94|0)\d{9}$/;
   const nicRegex = /^\d{9}V$/;
 
   const steps = [
@@ -321,6 +319,22 @@ function CreateEditProfile() {
         if (!p.email || !emailRegex.test(p.email))
           errs.email = "Required / Invalid";
       }
+      // DOB should not be a future date if provided
+      if (p.dateOfBirth) {
+        const dob = new Date(p.dateOfBirth);
+        if (isNaN(dob.getTime())) {
+          errs.dateOfBirth = "Invalid date";
+        } else {
+          const today = new Date();
+          // Normalize time portion to compare dates only
+          dob.setHours(0, 0, 0, 0);
+          today.setHours(0, 0, 0, 0);
+          if (dob > today) {
+            errs.dateOfBirth = "Select valid date of birth";
+          }
+        }
+      }
+
       if (p.nic && !nicRegex.test(String(p.nic))) errs.nic = "Invalid NIC";
     }
     if (step === 1) {
@@ -1035,7 +1049,7 @@ function CreateEditProfile() {
                           Mobile Number <span style={{ color: "red" }}>*</span>
                         </span>
                       }
-                      placeholder="+94 77 123 4567"
+                      placeholder="+94771234567"
                       fullWidth
                       value={employeeData.contact.mobileNumber}
                       onChange={(e) =>
@@ -1112,7 +1126,7 @@ function CreateEditProfile() {
                           Phone <span style={{ color: "red" }}>*</span>
                         </span>
                       }
-                      placeholder="+94 77 123 4567"
+                      placeholder="+94771234567"
                       fullWidth
                       value={employeeData.contact.emergencyPhone}
                       onChange={(e) =>
