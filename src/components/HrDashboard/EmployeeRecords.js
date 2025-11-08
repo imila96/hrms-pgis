@@ -52,26 +52,25 @@ const STATUS = ["Active", "Inactive", "Hold"];
 
 const EmployeeRecords = () => {
   const navigate = useNavigate();
-  const [employees, setEmployees] = useState([]);
 
+  const [employees, setEmployees] = useState([]); // Fetched employee summaries(employeeSummaryDTOs)
+
+  // Snackbar messages (success/error/info).
   const [snackbar, setSnackbar] = useState({
     open: false,
     message: "",
     severity: "info",
   });
 
-  // pagination for employee table
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
 
-  // Search & filter state
   const [searchQuery, setSearchQuery] = useState("");
   const [filterDepartment, setFilterDepartment] = useState("");
   const [filterDesignation, setFilterDesignation] = useState("");
   const [filterEmploymentType, setFilterEmploymentType] = useState("");
   const [filterStatus, setFilterStatus] = useState("");
 
-  // fetch employeeSummaryDto from backend
   const fetchEmployees = useCallback(async () => {
     try {
       const response = await axiosInstance.get("/hr/employees/summary");
@@ -86,8 +85,6 @@ const EmployeeRecords = () => {
     fetchEmployees();
   }, [fetchEmployees]);
 
-  // fetch profile change requests (placeholder endpoint)
-
   const showSnackbar = (message, severity = "info") => {
     setSnackbar({ open: true, message, severity });
   };
@@ -96,16 +93,13 @@ const EmployeeRecords = () => {
     setSnackbar({ ...snackbar, open: false });
   };
 
-  // navigation handlers for add/edit
+  // navigation functions
   const handleAdd = () => navigate("/hr/records/newEmployee");
   const handleEdit = (emp) => {
     const id = emp.employeeId || emp.id;
     navigate(`/hr/records/edit/${id}`);
   };
 
-  // Handlers for profile change requests (approve / reject)
-
-  // Overview values (total from table for now; other values are placeholders)
   const totalEmployees = employees.length;
   const activeEmployees = useMemo(() => {
     if (!employees || employees.length === 0) return 0;
@@ -117,7 +111,7 @@ const EmployeeRecords = () => {
     }).length;
   }, [employees]);
 
-  // derive unique job titles for the filter dropdown
+  //sorted list of unique designations (job titles)
   const uniqueDesignations = useMemo(() => {
     const s = new Set();
     employees.forEach((e) => {
@@ -127,7 +121,7 @@ const EmployeeRecords = () => {
     return Array.from(s).sort();
   }, [employees]);
 
-  // filtered view based on search and job title filter
+  // Filtered employees based on search and filter criteria
   const filteredEmployees = useMemo(() => {
     const q = searchQuery.trim().toLowerCase();
     return employees.filter((emp) => {
@@ -159,7 +153,7 @@ const EmployeeRecords = () => {
     filterStatus,
   ]);
 
-  // ensure page resets when filters change
+  // Reset to first page when filters/search change
   useEffect(() => {
     setPage(0);
   }, [
@@ -171,6 +165,7 @@ const EmployeeRecords = () => {
     employees.length,
   ]);
 
+  // Pagination callbacks
   const handleChangePage = (_, newPage) => setPage(newPage);
   const handleChangeRowsPerPage = (e) => {
     setRowsPerPage(parseInt(e.target.value, 10));
@@ -179,12 +174,11 @@ const EmployeeRecords = () => {
 
   return (
     <Box sx={{ p: 3 }}>
-      <BackButton />
       <Typography variant="h5" mb={2}>
         Employee Record Management
       </Typography>
 
-      {/* Overview cards (Total / Active / Pending) */}
+      {/* Overview cards (Total / Active) */}
       <Grid container spacing={2} alignItems="stretch" sx={{ mb: 2 }}>
         <Grid item xs={12} md={4} sx={{ display: "flex" }}>
           <Paper
@@ -388,7 +382,7 @@ const EmployeeRecords = () => {
                     <TableCell>{empType}</TableCell>
                     <TableCell>{stat}</TableCell>
                     <TableCell align="right">
-                      <IconButton
+                      {/* <IconButton
                         color="primary"
                         onClick={() =>
                           navigate(`/hr/records/view/${employeeId}`)
@@ -396,7 +390,7 @@ const EmployeeRecords = () => {
                         title="View"
                       >
                         <Visibility />
-                      </IconButton>
+                      </IconButton> */}
                       <IconButton
                         color="primary"
                         onClick={() => handleEdit(emp)}
@@ -430,11 +424,6 @@ const EmployeeRecords = () => {
         />
       </TableContainer>
 
-      {/* Add/Edit dialog removed — using route-based CreateEditProfile page */}
-
-      {/* Delete flow removed - deletion not available from UI anymore */}
-
-      {/* Snackbar */}
       <Snackbar
         open={snackbar.open}
         autoHideDuration={3000}
