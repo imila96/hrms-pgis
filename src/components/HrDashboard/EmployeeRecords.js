@@ -22,9 +22,8 @@ import {
   Select,
   MenuItem,
 } from "@mui/material";
-import { Edit, Visibility } from "@mui/icons-material";
+import { Edit } from "@mui/icons-material";
 import axiosInstance from "../../AxiosInstance";
-import BackButton from "../common/BackButton";
 
 const DEPARTMENTS = [
   "General Administration Division",
@@ -93,7 +92,7 @@ const EmployeeRecords = () => {
     setSnackbar({ ...snackbar, open: false });
   };
 
-  // navigation functions
+  // add new employee navigation
   const handleAdd = () => navigate("/hr/records/newEmployee");
   const handleEdit = (emp) => {
     const id = emp.employeeId || emp.id;
