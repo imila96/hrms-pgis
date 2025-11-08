@@ -86,4 +86,23 @@ public class AttendanceController {
     public Map<String, Long> todayCounts() {
         return svc.todaysCounts();
     }
+
+    /**
+     * Admin: update an employee's daily attendance record (check-in/check-out times).
+     * Body JSON: { "date": "yyyy-MM-dd", "checkIn": "HH:mm", "checkOut": "HH:mm" }
+     */
+    @PutMapping("/{empId}/record")
+    @PreAuthorize("hasAnyRole('HR','ADMIN','DIRECTOR')")
+    public void updateRecord(@PathVariable Integer empId,
+                             @RequestBody Map<String, String> body) {
+        String dateStr = body.get("date");
+        String inStr = body.get("checkIn");
+        String outStr = body.get("checkOut");
+        String status = body.get("status");
+        java.time.LocalDate date = dateStr == null ? null : java.time.LocalDate.parse(dateStr);
+        java.time.LocalTime inTime = (inStr == null || inStr.isBlank()) ? null : java.time.LocalTime.parse(inStr);
+        java.time.LocalTime outTime = (outStr == null || outStr.isBlank()) ? null : java.time.LocalTime.parse(outStr);
+        if (date == null) throw new IllegalArgumentException("date is required");
+        svc.updateDailyRecord(empId, date, inTime, outTime, status);
+    }
 }

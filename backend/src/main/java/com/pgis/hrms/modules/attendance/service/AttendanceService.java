@@ -232,4 +232,62 @@ public class AttendanceService {
         m.put("late", 0L);
         return m;
     }
+
+    /*
+     * Admin: replace the day's check-in/check-out events for an employee with supplied times.
+     * This implementation removes existing CHECK_IN/CHECK_OUT events for the date and
+     * inserts new events with the provided timestamps. The service expects times to be
+     * provided as LocalTime and will combine them with the date to form timestamps.
+     */
+    @Transactional
+    public void updateDailyRecord(Integer employeeId, LocalDate date, LocalTime checkIn, LocalTime checkOut, String status) {
+        var emp = empRepo.findById(employeeId).orElseThrow();
+
+        // remove existing check-in/out events for the day
+        var existing = evtRepo.findByEmployee_EmployeeIdAndEventDateAndEventTypeIn(
+                employeeId,
+                date,
+                List.of(AttendanceEventType.CHECK_IN, AttendanceEventType.CHECK_OUT)
+        );
+        if (existing != null && !existing.isEmpty()) {
+            evtRepo.deleteAll(existing);
+        }
+
+        // If status is provided, interpret it. Behavior:
+        // - "Absent": keep no events (cleared)
+        // - "On Leave": insert a MANUAL marker (no paid minutes)
+        // - "Present" / "Late": insert supplied checkIn/checkOut
+        // - null/unspecified: insert supplied times if any
+        if (status != null && !status.isBlank()) {
+            String s = status.trim();
+            if (s.equalsIgnoreCase("Absent")) {
+                return; // no events -> absent
+            }
+            if (s.equalsIgnoreCase("On Leave")) {
+                AttendanceEvent manual = new AttendanceEvent();
+                manual.setEmployee(emp);
+                manual.setEventType(AttendanceEventType.MANUAL);
+                manual.setTimestamp(LocalDateTime.of(date, LocalTime.NOON));
+                evtRepo.save(manual);
+                return;
+            }
+            // For Present / Late and other statuses, fall through to insert times below
+        }
+
+        if (checkIn != null) {
+            AttendanceEvent in = new AttendanceEvent();
+            in.setEmployee(emp);
+            in.setEventType(AttendanceEventType.CHECK_IN);
+            in.setTimestamp(LocalDateTime.of(date, checkIn));
+            evtRepo.save(in);
+        }
+
+        if (checkOut != null) {
+            AttendanceEvent out = new AttendanceEvent();
+            out.setEmployee(emp);
+            out.setEventType(AttendanceEventType.CHECK_OUT);
+            out.setTimestamp(LocalDateTime.of(date, checkOut));
+            evtRepo.save(out);
+        }
+    }
 }
