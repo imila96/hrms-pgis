@@ -64,7 +64,7 @@ const EMPLOYMENT_TYPES = ["Permanent", "Contract", "Temporary"];
 function CreateEditProfile() {
   const navigate = useNavigate();
   const { id } = useParams();
-  const [activeStep, setActiveStep] = useState(0);
+  const [activeStep, setActiveStep] = useState(0); //current step index in the 4-step wizard
   const [profileImage, setProfileImage] = useState(null);
 
   const [employeeData, setEmployeeData] = useState({
@@ -116,7 +116,7 @@ function CreateEditProfile() {
       tin: "",
       pensionScheme: "",
     },
-  });
+  }); //single nested state object holding all four sections
 
   const [errors, setErrors] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -127,6 +127,8 @@ function CreateEditProfile() {
   });
 
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  //const phoneRegex = /^(?:\+94|0)\d{9}$/;
+
   const phoneRegex = /^\+?[0-9\s-]{7,}$/;
   const nicRegex = /^\d{9}V$/;
 
@@ -137,7 +139,7 @@ function CreateEditProfile() {
     { label: "Compensation", icon: <AccountBalanceIcon /> },
   ];
   const { user } = useAuth();
-  const isEmployeeRole = (user && user.activeRole === "employee") || false;
+  const isEmployeeRole = (user && user.activeRole === "employee") || false; // change role(employee/hr)
 
   // fields that should be locked for employee self-editing
   const lockedFields = new Set([
@@ -165,8 +167,10 @@ function CreateEditProfile() {
 
   const isLocked = (fieldName) => isEmployeeRole && lockedFields.has(fieldName);
 
+  // Load existing employee data if in edit mode(if id param exist it's in edit mode)
+
   useEffect(() => {
-    if (!id) return;
+    if (!id) return; //If id exists, component is in edit mode
     let mounted = true;
     (async () => {
       try {
@@ -176,7 +180,7 @@ function CreateEditProfile() {
         let compensation = {};
 
         if (isEmployeeRole) {
-          // employee users fetch their own profile and sub-resources via /profile
+          // employee users fetch their own profile
           const empRes = await axiosInstance.get(`/profile/me`);
           emp = empRes.data || {};
 
@@ -197,7 +201,7 @@ function CreateEditProfile() {
           const comps = compRes.data || [];
           compensation = comps.length > 0 ? comps[0] : {};
         } else {
-          // HR/admin fetch full employee via /hr endpoints
+          // HR fetch full employee
           const empRes = await axiosInstance.get(`/hr/employees/${id}`);
           emp = empRes.data || {};
 
@@ -220,6 +224,7 @@ function CreateEditProfile() {
           compensation = comps.length > 0 ? comps[0] : {};
         }
 
+        // Only update state when the component is still mounted
         if (!mounted) return;
 
         setEmployeeData({
@@ -282,12 +287,13 @@ function CreateEditProfile() {
   }, [id, isEmployeeRole]);
 
   const setField = (section, field, value) => {
+    // Update the nested state for a single field inside one of the sections.
     setEmployeeData((s) => ({
       ...s,
       [section]: { ...s[section], [field]: value },
     }));
 
-    // clear any validation error tied to this field as user edits
+    // Clear any validation error tied to this field as the user edits it.
     setErrors((prev) => {
       if (!prev) return prev;
       if (!Object.prototype.hasOwnProperty.call(prev, field)) return prev;
@@ -297,6 +303,7 @@ function CreateEditProfile() {
     });
   };
 
+  // Validate fields for the given step
   const validateStep = (step) => {
     const errs = {};
     if (step === 0) {
@@ -321,7 +328,6 @@ function CreateEditProfile() {
       if (!isEmployeeRole) {
         if (!c.permanentAddress || !String(c.permanentAddress).trim())
           errs.permanentAddress = "Required";
-        // mobile number is required per request
         if (!c.mobileNumber || !phoneRegex.test(c.mobileNumber))
           errs.mobileNumber = "Required / Invalid";
         if (!c.emergencyName || !String(c.emergencyName).trim())
@@ -387,13 +393,17 @@ function CreateEditProfile() {
   };
 
   const handleNext = () => {
+    // Proceed to next step only if current step validates successfully.
     if (!validateStep(activeStep)) return;
     setActiveStep((s) => s + 1);
   };
 
   const handleBack = () => setActiveStep((s) => Math.max(0, s - 1));
 
+  //upload profile pic
   const handleImageUpload = (e) => {
+    // (file type + size) and reads the image as a data URL to display a preview
+    // and include in the payload. Uses FileReader to convert image to Base64.
     const file = e.target.files && e.target.files[0];
     if (!file) return;
 
@@ -416,8 +426,7 @@ function CreateEditProfile() {
       return;
     }
 
-    // Validate file size (max 5MB)
-    const maxSize = 5 * 1024 * 1024; // 5MB in bytes
+    const maxSize = 5 * 1024 * 1024;
     if (file.size > maxSize) {
       setSnackbar({
         open: true,
@@ -427,6 +436,7 @@ function CreateEditProfile() {
       return;
     }
 
+    // Read file as Base64 and set preview and store in personal.profileImage
     const reader = new FileReader();
     reader.onload = (ev) => {
       setProfileImage(ev.target.result);
@@ -447,11 +457,13 @@ function CreateEditProfile() {
     reader.readAsDataURL(file);
   };
 
+  //remove profile pic
   const handleRemoveImage = () => {
     setProfileImage(null);
     setField("personal", "profileImage", null);
   };
 
+  // build employee request object to create/update employee
   const buildPayload = () => ({
     employee: {
       name: `${employeeData.personal.firstName || ""}${
@@ -500,8 +512,9 @@ function CreateEditProfile() {
     },
   });
 
+  // finish submission
   const handleSubmit = async () => {
-    // validate all steps before submit
+    // Validate all steps before submission
     for (let i = 0; i < steps.length; i++) {
       if (!validateStep(i)) {
         setActiveStep(i);
@@ -513,7 +526,7 @@ function CreateEditProfile() {
     try {
       const payload = buildPayload();
       if (isEmployeeRole) {
-        // employee users may update their profile and sub-resources via /profile
+        // employee users can update their profile(endpoint - /profile)
         const profilePayload = {
           gender: employeeData.personal.gender || null,
           dateOfBirth: employeeData.personal.dateOfBirth || null,
@@ -526,7 +539,6 @@ function CreateEditProfile() {
         // save main profile
         await axiosInstance.put(`/profile/me`, profilePayload);
 
-        // helper to check if any meaningful contact fields provided
         const contact = employeeData.contact || {};
         const contactPayload = {
           permanentAddress: contact.permanentAddress || null,
@@ -607,6 +619,7 @@ function CreateEditProfile() {
           }
         }
       } else {
+        // HR user save/edit employee data
         if (id) {
           await axiosInstance.put(`/hr/employees/${id}/full`, payload);
         } else {
@@ -618,20 +631,18 @@ function CreateEditProfile() {
         message: "Saved successfully",
         severity: "success",
       });
-      // redirect appropriately
       if (isEmployeeRole) navigate("/employee/profile");
       else navigate("/hr/records");
     } catch (err) {
       console.error("Save failed", err);
       const status = err?.response?.status;
-      // Try to extract a helpful message from the server response
       const serverMsg =
         err?.response?.data?.message ||
         err?.response?.data?.error ||
         err?.response?.data ||
         err?.message;
 
-      // Determine if this is a duplicate-email situation
+      // Determine if this is a duplicate-email
       const isDuplicate =
         status === 409 ||
         (status === 500 &&
@@ -660,6 +671,7 @@ function CreateEditProfile() {
   return (
     <Box sx={{ p: 3, bgcolor: COLORS.background, minHeight: "100vh" }}>
       <Box sx={{ mb: 3, display: "flex", alignItems: "center", gap: 2 }}>
+        {/* back navigation */}
         <IconButton
           onClick={() =>
             navigate(isEmployeeRole ? "/employee/profile" : "/hr/records")
@@ -675,8 +687,9 @@ function CreateEditProfile() {
             : "Add New Employee"}
         </Typography>
       </Box>
-
+      {/* main content */}
       <Box sx={{ display: "flex", gap: 2 }}>
+        {/* profile picture section */}
         <Paper sx={{ p: 2, flex: "0 0 300px" }}>
           <Box
             sx={{
@@ -741,11 +754,10 @@ function CreateEditProfile() {
             </Alert>
           </Snackbar>
         </Paper>
-
+        {/* form */}
         <Paper sx={{ flex: 1, p: 2 }}>
           <Stepper activeStep={activeStep} alternativeLabel>
             {steps.map((s, idx) => {
-              // clone the icon so we can apply sx props dynamically based on active step
               const icon = React.cloneElement(s.icon, {
                 sx: {
                   color:
