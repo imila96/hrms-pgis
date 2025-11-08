@@ -43,7 +43,7 @@ const COLORS = {
 export default function PolicyManagement() {
   const [policies, setPolicies] = useState([]);
 
-  const [tab, setTab] = useState(0); // 0 Active,1 Upcoming,2 Archived,3 All
+  const [tab, setTab] = useState(0); // 0 Active,1 Pending,2 All
   const [search, setSearch] = useState("");
   const [filterStatus, setFilterStatus] = useState("All");
   const [page, setPage] = useState(0);
@@ -66,8 +66,7 @@ export default function PolicyManagement() {
     () => ({
       total: policies.length,
       active: policies.filter((p) => p.status === "Active").length,
-      upcoming: policies.filter((p) => p.status === "Upcoming").length,
-      archived: policies.filter((p) => p.status === "Archived").length,
+      pending: policies.filter((p) => p.status === "Pending").length,
     }),
     [policies]
   );
@@ -83,6 +82,7 @@ export default function PolicyManagement() {
         return "Active";
       }
       if (rawStatus === "REJECTED") return "Archived";
+      if (rawStatus === "INACTIVE") return "Inactive";
       return "Pending"; // PENDING or unknown
     } catch (e) {
       return "Pending";
@@ -117,8 +117,7 @@ export default function PolicyManagement() {
   const filtered = useMemo(() => {
     let list = policies.slice();
     if (tab === 0) list = list.filter((p) => p.status === "Active");
-    if (tab === 1) list = list.filter((p) => p.status === "Upcoming");
-    if (tab === 2) list = list.filter((p) => p.status === "Archived");
+    if (tab === 1) list = list.filter((p) => p.status === "Pending");
     if (filterStatus !== "All")
       list = list.filter((p) => p.status === filterStatus);
     if (search.trim()) {
@@ -371,26 +370,16 @@ export default function PolicyManagement() {
           <Grid item xs={12} sm={6} md={3}>
             <Paper sx={{ p: 2, borderRadius: 2 }}>
               <Typography variant="body2" color="text.secondary">
-                Upcoming
+                Pending
               </Typography>
               <Typography variant="h4" fontWeight={700} color={COLORS.support}>
-                {summary.upcoming}
+                {summary.pending}
               </Typography>
-              <Typography variant="caption">Planned</Typography>
+              <Typography variant="caption">Pending</Typography>
             </Paper>
           </Grid>
 
-          <Grid item xs={12} sm={6} md={3}>
-            <Paper sx={{ p: 2, borderRadius: 2 }}>
-              <Typography variant="body2" color="text.secondary">
-                Archived
-              </Typography>
-              <Typography variant="h4" fontWeight={700} color={COLORS.accent}>
-                {summary.archived}
-              </Typography>
-              <Typography variant="caption">Deprecated</Typography>
-            </Paper>
-          </Grid>
+          {/* Archived overview card removed per request */}
         </Grid>
       </Box>
 
@@ -405,8 +394,7 @@ export default function PolicyManagement() {
           textColor="primary"
         >
           <Tab label={`Active (${summary.active})`} />
-          <Tab label={`Upcoming (${summary.upcoming})`} />
-          <Tab label={`Archived (${summary.archived})`} />
+          <Tab label={`Pending (${summary.pending})`} />
           <Tab label={`All (${summary.total})`} />
         </Tabs>
       </Paper>
@@ -439,8 +427,7 @@ export default function PolicyManagement() {
               >
                 <MenuItem value="All">All</MenuItem>
                 <MenuItem value="Active">Active</MenuItem>
-                <MenuItem value="Upcoming">Upcoming</MenuItem>
-                <MenuItem value="Archived">Archived</MenuItem>
+                <MenuItem value="Pending">Pending</MenuItem>
               </Select>
             </FormControl>
           </Grid>

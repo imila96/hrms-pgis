@@ -136,10 +136,47 @@ export default function AttendanceTracking() {
     setOpenEdit(false);
   };
   const handleSaveEdit = () => {
-    setRecords((prev) =>
-      prev.map((r) => (r.id === selectedRecord.id ? selectedRecord : r))
-    );
-    setOpenEdit(false);
+    // perform backend update and refresh local row
+    (async () => {
+      try {
+        // ensure we have an employeeId on the record
+        const empId = selectedRecord?.employeeId;
+        if (!empId) {
+          // fallback: try to resolve by name (best effort)
+          const emp = fetchedEmployees.find(
+            (e) => e.name === selectedRecord?.name
+          );
+          if (emp) {
+            // try update using resolved id
+            await axiosInstance.put(`/attendance/${emp.id}/record`, {
+              date: selectedRecord.date,
+              checkIn: selectedRecord.checkIn,
+              checkOut: selectedRecord.checkOut,
+              status: selectedRecord.status,
+            });
+          } else {
+            console.warn(
+              "No employeeId available for edit; skipping backend update"
+            );
+          }
+        } else {
+          await axiosInstance.put(`/attendance/${empId}/record`, {
+            date: selectedRecord.date,
+            checkIn: selectedRecord.checkIn,
+            checkOut: selectedRecord.checkOut,
+            status: selectedRecord.status,
+          });
+        }
+
+        // optimistic local update
+        setRecords((prev) =>
+          prev.map((r) => (r.id === selectedRecord.id ? selectedRecord : r))
+        );
+        setOpenEdit(false);
+      } catch (err) {
+        console.error("Failed to save edit", err);
+      }
+    })();
   };
 
   // Add record handlers removed (frontend now uses punch buttons and backend endpoints)
@@ -159,6 +196,41 @@ export default function AttendanceTracking() {
         return "#F4C430";
       default:
         return "#999";
+    }
+  };
+
+  // CSV export helper — ensures proper quoting, headers and download
+  const exportToCsv = (rows, filename = "data.csv", columns = []) => {
+    try {
+      if (!rows || rows.length === 0) {
+        // still offer an empty CSV with headers
+      }
+      const escape = (v) => {
+        if (v === null || v === undefined) return "";
+        const s = String(v);
+        if (s.includes('"') || s.includes(",") || s.includes("\n")) {
+          return '"' + s.replace(/"/g, '""') + '"';
+        }
+        return s;
+      };
+
+      const headerRow = columns.map((c) => c.label || c.key).join(",");
+      const dataRows = (rows || []).map((r) =>
+        columns.map((c) => escape(r[c.key])).join(",")
+      );
+
+      const csv = [headerRow, ...dataRows].join("\n");
+      const blob = new Blob([csv], { type: "text/csv" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    } catch (e) {
+      console.error("Export failed", e);
     }
   };
 
@@ -325,11 +397,13 @@ export default function AttendanceTracking() {
       // map backend maps to UI rows: employeeId, name, workDate, firstIn, lastOut, breakMinutes, paidMinutes
       const mapped = data.map((d, idx) => ({
         id: idx,
+        employeeId: d.employeeId,
         name: d.name || `EMP${d.employeeId}`,
         department: d.department || "",
         date: d.workDate,
-        checkIn: d.firstIn,
-        checkOut: d.lastOut,
+        // convert timestamps to HH:mm so the edit time inputs accept values
+        checkIn: d.firstIn ? dayjs(d.firstIn).format("HH:mm") : "",
+        checkOut: d.lastOut ? dayjs(d.lastOut).format("HH:mm") : "",
         status:
           d.status ||
           (d.paidMinutes && d.paidMinutes > 0 ? "Present" : "Absent"),
@@ -562,7 +636,7 @@ export default function AttendanceTracking() {
         <Box sx={{ width: "100%", height: 420, overflow: "hidden" }}>
           {/* Month selector inside the chart area (top-right) */}
           <Box sx={{ display: "flex", justifyContent: "flex-end", mb: 1 }}>
-            <FormControl size="small" sx={{ minWidth: 160 }}>
+            <FormControl size="large" sx={{ minWidth: 160 }}>
               <InputLabel>Month</InputLabel>
               <Select
                 value={chartMonth}
@@ -698,29 +772,19 @@ export default function AttendanceTracking() {
                     variant="contained"
                     startIcon={<DownloadIcon />}
                     onClick={() => {
-                      // simple CSV export of filteredRows
-                      const header = [
-                        "id",
-                        "name",
-                        "department",
-                        "date",
-                        "checkIn",
-                        "checkOut",
-                        "status",
+                      const columns = [
+                        { key: "id", label: "ID" },
+                        { key: "name", label: "Employee Name" },
+                        { key: "department", label: "Department" },
+                        { key: "date", label: "Date" },
+                        { key: "checkIn", label: "Check-In" },
+                        { key: "checkOut", label: "Check-Out" },
+                        { key: "status", label: "Status" },
                       ];
-                      const rows = filteredRecords.map((r) =>
-                        header.map((h) => r[h]).join(",")
-                      );
-                      const blob = new Blob(
-                        [[header.join(",")], ...rows].join("\n"),
-                        { type: "text/csv" }
-                      );
-                      const url = URL.createObjectURL(blob);
-                      const a = document.createElement("a");
-                      a.href = url;
-                      a.download = "daily_attendance.csv";
-                      a.click();
-                      URL.revokeObjectURL(url);
+                      const fileName = `daily_attendance_${
+                        selectedMonth || "all"
+                      }.csv`;
+                      exportToCsv(filteredRecords, fileName, columns);
                     }}
                   >
                     Export
