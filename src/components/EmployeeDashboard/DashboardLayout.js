@@ -46,7 +46,6 @@ const menuItems = [
   { label: "Policies", path: "/employee/policies" },
   { label: "Announcements", path: "/employee/announcements" },
   { label: "Issues", path: "/employee/issues" },
-  { label: "Reports", path: "/employee/reports" },
 ];
 
 const DashboardLayout = () => {
@@ -189,7 +188,7 @@ const DashboardLayout = () => {
 
             {/* Center: Compact Navigation (Desktop only) */}
             <Box sx={{ display: { xs: "none", md: "flex" }, gap: 0.5 }}>
-              {menuItems.slice(0, 7).map((item) => (
+              {menuItems.slice(0, 6).map((item) => (
                 <Button
                   key={item.path}
                   component={NavLink}

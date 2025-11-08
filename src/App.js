@@ -33,7 +33,6 @@ import Policies from "./components/EmployeeDashboard/Policies";
 import Announcements from "./components/EmployeeDashboard/Announcements";
 import Complaints from "./components/EmployeeDashboard/Complaints";
 import Issues from "./components/EmployeeDashboard/Issues";
-import Reports from "./components/EmployeeDashboard/Reports";
 import ResetPassword from "./components/EmployeeDashboard/ResetPassword";
 
 import DirectorDashboard from "./components/DirectorDashboard/DirectorDashboard";
@@ -159,7 +158,6 @@ const AppRoutes = () => {
           <Route path="announcements" element={<Announcements />} />
           <Route path="complaints" element={<Complaints />} />
           <Route path="issues" element={<Issues />} />
-          <Route path="reports" element={<Reports />} />
         </Route>
 
         {/* catch-all */}
