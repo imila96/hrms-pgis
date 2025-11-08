@@ -174,6 +174,46 @@ public class AttendanceService {
         return out;
     }
 
+    /**
+     * Return all available daily summaries across the entire dataset.
+     * Used by frontend when it requests overview without a month parameter.
+     */
+    @Transactional(readOnly = true)
+    public List<Map<String, Object>> allOverview() {
+        // use a very wide date range to capture all records; if your dataset is huge
+        // you may want to paginate or restrict this in future.
+        LocalDate from = LocalDate.of(1970, 1, 1);
+        LocalDate to   = LocalDate.now();
+        var rows = evtRepo.findDailySummaryForAll(from, to);
+        List<Map<String, Object>> out = new ArrayList<>();
+        for (Object[] row : rows) {
+            Integer empId = row[0] == null ? null : ((Number) row[0]).intValue();
+            LocalDate workDate = row[1] == null ? null : ((java.sql.Date) row[1]).toLocalDate();
+            java.time.LocalDateTime firstIn = row[2] == null ? null : ((java.sql.Timestamp) row[2]).toLocalDateTime();
+            java.time.LocalDateTime lastOut = row[3] == null ? null : ((java.sql.Timestamp) row[3]).toLocalDateTime();
+            int breakMin = row[4] == null ? 0 : ((Number) row[4]).intValue();
+            int paidMin  = row[5] == null ? 0 : ((Number) row[5]).intValue();
+
+            Map<String, Object> m = new HashMap<>();
+            m.put("employeeId", empId);
+            m.put("workDate", workDate);
+            m.put("firstIn", firstIn);
+            m.put("lastOut", lastOut);
+            m.put("breakMinutes", breakMin);
+            m.put("paidMinutes", paidMin);
+
+            // try to resolve employee name and department if available
+            empRepo.findById(empId).ifPresent(e -> {
+                m.put("name", e.getName());
+                employmentRepository.findFirstByEmployeeEmployeeIdOrderByDateOfJoiningAsc(empId)
+                        .ifPresent(em -> m.put("department", em.getDepartment()));
+            });
+
+            out.add(m);
+        }
+        return out;
+    }
+
     private RuntimeException conflict(String msg) {
         // Replace with a custom exception mapped to 409 if you have one
         return new IllegalStateException(msg);

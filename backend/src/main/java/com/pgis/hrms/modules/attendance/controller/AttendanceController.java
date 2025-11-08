@@ -73,7 +73,11 @@ public class AttendanceController {
 
     @GetMapping("/overview")
     @PreAuthorize("hasAnyRole('HR','ADMIN','DIRECTOR')")
-    public List<?> overview(@RequestParam @DateTimeFormat(pattern="yyyy-MM") YearMonth month) {
+    public List<?> overview(@RequestParam(required = false) @DateTimeFormat(pattern="yyyy-MM") YearMonth month) {
+        if (month == null) {
+            // no month provided -> return all available summaries (frontend may call without month to show all records)
+            return svc.allOverview();
+        }
         return svc.monthlyOverview(month);
     }
 
