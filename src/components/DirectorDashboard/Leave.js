@@ -64,11 +64,52 @@ export default function DirectorLeave() {
 
   const fetchData = async () => {
     try {
-      const res = await axiosInstance.get("/leave");
-      setRequests(res.data.requests || []);
-      setBalances(res.data.balances || []);
+      // Fetch all leave requests (director can view all employees' leave)
+      const { data } = await axiosInstance.get("/leave/all");
+      
+      // Helper to convert enum to Title Case (PENDING -> Pending)
+      const toTitleCase = (str) => {
+        if (!str) return str;
+        return str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();
+      };
+      
+      // Helper function to calculate working days
+      const calculateDays = (start, end) => {
+        if (!start || !end) return 0;
+        try {
+          const startDate = parseISO(start);
+          const endDate = parseISO(end);
+          const diff = Math.round((endDate - startDate) / (1000 * 60 * 60 * 24)) + 1;
+          return diff > 0 ? diff : 0;
+        } catch (e) {
+          console.error("Error calculating days:", e);
+          return 0;
+        }
+      };
+      
+      // Transform backend data to match frontend format
+      const transformedRequests = data.map((item) => ({
+        id: item.id,
+        employeeId: `EMP${String(item.id).padStart(3, "0")}`,
+        employeeName: item.employee || "Unknown",
+        dept: "N/A", // Department not in backend DTO
+        type: toTitleCase(item.type),
+        startDate: item.start,
+        endDate: item.end,
+        days: calculateDays(item.start, item.end),
+        reason: item.reason || "",
+        status: toTitleCase(item.status),
+        createdAt: item.start,
+        attachmentUrl: null,
+      }));
+      
+      setRequests(transformedRequests);
+      
+      // TODO: Fetch balances if endpoint exists
+      setBalances([]);
     } catch (err) {
       console.error("Failed to fetch leave data", err);
+      alert("Failed to load leave requests. Please try again.");
     }
   };
 
@@ -226,7 +267,7 @@ export default function DirectorLeave() {
             Leave Overview
           </Typography>
           <Typography variant="body2" color="text.secondary">
-            View organization-wide leave requests, balances, and calendar.
+            View organization-wide leave requests, balances, and calendar (Read-only access).
           </Typography>
         </Box>
         <Button
