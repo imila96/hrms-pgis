@@ -29,9 +29,9 @@ export function SectionTabs(props) {
     return (
       <Box
         sx={{
-          borderBottom: "1px solid #e6e8eb",
           bgcolor: "white",
-          borderRadius: 2,
+          borderRadius: 3,
+          boxShadow: "0 2px 8px rgba(0,0,0,0.05)",
         }}
       >
         <Tabs
@@ -40,13 +40,30 @@ export function SectionTabs(props) {
           variant="scrollable"
           scrollButtons="auto"
           aria-label="employee sections"
-          sx={{ px: 2 }}
+          sx={{ 
+            px: 2,
+            "& .MuiTab-root": {
+              textTransform: "none",
+              fontWeight: 600,
+              fontSize: "0.95rem",
+              minHeight: 56,
+              color: "#64748b",
+              "&.Mui-selected": {
+                color: "#4B49AC",
+              }
+            },
+            "& .MuiTabs-indicator": {
+              backgroundColor: "#4B49AC",
+              height: 3,
+              borderRadius: "3px 3px 0 0",
+            }
+          }}
         >
           {tabs.map((t) => (
             <Tab key={t.label} label={t.label} />
           ))}
         </Tabs>
-        <Box sx={{ p: 2 }}>{tabs[active]?.content}</Box>
+        <Box sx={{ p: 3 }}>{tabs[active]?.content}</Box>
       </Box>
     );
   }
@@ -60,9 +77,9 @@ export function SectionTabs(props) {
   return (
     <Box
       sx={{
-        borderBottom: "1px solid #e6e8eb",
         bgcolor: "white",
-        borderRadius: 2,
+        borderRadius: 3,
+        boxShadow: "0 2px 8px rgba(0,0,0,0.05)",
       }}
     >
       <Tabs
@@ -71,7 +88,24 @@ export function SectionTabs(props) {
         variant="scrollable"
         scrollButtons="auto"
         aria-label="employee sections"
-        sx={{ px: 2 }}
+        sx={{ 
+          px: 2,
+          "& .MuiTab-root": {
+            textTransform: "none",
+            fontWeight: 600,
+            fontSize: "0.95rem",
+            minHeight: 56,
+            color: "#64748b",
+            "&.Mui-selected": {
+              color: "#4B49AC",
+            }
+          },
+          "& .MuiTabs-indicator": {
+            backgroundColor: "#4B49AC",
+            height: 3,
+            borderRadius: "3px 3px 0 0",
+          }
+        }}
       >
         {labels.map((label) => (
           <Tab key={label} label={label} />
@@ -104,7 +138,18 @@ export function ProfileSidebar({ user, primaryEmployment, primaryContact }) {
   const empId = user?.id || user?.employeeId || "";
 
   return (
-    <Paper sx={{ p: 3, bgcolor: "white" }}>
+    <Paper 
+      sx={{ 
+        p: 3, 
+        bgcolor: "white",
+        borderRadius: 3,
+        boxShadow: "0 2px 12px rgba(0,0,0,0.08)",
+        transition: "box-shadow 0.3s ease",
+        "&:hover": {
+          boxShadow: "0 4px 20px rgba(75,73,172,0.12)",
+        }
+      }}
+    >
       <Box
         sx={{ display: "flex", alignItems: "center", flexDirection: "column" }}
       >
@@ -114,23 +159,45 @@ export function ProfileSidebar({ user, primaryEmployment, primaryContact }) {
             width: 120,
             height: 120,
             mb: 2,
-            bgcolor: "#fde7e9",
-            color: "#222",
+            bgcolor: "#4B49AC",
+            color: "#fff",
+            fontSize: "2.5rem",
+            fontWeight: 700,
+            border: "4px solid #f0f2ff",
+            boxShadow: "0 4px 12px rgba(75,73,172,0.2)",
           }}
         >
           {!user?.profileImage && (initials || "OB")}
         </Avatar>
         <Typography
           variant="h6"
-          sx={{ fontWeight: 700, mb: 1, textAlign: "center" }}
+          sx={{ 
+            fontWeight: 700, 
+            mb: 2, 
+            textAlign: "center",
+            color: "#4B49AC",
+            fontSize: "1.25rem"
+          }}
         >
           Employee Details
         </Typography>
-        <Stack spacing={1} sx={{ width: "100%", mb: 3 }}>
+        <Stack spacing={1.5} sx={{ width: "100%", mb: 3 }}>
           <Button
-            variant="outlined"
-            size="small"
-            sx={{ borderRadius: 2 }}
+            variant="contained"
+            size="medium"
+            sx={{ 
+              borderRadius: 2,
+              bgcolor: "#4B49AC",
+              textTransform: "none",
+              fontWeight: 600,
+              py: 1.2,
+              "&:hover": {
+                bgcolor: "#3d3a8f",
+                transform: "translateY(-2px)",
+                boxShadow: "0 4px 12px rgba(75,73,172,0.3)",
+              },
+              transition: "all 0.2s ease"
+            }}
             onClick={() =>
               isEmployeeRole
                 ? navigate(`/employee/profile/edit/${empId}`)
@@ -142,16 +209,21 @@ export function ProfileSidebar({ user, primaryEmployment, primaryContact }) {
           {isEmployeeRole && (
             <Button
               variant="outlined"
-              size="small"
+              size="medium"
               startIcon={<Lock />}
               sx={{ 
                 borderRadius: 2,
                 borderColor: "#7DA0FA",
                 color: "#7DA0FA",
+                textTransform: "none",
+                fontWeight: 600,
+                py: 1.2,
                 "&:hover": {
                   borderColor: "#4B49AC",
                   bgcolor: "#f8f9ff",
-                }
+                  transform: "translateY(-2px)",
+                },
+                transition: "all 0.2s ease"
               }}
               onClick={() => navigate("/employee/reset-password")}
             >
@@ -160,13 +232,161 @@ export function ProfileSidebar({ user, primaryEmployment, primaryContact }) {
           )}
         </Stack>
 
-        <Stack spacing={1.2} sx={{ width: "100%", color: "text.secondary" }}>
-          <Typography>{user?.name || "-"}</Typography>
-          <Typography>{jobTitle || "-"}</Typography>
-          <Typography>{dept || "-"}</Typography>
-          <Typography>{email || "-"}</Typography>
-          <Typography>{phone || "-"}</Typography>
-          <Typography>{empId || "-"}</Typography>
+        <Stack spacing={2} sx={{ width: "100%", color: "text.secondary" }}>
+          <Box sx={{ 
+            p: 2, 
+            bgcolor: "#f8f9ff", 
+            borderRadius: 2,
+            borderLeft: "3px solid #4B49AC"
+          }}>
+            <Typography 
+              variant="caption" 
+              color="text.secondary" 
+              fontWeight={600}
+              sx={{ 
+                textTransform: "uppercase", 
+                fontSize: "0.65rem",
+                letterSpacing: "0.5px",
+                mb: 0.5,
+                display: "block"
+              }}
+            >
+              Full Name
+            </Typography>
+            <Typography fontWeight={600} fontSize="0.9rem" color="#2c3e50">
+              {user?.name || "—"}
+            </Typography>
+          </Box>
+          
+          <Box sx={{ 
+            p: 2, 
+            bgcolor: "#f8f9ff", 
+            borderRadius: 2,
+            borderLeft: "3px solid #7DA0FA"
+          }}>
+            <Typography 
+              variant="caption" 
+              color="text.secondary" 
+              fontWeight={600}
+              sx={{ 
+                textTransform: "uppercase", 
+                fontSize: "0.65rem",
+                letterSpacing: "0.5px",
+                mb: 0.5,
+                display: "block"
+              }}
+            >
+              Job Title
+            </Typography>
+            <Typography fontWeight={600} fontSize="0.9rem" color="#2c3e50">
+              {jobTitle || "—"}
+            </Typography>
+          </Box>
+          
+          <Box sx={{ 
+            p: 2, 
+            bgcolor: "#f8f9ff", 
+            borderRadius: 2,
+            borderLeft: "3px solid #7978E9"
+          }}>
+            <Typography 
+              variant="caption" 
+              color="text.secondary" 
+              fontWeight={600}
+              sx={{ 
+                textTransform: "uppercase", 
+                fontSize: "0.65rem",
+                letterSpacing: "0.5px",
+                mb: 0.5,
+                display: "block"
+              }}
+            >
+              Department
+            </Typography>
+            <Typography fontWeight={600} fontSize="0.9rem" color="#2c3e50">
+              {dept || "—"}
+            </Typography>
+          </Box>
+          
+          <Box sx={{ 
+            p: 2, 
+            bgcolor: "#f8f9ff", 
+            borderRadius: 2,
+            borderLeft: "3px solid #F3797E"
+          }}>
+            <Typography 
+              variant="caption" 
+              color="text.secondary" 
+              fontWeight={600}
+              sx={{ 
+                textTransform: "uppercase", 
+                fontSize: "0.65rem",
+                letterSpacing: "0.5px",
+                mb: 0.5,
+                display: "block"
+              }}
+            >
+              Email
+            </Typography>
+            <Typography 
+              fontWeight={600} 
+              fontSize="0.85rem" 
+              color="#2c3e50"
+              sx={{ wordBreak: "break-word" }}
+            >
+              {email || "—"}
+            </Typography>
+          </Box>
+          
+          <Box sx={{ 
+            p: 2, 
+            bgcolor: "#f8f9ff", 
+            borderRadius: 2,
+            borderLeft: "3px solid #98BDFF"
+          }}>
+            <Typography 
+              variant="caption" 
+              color="text.secondary" 
+              fontWeight={600}
+              sx={{ 
+                textTransform: "uppercase", 
+                fontSize: "0.65rem",
+                letterSpacing: "0.5px",
+                mb: 0.5,
+                display: "block"
+              }}
+            >
+              Phone
+            </Typography>
+            <Typography fontWeight={600} fontSize="0.9rem" color="#2c3e50">
+              {phone || "—"}
+            </Typography>
+          </Box>
+          
+          <Box sx={{ 
+            p: 2, 
+            bgcolor: "#f8f9ff", 
+            borderRadius: 2,
+            borderLeft: "3px solid #4B49AC"
+          }}>
+            <Typography 
+              variant="caption" 
+              color="text.secondary" 
+              fontWeight={600}
+              sx={{ 
+                textTransform: "uppercase", 
+                fontSize: "0.65rem",
+                letterSpacing: "0.5px",
+                mb: 0.5,
+                display: "block"
+              }}
+            >
+              Employee ID
+            </Typography>
+            <Typography fontWeight={600} fontSize="0.9rem" color="#2c3e50">
+              {empId || "—"}
+            </Typography>
+          </Box>
         </Stack>
       </Box>
     </Paper>
@@ -251,15 +471,16 @@ export default function Profile() {
   }
 
   return (
-    <>
-      <Paper sx={{ p: 0, mb: 2 }} elevation={0}>
+    <Box sx={{ maxWidth: 1200, mx: "auto" }}>
+      <Paper sx={{ p: 0, mb: 3 }} elevation={0}>
         <SectionTabs value={tab} onChange={(_, v) => setTab(v)} />
       </Paper>
       <Box
         sx={{
           display: "grid",
-          gridTemplateColumns: { xs: "1fr", md: "320px 1fr" },
+          gridTemplateColumns: { xs: "1fr", md: "320px minmax(0, 840px)" },
           gap: 3,
+          maxWidth: "100%",
         }}
       >
         <ProfileSidebar
@@ -267,13 +488,24 @@ export default function Profile() {
           primaryEmployment={employments[0]}
           primaryContact={contacts[0]}
         />
-        <Paper sx={{ p: { xs: 2, md: 3 } }}>
+        <Paper 
+          sx={{ 
+            p: { xs: 3, md: 4 },
+            borderRadius: 3,
+            boxShadow: "0 2px 12px rgba(0,0,0,0.08)",
+            transition: "box-shadow 0.3s ease",
+            minWidth: 0,
+            "&:hover": {
+              boxShadow: "0 4px 20px rgba(75,73,172,0.12)",
+            }
+          }}
+        >
           {tab === 0 && <PersonalInfo user={user} />}
           {tab === 1 && <ContactInfo contacts={contacts} />}
           {tab === 2 && <EmploymentInfo employments={employments} />}
           {tab === 3 && <CompensationPayroll compensations={compensations} />}
         </Paper>
       </Box>
-    </>
+    </Box>
   );
 }

@@ -91,6 +91,7 @@ export default function AttendanceTracking() {
   // Chart tab state: 0 = Weekly, 1 = Monthly, 2 = Overview
   const [chartTab, setChartTab] = useState(0);
   const [chartDept, setChartDept] = useState("All");
+  const [pieDept, setPieDept] = useState("All");
   const months = useMemo(() => {
     const out = [];
     const now = new Date();
@@ -112,6 +113,16 @@ export default function AttendanceTracking() {
 
   // Aggregated chart data from backend overview
   const [monthlyData, setMonthlyData] = useState([]);
+  const [deptTotals, setDeptTotals] = useState([]);
+  const [pieData, setPieData] = useState([]);
+  
+  // Pie chart colors for attendance status
+  const pieColors = {
+    Present: "#4B49AC",
+    Absent: "#F3797E",
+    "On Leave": "#7DA0FA",
+    Late: "#F4C430",
+  };
 
   // --- Daily / Employee attendance records section state ---
   const [recordsTab, setRecordsTab] = useState(0);
@@ -378,11 +389,45 @@ export default function AttendanceTracking() {
       });
 
       setMonthlyData(mCounts);
+
+      // Compute department totals for bar chart in Overview tab
+      const deptMap = {};
+      records.forEach((r) => {
+        if (month && month !== "All" && dayjs(r.date).format("YYYY-MM") !== month) return;
+        const dept = r.department || "Unknown";
+        deptMap[dept] = (deptMap[dept] || 0) + 1;
+      });
+      const deptData = Object.entries(deptMap).map(([department, count]) => ({
+        department,
+        count,
+      }));
+      setDeptTotals(deptData);
+
+      // Compute pie chart data for attendance distribution
+      const pieFiltered = records.filter((r) => {
+        if (month && month !== "All" && dayjs(r.date).format("YYYY-MM") !== month)
+          return false;
+        if (pieDept && pieDept !== "All" && r.department !== pieDept)
+          return false;
+        return true;
+      });
+      const statusMap = {};
+      pieFiltered.forEach((r) => {
+        const status = r.status || "Unknown";
+        statusMap[status] = (statusMap[status] || 0) + 1;
+      });
+      const pieChartData = Object.entries(statusMap).map(([name, value]) => ({
+        name,
+        value,
+      }));
+      setPieData(pieChartData);
     } catch (e) {
       console.error("Failed to compute aggregates", e);
       setMonthlyData([]);
+      setDeptTotals([]);
+      setPieData([]);
     }
-  }, [records, chartDept, chartMonth]);
+  }, [records, chartDept, chartMonth, pieDept]);
 
   // fetch attendance state for current user (canCheckIn / canCheckOut etc)
   const fetchMyState = async () => {

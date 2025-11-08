@@ -8,6 +8,7 @@ import com.pgis.hrms.modules.leave.config.LeaveConfig;
 import com.pgis.hrms.modules.leave.dto.*;
 import com.pgis.hrms.modules.leave.model.*;
 import com.pgis.hrms.modules.leave.repository.*;
+import com.pgis.hrms.modules.leave.util.SriLankanHolidays;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -247,8 +248,11 @@ public class LeaveService {
         return (int) (months * 0.5);  // ½ day per month
     }
 
+    /**
+     * Calculate working days excluding Sri Lankan public holidays and Poya days
+     * Note: Saturdays and Sundays are working days in this organization
+     */
     private int workingDays(LocalDate from, LocalDate to) {
-        // Count all days including weekends
-        return (int) ChronoUnit.DAYS.between(from, to) + 1;
+        return SriLankanHolidays.calculateWorkingDays(from, to);
     }
 }

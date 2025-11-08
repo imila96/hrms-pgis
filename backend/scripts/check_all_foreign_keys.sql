@@ -1,0 +1,14 @@
+-- Query to find all foreign keys pointing to 'employees' table
+SELECT 
+    TABLE_NAME,
+    CONSTRAINT_NAME,
+    COLUMN_NAME,
+    REFERENCED_TABLE_NAME,
+    REFERENCED_COLUMN_NAME
+FROM 
+    INFORMATION_SCHEMA.KEY_COLUMN_USAGE
+WHERE 
+    TABLE_SCHEMA = 'hrms_dev' 
+    AND REFERENCED_TABLE_NAME IN ('employees', 'employee')
+ORDER BY 
+    REFERENCED_TABLE_NAME, TABLE_NAME;

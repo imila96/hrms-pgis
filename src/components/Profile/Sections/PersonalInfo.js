@@ -1,13 +1,44 @@
 import React from "react";
-import { Typography, Divider, Grid } from "@mui/material";
+import { Typography, Divider, Grid, Box } from "@mui/material";
 
 const Field = ({ label, value }) => (
-  <div>
-    <Typography variant="body2" color="text.secondary" gutterBottom>
+  <Box 
+    sx={{ 
+      p: 2.5,
+      borderRadius: 2,
+      bgcolor: "#f8f9ff",
+      transition: "all 0.2s ease",
+      "&:hover": {
+        bgcolor: "#f0f2ff",
+        transform: "translateX(4px)",
+      }
+    }}
+  >
+    <Typography 
+      variant="caption" 
+      color="text.secondary" 
+      fontWeight={600}
+      sx={{ 
+        textTransform: "uppercase", 
+        fontSize: "0.7rem",
+        letterSpacing: "0.5px",
+        mb: 0.5,
+        display: "block"
+      }}
+    >
       {label}
     </Typography>
-    <Typography variant="body1">{value || "-"}</Typography>
-  </div>
+    <Typography 
+      variant="body1" 
+      fontWeight={600}
+      sx={{ 
+        fontSize: "0.95rem",
+        color: "#2c3e50"
+      }}
+    >
+      {value || "—"}
+    </Typography>
+  </Box>
 );
 
 export default function PersonalInfo({ user }) {
@@ -15,15 +46,23 @@ export default function PersonalInfo({ user }) {
   const firstName = nameParts[0] || "";
   const lastName = nameParts.slice(1).join(" ") || "";
   return (
-    <>
-      <Typography variant="h5" sx={{ mb: 2 }}>
+    <Box>
+      <Typography 
+        variant="h5" 
+        fontWeight={700}
+        sx={{ 
+          mb: 3,
+          color: "#4B49AC",
+          fontSize: "1.5rem"
+        }}
+      >
         Personal Information
       </Typography>
-      <Divider sx={{ mb: 3 }} />
-      <Grid container columnSpacing={"50%"}>
+      <Divider sx={{ mb: 4, borderColor: "#e6e9ff" }} />
+      <Grid container spacing={3}>
         {/* Left Column */}
         <Grid item xs={12} md={6}>
-          <Grid container spacing={3} direction={`column`}>
+          <Grid container spacing={2.5} direction="column">
             <Grid item xs={12}>
               <Field label="First Name" value={firstName} />
             </Grid>
@@ -44,7 +83,7 @@ export default function PersonalInfo({ user }) {
 
         {/* Right Column */}
         <Grid item xs={12} md={6}>
-          <Grid container spacing={3} direction={`column`}>
+          <Grid container spacing={2.5} direction="column">
             <Grid item xs={12}>
               <Field label="Middle Name" value={user?.middleName} />
             </Grid>
@@ -63,6 +102,6 @@ export default function PersonalInfo({ user }) {
           </Grid>
         </Grid>
       </Grid>
-    </>
+    </Box>
   );
 }

@@ -29,6 +29,7 @@ import {
 import { useAuth } from "../../context/AuthContext";
 import { useNavigate } from "react-router-dom";
 import axiosInstance from "../../AxiosInstance";
+import { calculateWorkingDays, getHolidaysForYear } from "../../utils/sriLankanHolidays";
 
 // ============ Presentational Components ============
 
@@ -124,12 +125,6 @@ const KpiCard = ({ title, value, subtitle, icon: Icon, color, index }) => {
 };
 
 const LeaveRow = ({ leave, index }) => {
-  const priorityColor = {
-    high: "#F3797E",
-    medium: "#FFA726",
-    low: "#43e97b",
-  };
-
   const StatusIcon =
     leave.statusLabel === "APPROVED"
       ? CheckCircle
@@ -373,7 +368,13 @@ export default function EmployeeOverview() {
     // Backend returns 'start' and 'end', not 'startDate' and 'endDate'
     const startDate = new Date(leave.start);
     const endDate = new Date(leave.end);
-    const days = Math.ceil((endDate - startDate) / (1000 * 60 * 60 * 24)) + 1;
+    
+    // Calculate working days excluding Sri Lankan holidays
+    const workingDaysResult = calculateWorkingDays(
+      leave.start, // ISO format string
+      leave.end    // ISO format string
+    );
+    const days = workingDaysResult.workingDays;
 
     // Backend returns 'type' (enum), not 'leaveType' (string)
     const leaveTypeDisplay = leave.type ? String(leave.type).replace(/_/g, ' ') : 'Leave';
@@ -697,7 +698,7 @@ export default function EmployeeOverview() {
                       borderRadius: '10px',
                     },
                   }}>
-                    {getSriLankanHolidays().slice(0, 4).map((holiday, i) => (
+                    {getSriLankanHolidays().slice(0, 3).map((holiday, i) => (
                       <Box
                         key={i}
                         sx={{
@@ -867,44 +868,32 @@ export default function EmployeeOverview() {
 // Helper function to get Sri Lankan public holidays
 function getSriLankanHolidays() {
   const today = new Date();
+  const currentYear = today.getFullYear();
   
-  // Sri Lankan Public Holidays for 2025 (including religious and national holidays)
-  const holidays = [
-    { name: "Duruthu Full Moon Poya Day", date: new Date(2025, 0, 13) },
-    { name: "Thai Pongal", date: new Date(2025, 0, 14) },
-    { name: "Independence Day", date: new Date(2025, 1, 4) },
-    { name: "Navam Full Moon Poya Day", date: new Date(2025, 1, 12) },
-    { name: "Maha Shivarathri Day", date: new Date(2025, 1, 26) },
-    { name: "Madin Full Moon Poya Day", date: new Date(2025, 2, 14) },
-    { name: "Good Friday", date: new Date(2025, 3, 18) },
-    { name: "Sinhala & Tamil New Year", date: new Date(2025, 3, 14) },
-    { name: "Bak Full Moon Poya Day", date: new Date(2025, 3, 12) },
-    { name: "May Day", date: new Date(2025, 4, 1) },
-    { name: "Vesak Full Moon Poya Day", date: new Date(2025, 4, 12) },
-    { name: "Day Following Vesak", date: new Date(2025, 4, 13) },
-    { name: "Poson Full Moon Poya Day", date: new Date(2025, 5, 11) },
-    { name: "Eid al-Adha", date: new Date(2025, 5, 7) },
-    { name: "Esala Full Moon Poya Day", date: new Date(2025, 6, 10) },
-    { name: "Nikini Full Moon Poya Day", date: new Date(2025, 7, 9) },
-    { name: "Milad-un-Nabi", date: new Date(2025, 8, 5) },
-    { name: "Binara Full Moon Poya Day", date: new Date(2025, 8, 7) },
-    { name: "Vap Full Moon Poya Day", date: new Date(2025, 9, 6) },
-    { name: "Deepavali", date: new Date(2025, 9, 20) },
-    { name: "Il Full Moon Poya Day", date: new Date(2025, 10, 5) },
-    { name: "Unduvap Full Moon Poya Day", date: new Date(2025, 11, 5) },
-    { name: "Christmas Day", date: new Date(2025, 11, 25) },
-  ];
-
-  // Filter upcoming holidays and calculate days until
-  const upcomingHolidays = holidays
-    .filter(h => h.date >= today)
-    .map(h => ({
-      ...h,
-      daysUntil: Math.ceil((h.date - today) / (1000 * 60 * 60 * 24))
+  // Get holidays from the centralized utility for current and next year
+  const currentYearHolidays = getHolidaysForYear(currentYear);
+  const nextYearHolidays = getHolidaysForYear(currentYear + 1);
+  
+  // Combine and convert to required format
+  const allHolidays = [
+    ...currentYearHolidays.map(h => ({
+      name: h.name,
+      date: new Date(h.date),
+      daysUntil: Math.ceil((new Date(h.date) - today) / (1000 * 60 * 60 * 24))
+    })),
+    ...nextYearHolidays.map(h => ({
+      name: h.name,
+      date: new Date(h.date),
+      daysUntil: Math.ceil((new Date(h.date) - today) / (1000 * 60 * 60 * 24))
     }))
+  ];
+  
+  // Filter upcoming holidays only
+  const upcomingHolidays = allHolidays
+    .filter(h => h.date >= today)
     .sort((a, b) => a.date - b.date);
 
-  return upcomingHolidays.length > 0 ? upcomingHolidays : holidays.slice(0, 4).map(h => ({
+  return upcomingHolidays.length > 0 ? upcomingHolidays : allHolidays.slice(0, 4).map(h => ({
     ...h,
     daysUntil: 0
   }));

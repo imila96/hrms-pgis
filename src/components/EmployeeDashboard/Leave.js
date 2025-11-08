@@ -57,6 +57,8 @@ import CancelIcon from "@mui/icons-material/Cancel";
 import { format, parseISO, isWithinInterval, differenceInDays } from "date-fns";
 import axiosInstance from "../../AxiosInstance";
 import BackButton from "../common/BackButton";
+import SriLankanDatePicker from "../common/SriLankanDatePicker";
+import { calculateWorkingDays, getHolidaysForYear } from "../../utils/sriLankanHolidays";
 
 // Color palette matching HR dashboard
 const COLORS = {
@@ -106,6 +108,19 @@ export default function Leave() {
     endDate: "",
     reason: "",
   });
+  
+  // Calculate working days and holidays for the selected date range
+  const leaveDaysInfo = useMemo(() => {
+    if (!newLeave.startDate || !newLeave.endDate) {
+      return null;
+    }
+    
+    try {
+      return calculateWorkingDays(newLeave.startDate, newLeave.endDate);
+    } catch (e) {
+      return null;
+    }
+  }, [newLeave.startDate, newLeave.endDate]);
 
   // Detail dialog
   const [detailOpen, setDetailOpen] = useState(false);
@@ -321,15 +336,14 @@ export default function Leave() {
       return "End date cannot be before start date.";
     }
 
-    // Calculate requested days
-    const start = new Date(startDate);
-    const end = new Date(endDate);
-    const requestedDays = differenceInDays(end, start) + 1;
+    // Calculate requested days excluding holidays
+    const workingDaysInfo = calculateWorkingDays(startDate, endDate);
+    const requestedDays = workingDaysInfo.workingDays;
 
     // Validation 2: Check remaining balance
     const balance = balances.find(b => b.type === newLeave.type);
     if (balance && balance.remaining < requestedDays) {
-      return `Insufficient leave balance. You have ${balance.remaining} days remaining but requested ${requestedDays} days.`;
+      return `Insufficient leave balance. You have ${balance.remaining} days remaining but requested ${requestedDays} working days (${workingDaysInfo.totalDays} total days - ${workingDaysInfo.holidays} holidays).`;
     }
 
     // Validation 3: Check for overlapping leaves (approved or pending only)
@@ -477,7 +491,8 @@ export default function Leave() {
 
   const calculateDays = (start, end) => {
     try {
-      return differenceInDays(parseISO(end), parseISO(start)) + 1;
+      const result = calculateWorkingDays(start, end);
+      return result.workingDays;
     } catch {
       return 0;
     }
@@ -670,6 +685,84 @@ export default function Leave() {
           </Paper>
         </Grid>
       </Grid>
+
+      {/* Upcoming Holidays Section */}
+      <Paper
+        sx={{
+          p: 2.5,
+          mb: 3,
+          borderRadius: 3,
+          boxShadow: "0 4px 20px rgba(240, 147, 251, 0.15)",
+          background: 'linear-gradient(to bottom, #ffffff, #fff5fd)',
+          border: '1px solid #ffe6f9',
+        }}
+      >
+        <Typography 
+          variant="h6" 
+          fontWeight={700} 
+          sx={{
+            background: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
+            WebkitBackgroundClip: 'text',
+            WebkitTextFillColor: 'transparent',
+            mb: 2,
+            display: 'flex',
+            alignItems: 'center',
+            gap: 1,
+          }}
+        >
+          🇱🇰 Upcoming Public Holidays
+        </Typography>
+        <Grid container spacing={2}>
+          {getUpcomingSriLankanHolidays().slice(0, 5).map((holiday, i) => (
+            <Grid item xs={12} sm={6} md={3} key={i}>
+              <Box
+                sx={{
+                  p: 2,
+                  borderRadius: 2,
+                  background: 'linear-gradient(135deg, #ffeaf6 0%, #fff5fd 100%)',
+                  borderLeft: "3px solid #f093fb",
+                  transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
+                  "&:hover": {
+                    background: 'linear-gradient(135deg, #ffd9f0 0%, #ffeaf6 100%)',
+                    transform: "translateY(-4px)",
+                    boxShadow: "0 6px 16px rgba(240, 147, 251, 0.3)",
+                  },
+                }}
+              >
+                <Typography 
+                  variant="body2" 
+                  fontWeight={600} 
+                  color="#c2185b" 
+                  sx={{ fontSize: '0.9rem', mb: 1 }}
+                  noWrap
+                >
+                  {holiday.name}
+                </Typography>
+                <Box display="flex" alignItems="center" justifyContent="space-between">
+                  <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.85rem' }}>
+                    {holiday.date.toLocaleDateString('en-US', { 
+                      month: 'short', 
+                      day: 'numeric',
+                      year: 'numeric'
+                    })}
+                  </Typography>
+                  <Chip
+                    label={`${holiday.daysUntil}d`}
+                    size="small"
+                    sx={{
+                      bgcolor: holiday.daysUntil <= 7 ? "#f5576c22" : "#f093fb22",
+                      color: holiday.daysUntil <= 7 ? "#f5576c" : "#f093fb",
+                      fontWeight: 700,
+                      fontSize: "0.7rem",
+                      height: 22,
+                    }}
+                  />
+                </Box>
+              </Box>
+            </Grid>
+          ))}
+        </Grid>
+      </Paper>
 
       {/* Tabs */}
       <Paper sx={{ borderRadius: 2, mb: 2 }}>
@@ -979,30 +1072,106 @@ export default function Leave() {
 
 
             <Grid item xs={12} md={6}>
-              <TextField
+              <SriLankanDatePicker
                 label="Start Date *"
-                type="date"
                 name="startDate"
-                fullWidth
-                size="small"
-                InputLabelProps={{ shrink: true }}
                 value={newLeave.startDate}
                 onChange={handleChange}
+                minDate={format(new Date(), "yyyy-MM-dd")}
+                required
               />
             </Grid>
 
             <Grid item xs={12} md={6}>
-              <TextField
+              <SriLankanDatePicker
                 label="End Date *"
-                type="date"
                 name="endDate"
-                fullWidth
-                size="small"
-                InputLabelProps={{ shrink: true }}
                 value={newLeave.endDate}
                 onChange={handleChange}
+                minDate={newLeave.startDate || format(new Date(), "yyyy-MM-dd")}
+                required
               />
             </Grid>
+            
+            {/* Show holiday and working days calculation */}
+            {leaveDaysInfo && (
+              <Grid item xs={12}>
+                <Paper 
+                  sx={{ 
+                    p: 2, 
+                    backgroundColor: '#F5F7FF',
+                    borderRadius: 2,
+                    border: '1px solid #E0E7FF'
+                  }}
+                >
+                  <Typography variant="subtitle2" fontWeight={600} gutterBottom>
+                    Leave Duration Calculation
+                  </Typography>
+                  
+                  <Grid container spacing={1} sx={{ mt: 1 }}>
+                    <Grid item xs={4}>
+                      <Typography variant="caption" color="text.secondary">
+                        Total Days
+                      </Typography>
+                      <Typography variant="h6" fontWeight={700}>
+                        {leaveDaysInfo.totalDays}
+                      </Typography>
+                    </Grid>
+                    
+                    <Grid item xs={4}>
+                      <Typography variant="caption" color="text.secondary">
+                        Holidays
+                      </Typography>
+                      <Typography variant="h6" fontWeight={700} color="warning.main">
+                        {leaveDaysInfo.holidays}
+                      </Typography>
+                    </Grid>
+                    
+                    <Grid item xs={4}>
+                      <Typography variant="caption" color="text.secondary">
+                        Working Days
+                      </Typography>
+                      <Typography variant="h6" fontWeight={700} color={COLORS.primary}>
+                        {leaveDaysInfo.workingDays}
+                      </Typography>
+                    </Grid>
+                  </Grid>
+                  
+                  {leaveDaysInfo.holidays > 0 && (
+                    <Box sx={{ mt: 2 }}>
+                      <Typography variant="caption" color="text.secondary" fontWeight={600}>
+                        Holidays in this period:
+                      </Typography>
+                      <Box sx={{ mt: 0.5 }}>
+                        {leaveDaysInfo.holidaysList.map((holiday, idx) => (
+                          <Chip
+                            key={idx}
+                            label={`${format(parseISO(holiday.date), "MMM dd")} - ${holiday.name}`}
+                            size="small"
+                            sx={{ 
+                              mr: 0.5, 
+                              mb: 0.5,
+                              backgroundColor: '#FFF9E6',
+                              color: '#F57C00',
+                              fontWeight: 500
+                            }}
+                          />
+                        ))}
+                      </Box>
+                      <Typography variant="caption" color="warning.main" sx={{ mt: 1, display: 'block' }}>
+                        ℹ️ Public holidays are automatically excluded from your leave count
+                      </Typography>
+                    </Box>
+                  )}
+                  
+                  <Divider sx={{ my: 1.5 }} />
+                  
+                  <Typography variant="body2" color="text.secondary">
+                    You will use <strong style={{ color: COLORS.primary }}>{leaveDaysInfo.workingDays} leave days</strong> for this period
+                  </Typography>
+                </Paper>
+              </Grid>
+            )}
 
             <Grid item xs={12}>
               <TextField
@@ -1190,4 +1359,35 @@ export default function Leave() {
       </Snackbar>
     </Box>
   );
+}
+
+// Helper function to get upcoming Sri Lankan public holidays
+function getUpcomingSriLankanHolidays() {
+  const today = new Date();
+  const currentYear = today.getFullYear();
+  
+  // Get holidays from the centralized utility for current and next year
+  const currentYearHolidays = getHolidaysForYear(currentYear);
+  const nextYearHolidays = getHolidaysForYear(currentYear + 1);
+  
+  // Combine and convert to required format
+  const allHolidays = [
+    ...currentYearHolidays.map(h => ({
+      name: h.name,
+      date: new Date(h.date),
+      daysUntil: Math.ceil((new Date(h.date) - today) / (1000 * 60 * 60 * 24))
+    })),
+    ...nextYearHolidays.map(h => ({
+      name: h.name,
+      date: new Date(h.date),
+      daysUntil: Math.ceil((new Date(h.date) - today) / (1000 * 60 * 60 * 24))
+    }))
+  ];
+  
+  // Filter upcoming holidays only and sort by date
+  const upcomingHolidays = allHolidays
+    .filter(h => h.date >= today)
+    .sort((a, b) => a.date - b.date);
+
+  return upcomingHolidays;
 }

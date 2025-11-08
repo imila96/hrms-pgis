@@ -35,6 +35,7 @@ import CheckCircleOutlineIcon from "@mui/icons-material/CheckCircleOutline";
 import CancelOutlinedIcon from "@mui/icons-material/CancelOutlined";
 import { format, isWithinInterval, parseISO } from "date-fns";
 import api from "../../AxiosInstance"; // Import axios instance
+import { calculateWorkingDays } from "../../utils/sriLankanHolidays";
 
 // Keep project color palette (from HrDashboard)
 const COLORS = {
@@ -324,6 +325,19 @@ export default function LeaveManagement() {
     return keys.map((k) => ({ date: k, items: map[k] }));
   }, [requests]);
 
+  // Helper function to calculate working days excluding Sri Lankan holidays
+  // Note: Saturdays and Sundays are working days in this organization
+  const calculateDays = (start, end) => {
+    if (!start || !end) return 0;
+    try {
+      const result = calculateWorkingDays(start, end);
+      return result.workingDays;
+    } catch (e) {
+      console.error("Error calculating working days:", e);
+      return 0;
+    }
+  };
+
   // EFFECT: Fetch real data from backend
   useEffect(() => {
     const fetchData = async () => {
@@ -369,19 +383,6 @@ export default function LeaveManagement() {
 
     fetchData();
   }, []);
-
-  // Helper function to calculate working days
-  const calculateDays = (start, end) => {
-    if (!start || !end) return 0;
-    const startDate = new Date(start);
-    const endDate = new Date(end);
-    let days = 0;
-    for (let d = new Date(startDate); d <= endDate; d.setDate(d.getDate() + 1)) {
-      const day = d.getDay();
-      if (day !== 0 && day !== 6) days++; // Exclude weekends
-    }
-    return days;
-  };
 
   return (
     <Box sx={{ p: 3, background: COLORS.bg, minHeight: "80vh" }}>
