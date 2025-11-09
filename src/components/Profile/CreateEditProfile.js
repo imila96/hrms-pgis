@@ -408,9 +408,45 @@ function CreateEditProfile() {
     return Object.keys(errs).length === 0;
   };
 
+<<<<<<< HEAD
+  const handleNext = async () => {
+=======
   const handleNext = () => {
     // Proceed to next step only if current step validates successfully.
+>>>>>>> e1e389b8e3a9e6be4c59005883f4c87b9baceb55
     if (!validateStep(activeStep)) return;
+    
+    // Additional email validation when moving from Personal step (step 0) during employee creation
+    if (activeStep === 0 && !id && !isEmployeeRole) {
+      const email = employeeData.personal.email;
+      if (email && emailRegex.test(email)) {
+        try {
+          const response = await axiosInstance.get(`/hr/employees/validate-email?email=${encodeURIComponent(email)}`);
+          if (response.data === true) {
+            // Email already exists
+            setErrors((prev) => ({ 
+              ...prev, 
+              email: "This email already exists. Please use a different email." 
+            }));
+            setSnackbar({
+              open: true,
+              message: "This email already exists. Please use a different email.",
+              severity: "error",
+            });
+            return; // Don't proceed to next step
+          }
+        } catch (err) {
+          console.error("Email validation error:", err);
+          // If validation fails due to network error, show a warning but allow to proceed
+          setSnackbar({
+            open: true,
+            message: "Unable to validate email. Please check your connection.",
+            severity: "warning",
+          });
+        }
+      }
+    }
+    
     setActiveStep((s) => s + 1);
   };
 
