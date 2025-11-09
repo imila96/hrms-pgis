@@ -26,7 +26,7 @@ public class EmployeeController {
         return ResponseEntity.ok(employeeService.createEmployee(dto));
     }
 
-    // New: create an employee together with contact, employment and compensation in a single request
+    //create an employee together with contact, employment and compensation in a single request
     @PostMapping("/create")
     @PreAuthorize("hasAnyRole('HR','ADMIN')")
     public ResponseEntity<EmployeeDto> createFull(@RequestBody EmployeeRequest request) {
@@ -55,7 +55,7 @@ public class EmployeeController {
         return ResponseEntity.ok(employeeService.updateEmployee(id, dto));
     }
 
-    // New: update full employee payload (employee + contact + employment + compensation)
+    // update full employee payload (employee + contact + employment + compensation)
     @PutMapping("/{id}/full")
     public ResponseEntity<EmployeeDto> updateFull(
             @PathVariable Integer id,

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import {
   Box,
@@ -64,8 +64,10 @@ const EMPLOYMENT_TYPES = ["Permanent", "Contract", "Temporary"];
 function CreateEditProfile() {
   const navigate = useNavigate();
   const { id } = useParams();
-  const [activeStep, setActiveStep] = useState(0);
+  const [activeStep, setActiveStep] = useState(0); //current step index in the 4-step wizard
   const [profileImage, setProfileImage] = useState(null);
+
+  const fileInputRef = useRef(null);
 
   const [employeeData, setEmployeeData] = useState({
     personal: {
@@ -116,7 +118,7 @@ function CreateEditProfile() {
       tin: "",
       pensionScheme: "",
     },
-  });
+  }); //single nested state object holding all four sections
 
   const [errors, setErrors] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -127,7 +129,7 @@ function CreateEditProfile() {
   });
 
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  const phoneRegex = /^\+?[0-9\s-]{7,}$/;
+  const phoneRegex = /^(?:\+94|0)\d{9}$/;
   const nicRegex = /^\d{9}V$/;
 
   const steps = [
@@ -137,7 +139,7 @@ function CreateEditProfile() {
     { label: "Compensation", icon: <AccountBalanceIcon /> },
   ];
   const { user } = useAuth();
-  const isEmployeeRole = (user && user.activeRole === "employee") || false;
+  const isEmployeeRole = (user && user.activeRole === "employee") || false; // change role(employee/hr)
 
   // fields that should be locked for employee self-editing
   const lockedFields = new Set([
@@ -165,8 +167,10 @@ function CreateEditProfile() {
 
   const isLocked = (fieldName) => isEmployeeRole && lockedFields.has(fieldName);
 
+  // Load existing employee data if in edit mode(if id param exist it's in edit mode)
+
   useEffect(() => {
-    if (!id) return;
+    if (!id) return; //If id exists, component is in edit mode
     let mounted = true;
     (async () => {
       try {
@@ -176,7 +180,7 @@ function CreateEditProfile() {
         let compensation = {};
 
         if (isEmployeeRole) {
-          // employee users fetch their own profile and sub-resources via /profile
+          // employee users fetch their own profile
           const empRes = await axiosInstance.get(`/profile/me`);
           emp = empRes.data || {};
 
@@ -197,7 +201,7 @@ function CreateEditProfile() {
           const comps = compRes.data || [];
           compensation = comps.length > 0 ? comps[0] : {};
         } else {
-          // HR/admin fetch full employee via /hr endpoints
+          // HR fetch full employee
           const empRes = await axiosInstance.get(`/hr/employees/${id}`);
           emp = empRes.data || {};
 
@@ -220,6 +224,7 @@ function CreateEditProfile() {
           compensation = comps.length > 0 ? comps[0] : {};
         }
 
+        // Only update state when the component is still mounted
         if (!mounted) return;
 
         setEmployeeData({
@@ -282,12 +287,13 @@ function CreateEditProfile() {
   }, [id, isEmployeeRole]);
 
   const setField = (section, field, value) => {
+    // Update the nested state for a single field inside one of the sections.
     setEmployeeData((s) => ({
       ...s,
       [section]: { ...s[section], [field]: value },
     }));
 
-    // clear any validation error tied to this field as user edits
+    // Clear any validation error tied to this field as the user edits it.
     setErrors((prev) => {
       if (!prev) return prev;
       if (!Object.prototype.hasOwnProperty.call(prev, field)) return prev;
@@ -297,6 +303,7 @@ function CreateEditProfile() {
     });
   };
 
+  // Validate fields for the given step
   const validateStep = (step) => {
     const errs = {};
     if (step === 0) {
@@ -314,6 +321,22 @@ function CreateEditProfile() {
         if (!p.email || !emailRegex.test(p.email))
           errs.email = "Required / Invalid";
       }
+      // DOB should not be a future date if provided
+      if (p.dateOfBirth) {
+        const dob = new Date(p.dateOfBirth);
+        if (isNaN(dob.getTime())) {
+          errs.dateOfBirth = "Invalid date";
+        } else {
+          const today = new Date();
+          // Normalize time portion to compare dates only
+          dob.setHours(0, 0, 0, 0);
+          today.setHours(0, 0, 0, 0);
+          if (dob > today) {
+            errs.dateOfBirth = "Select valid date of birth";
+          }
+        }
+      }
+
       if (p.nic && !nicRegex.test(String(p.nic))) errs.nic = "Invalid NIC";
     }
     if (step === 1) {
@@ -321,7 +344,6 @@ function CreateEditProfile() {
       if (!isEmployeeRole) {
         if (!c.permanentAddress || !String(c.permanentAddress).trim())
           errs.permanentAddress = "Required";
-        // mobile number is required per request
         if (!c.mobileNumber || !phoneRegex.test(c.mobileNumber))
           errs.mobileNumber = "Required / Invalid";
         if (!c.emergencyName || !String(c.emergencyName).trim())
@@ -350,7 +372,7 @@ function CreateEditProfile() {
           errs.employmentStatus = "Required";
       }
 
-      // if dateOfJoining present, ensure other employment dates (if provided) are after it
+      // if dateOfJoining present, ensure other employment date are after it
       const doj = e.dateOfJoining ? new Date(e.dateOfJoining) : null;
       if (doj) {
         if (e.probationEndDate) {
@@ -386,46 +408,18 @@ function CreateEditProfile() {
     return Object.keys(errs).length === 0;
   };
 
-  const handleNext = async () => {
+  const handleNext = () => {
+    // Proceed to next step only if current step validates successfully.
     if (!validateStep(activeStep)) return;
-    
-    // Additional email validation when moving from Personal step (step 0) during employee creation
-    if (activeStep === 0 && !id && !isEmployeeRole) {
-      const email = employeeData.personal.email;
-      if (email && emailRegex.test(email)) {
-        try {
-          const response = await axiosInstance.get(`/hr/employees/validate-email?email=${encodeURIComponent(email)}`);
-          if (response.data === true) {
-            // Email already exists
-            setErrors((prev) => ({ 
-              ...prev, 
-              email: "This email already exists. Please use a different email." 
-            }));
-            setSnackbar({
-              open: true,
-              message: "This email already exists. Please use a different email.",
-              severity: "error",
-            });
-            return; // Don't proceed to next step
-          }
-        } catch (err) {
-          console.error("Email validation error:", err);
-          // If validation fails due to network error, show a warning but allow to proceed
-          setSnackbar({
-            open: true,
-            message: "Unable to validate email. Please check your connection.",
-            severity: "warning",
-          });
-        }
-      }
-    }
-    
     setActiveStep((s) => s + 1);
   };
 
   const handleBack = () => setActiveStep((s) => Math.max(0, s - 1));
 
+  //upload profile pic
   const handleImageUpload = (e) => {
+    // (file type + size) and reads the image as a data URL to display a preview
+    // and include in the payload. Uses FileReader to convert image to Base64.
     const file = e.target.files && e.target.files[0];
     if (!file) return;
 
@@ -448,8 +442,7 @@ function CreateEditProfile() {
       return;
     }
 
-    // Validate file size (max 5MB)
-    const maxSize = 5 * 1024 * 1024; // 5MB in bytes
+    const maxSize = 5 * 1024 * 1024;
     if (file.size > maxSize) {
       setSnackbar({
         open: true,
@@ -459,6 +452,7 @@ function CreateEditProfile() {
       return;
     }
 
+    // Read file as Base64 and set preview and store in personal.profileImage
     const reader = new FileReader();
     reader.onload = (ev) => {
       setProfileImage(ev.target.result);
@@ -468,6 +462,10 @@ function CreateEditProfile() {
         message: "Image uploaded successfully",
         severity: "success",
       });
+
+      try {
+        if (fileInputRef.current) fileInputRef.current.value = null;
+      } catch (e) {}
     };
     reader.onerror = () => {
       setSnackbar({
@@ -475,15 +473,23 @@ function CreateEditProfile() {
         message: "Failed to read image file",
         severity: "error",
       });
+      try {
+        if (fileInputRef.current) fileInputRef.current.value = null;
+      } catch (e) {}
     };
     reader.readAsDataURL(file);
   };
 
+  //remove profile pic
   const handleRemoveImage = () => {
     setProfileImage(null);
     setField("personal", "profileImage", null);
+    try {
+      if (fileInputRef.current) fileInputRef.current.value = null;
+    } catch (e) {}
   };
 
+  // build employee request object to create/update employee
   const buildPayload = () => ({
     employee: {
       name: `${employeeData.personal.firstName || ""}${
@@ -532,8 +538,9 @@ function CreateEditProfile() {
     },
   });
 
+  // finish submission
   const handleSubmit = async () => {
-    // validate all steps before submit
+    // Validate all steps before submission
     for (let i = 0; i < steps.length; i++) {
       if (!validateStep(i)) {
         setActiveStep(i);
@@ -545,7 +552,7 @@ function CreateEditProfile() {
     try {
       const payload = buildPayload();
       if (isEmployeeRole) {
-        // employee users may update their profile and sub-resources via /profile
+        // employee users can update their profile(endpoint - /profile)
         const profilePayload = {
           gender: employeeData.personal.gender || null,
           dateOfBirth: employeeData.personal.dateOfBirth || null,
@@ -558,7 +565,6 @@ function CreateEditProfile() {
         // save main profile
         await axiosInstance.put(`/profile/me`, profilePayload);
 
-        // helper to check if any meaningful contact fields provided
         const contact = employeeData.contact || {};
         const contactPayload = {
           permanentAddress: contact.permanentAddress || null,
@@ -639,6 +645,7 @@ function CreateEditProfile() {
           }
         }
       } else {
+        // HR user save/edit employee data
         if (id) {
           await axiosInstance.put(`/hr/employees/${id}/full`, payload);
         } else {
@@ -650,20 +657,18 @@ function CreateEditProfile() {
         message: "Saved successfully",
         severity: "success",
       });
-      // redirect appropriately
       if (isEmployeeRole) navigate("/employee/profile");
       else navigate("/hr/records");
     } catch (err) {
       console.error("Save failed", err);
       const status = err?.response?.status;
-      // Try to extract a helpful message from the server response
       const serverMsg =
         err?.response?.data?.message ||
         err?.response?.data?.error ||
         err?.response?.data ||
         err?.message;
 
-      // Determine if this is a duplicate-email situation
+      // Determine if this is a duplicate-email
       const isDuplicate =
         status === 409 ||
         (status === 500 &&
@@ -692,6 +697,7 @@ function CreateEditProfile() {
   return (
     <Box sx={{ p: 3, bgcolor: COLORS.background, minHeight: "100vh" }}>
       <Box sx={{ mb: 3, display: "flex", alignItems: "center", gap: 2 }}>
+        {/* back navigation */}
         <IconButton
           onClick={() =>
             navigate(isEmployeeRole ? "/employee/profile" : "/hr/records")
@@ -707,8 +713,9 @@ function CreateEditProfile() {
             : "Add New Employee"}
         </Typography>
       </Box>
-
+      {/* main content */}
       <Box sx={{ display: "flex", gap: 2 }}>
+        {/* profile picture section */}
         <Paper sx={{ p: 2, flex: "0 0 300px" }}>
           <Box
             sx={{
@@ -735,7 +742,11 @@ function CreateEditProfile() {
                 sx={{ bgcolor: COLORS.primary }}
               >
                 Upload
+                {/* Hidden file input. We attach a ref so we can clear its value
+                    programmatically (enables re-selecting the same file in the
+                    same session). */}
                 <input
+                  ref={fileInputRef}
                   hidden
                   accept="image/jpeg,image/jpg,image/png,image/gif,image/bmp,image/webp"
                   type="file"
@@ -773,11 +784,10 @@ function CreateEditProfile() {
             </Alert>
           </Snackbar>
         </Paper>
-
+        {/* form */}
         <Paper sx={{ flex: 1, p: 2 }}>
           <Stepper activeStep={activeStep} alternativeLabel>
             {steps.map((s, idx) => {
-              // clone the icon so we can apply sx props dynamically based on active step
               const icon = React.cloneElement(s.icon, {
                 sx: {
                   color:
@@ -1055,7 +1065,7 @@ function CreateEditProfile() {
                           Mobile Number <span style={{ color: "red" }}>*</span>
                         </span>
                       }
-                      placeholder="+94 77 123 4567"
+                      placeholder="+94771234567"
                       fullWidth
                       value={employeeData.contact.mobileNumber}
                       onChange={(e) =>
@@ -1132,7 +1142,7 @@ function CreateEditProfile() {
                           Phone <span style={{ color: "red" }}>*</span>
                         </span>
                       }
-                      placeholder="+94 77 123 4567"
+                      placeholder="+94771234567"
                       fullWidth
                       value={employeeData.contact.emergencyPhone}
                       onChange={(e) =>

@@ -1,4 +1,3 @@
-// src/components/DirectorDashboard/Attendance.js
 import React, { useEffect, useMemo, useState } from "react";
 import {
   Box,
@@ -45,8 +44,6 @@ import axiosInstance from "../../AxiosInstance";
 export default function Attendance() {
   const [records, setRecords] = useState([]);
   const [selectedRecord, setSelectedRecord] = useState(null);
-
-  // summary stats
   const [stats, setStats] = useState({
     present: 0,
     absent: 0,
@@ -54,19 +51,46 @@ export default function Attendance() {
     late: 0,
   });
 
-  // fetch all attendance
+  // ✅ fetch attendance overview
   useEffect(() => {
-    fetchAttendance();
+    fetchAttendanceOverview();
   }, []);
 
-  const fetchAttendance = async () => {
+  const fetchAttendanceOverview = async () => {
     try {
-      const res = await axiosInstance.get("/attendance");
-      setRecords(res.data || []);
-      computeStats(res.data);
+      const res = await axiosInstance.get("/attendance/overview");
+      const data = res.data || [];
+
+      // ✅ map backend DTO fields to frontend
+      const mapped = data.map((d, idx) => ({
+        id: idx,
+        name: d.name || `EMP${d.employeeId}`,
+        department: d.department || "Unknown",
+        date: d.workDate,
+        checkIn: d.firstIn || "-",
+        checkOut: d.lastOut || "-",
+        status:
+          d.status ||
+          (d.paidMinutes && d.paidMinutes > 0
+            ? "Present"
+            : d.leaveStatus
+            ? "On Leave"
+            : "Absent"),
+      }));
+
+      setRecords(mapped);
+      computeStats(mapped);
     } catch (err) {
-      console.error("Failed to fetch attendance records", err);
+      console.error("Failed to fetch attendance overview", err);
     }
+  };
+
+  const computeStats = (data) => {
+    const present = data.filter((r) => r.status === "Present").length;
+    const absent = data.filter((r) => r.status === "Absent").length;
+    const onLeave = data.filter((r) => r.status === "On Leave").length;
+    const late = data.filter((r) => r.status === "Late").length;
+    setStats({ present, absent, onLeave, late });
   };
 
   const fetchRecordDetails = async (id) => {
@@ -79,15 +103,7 @@ export default function Attendance() {
     }
   };
 
-  const computeStats = (data) => {
-    const present = data.filter((r) => r.status === "Present").length;
-    const absent = data.filter((r) => r.status === "Absent").length;
-    const onLeave = data.filter((r) => r.status === "On Leave").length;
-    const late = data.filter((r) => r.status === "Late").length;
-    setStats({ present, absent, onLeave, late });
-  };
-
-  // chart state
+  // chart states
   const [chartTab, setChartTab] = useState(0);
   const [chartDept, setChartDept] = useState("All");
   const [chartMonth, setChartMonth] = useState(dayjs().format("YYYY-MM"));
@@ -115,7 +131,7 @@ export default function Attendance() {
     Late: "#F4C430",
   };
 
-  // filter states
+  // filters
   const [searchName, setSearchName] = useState("");
   const [statusFilter, setStatusFilter] = useState("All");
   const [selectedDept, setSelectedDept] = useState("All");
@@ -139,7 +155,7 @@ export default function Attendance() {
     }
   };
 
-  // filtered records
+  // ✅ filter logic
   const filteredRecords = useMemo(() => {
     return records.filter((r) => {
       const sameDept = selectedDept === "All" || r.department === selectedDept;
@@ -152,51 +168,31 @@ export default function Attendance() {
       if (dateFrom || dateTo) {
         const d = dayjs(r.date);
         if (dateFrom)
-          inDate = inDate && d.isAfter(dayjs(dateFrom)) || d.isSame(dayjs(dateFrom), "day");
+          inDate =
+            (inDate && d.isAfter(dayjs(dateFrom))) ||
+            d.isSame(dayjs(dateFrom), "day");
         if (dateTo)
-          inDate = inDate && d.isBefore(dayjs(dateTo)) || d.isSame(dayjs(dateTo), "day");
+          inDate =
+            (inDate && d.isBefore(dayjs(dateTo))) ||
+            d.isSame(dayjs(dateTo), "day");
       }
 
       return sameDept && matchesName && matchesStatus && inDate;
     });
   }, [records, selectedDept, searchName, statusFilter, dateFrom, dateTo]);
 
-  // charts (mock aggregation)
-  const weeklyData = useMemo(() => {
-    const days = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
-    return days.map((d) => {
-      const present = Math.floor(Math.random() * 40 + 10);
-      const onLeave = Math.floor(Math.random() * 8);
-      const absent = Math.floor(Math.random() * 6);
-      return { day: d, Present: present, OnLeave: onLeave, Absent: absent };
-    });
-  }, [chartDept, chartMonth]);
-
-  const monthlyData = useMemo(() => {
-    const days = Array.from({ length: 28 }, (_, i) => i + 1);
-    return days.map((d) => ({
-      day: String(d),
-      Present: Math.floor(Math.random() * 30 + 10),
-      OnLeave: Math.floor(Math.random() * 5),
-      Absent: Math.floor(Math.random() * 4),
-    }));
-  }, [chartDept, chartMonth]);
-
+  // ✅ use backend records for pie chart, not random mock data
   const pieData = useMemo(() => {
     const counts = { Present: 0, "On Leave": 0, Absent: 0, Late: 0 };
     records.forEach((r) => {
-      if (
-        chartMonth &&
-        dayjs(r.date).format("YYYY-MM") !== chartMonth
-      )
-        return;
+      if (chartMonth && dayjs(r.date).format("YYYY-MM") !== chartMonth) return;
       if (pieDept !== "All" && r.department !== pieDept) return;
       if (counts[r.status] !== undefined) counts[r.status] += 1;
     });
     return Object.keys(counts).map((k) => ({ name: k, value: counts[k] }));
   }, [records, chartMonth, pieDept]);
 
-  // pagination handlers
+  // pagination
   const handlePageChange = (event, newPage) => setPage(newPage);
   const handleRowsChange = (e) => {
     setRowsPerPage(parseInt(e.target.value, 10));
@@ -209,7 +205,7 @@ export default function Attendance() {
         Attendance Overview
       </Typography>
 
-      {/* Top Summary Cards */}
+      {/* Summary cards */}
       <Grid container spacing={2}>
         {[
           { label: "Present", value: stats.present, color: "#4B49AC" },
@@ -234,13 +230,9 @@ export default function Attendance() {
         ))}
       </Grid>
 
-      {/* Charts Section */}
+      {/* Charts */}
       <Paper sx={{ mt: 3, p: 2 }}>
-        <Tabs
-          value={chartTab}
-          onChange={(_, v) => setChartTab(v)}
-          sx={{ mb: 2 }}
-        >
+        <Tabs value={chartTab} onChange={(_, v) => setChartTab(v)} sx={{ mb: 2 }}>
           <Tab label="Weekly" />
           <Tab label="Monthly" />
           <Tab label="Overview" />
@@ -284,27 +276,7 @@ export default function Attendance() {
 
         <Box sx={{ width: "100%", height: 400 }}>
           <ResponsiveContainer width="100%" height="100%">
-            {chartTab === 0 ? (
-              <BarChart data={weeklyData}>
-                <XAxis dataKey="day" />
-                <YAxis />
-                <Tooltip />
-                <Legend />
-                <Bar dataKey="Present" stackId="a" fill="#4B49AC" />
-                <Bar dataKey="OnLeave" stackId="a" fill="#7DA0FA" />
-                <Bar dataKey="Absent" stackId="a" fill="#F3797E" />
-              </BarChart>
-            ) : chartTab === 1 ? (
-              <BarChart data={monthlyData}>
-                <XAxis dataKey="day" />
-                <YAxis />
-                <Tooltip />
-                <Legend />
-                <Bar dataKey="Present" stackId="a" fill="#4B49AC" />
-                <Bar dataKey="OnLeave" stackId="a" fill="#7DA0FA" />
-                <Bar dataKey="Absent" stackId="a" fill="#F3797E" />
-              </BarChart>
-            ) : (
+            {chartTab === 2 ? (
               <PieChart>
                 <Pie
                   data={pieData}
@@ -327,18 +299,25 @@ export default function Attendance() {
                 <Tooltip />
                 <Legend />
               </PieChart>
+            ) : (
+              <BarChart data={pieData}>
+                <XAxis dataKey="name" />
+                <YAxis />
+                <Tooltip />
+                <Legend />
+                <Bar dataKey="value" fill="#4B49AC" />
+              </BarChart>
             )}
           </ResponsiveContainer>
         </Box>
       </Paper>
 
-      {/* Attendance Table */}
+      {/* Table */}
       <Paper sx={{ mt: 3, p: 2 }}>
         <Typography variant="h6" fontWeight={600} sx={{ mb: 2 }}>
           Attendance Records
         </Typography>
 
-        {/* Filters */}
         <Grid container spacing={2} alignItems="center" sx={{ mb: 2 }}>
           <Grid item xs={12} md={4}>
             <Autocomplete
@@ -396,44 +375,6 @@ export default function Attendance() {
                 <MenuItem value="Late">Late</MenuItem>
               </Select>
             </FormControl>
-          </Grid>
-          <Grid item xs={6} md={2}>
-            <TextField
-              fullWidth
-              size="small"
-              label="From"
-              type="date"
-              value={dateFrom}
-              onChange={(e) => setDateFrom(e.target.value)}
-              InputLabelProps={{ shrink: true }}
-            />
-          </Grid>
-          <Grid item xs={6} md={2}>
-            <TextField
-              fullWidth
-              size="small"
-              label="To"
-              type="date"
-              value={dateTo}
-              onChange={(e) => setDateTo(e.target.value)}
-              InputLabelProps={{ shrink: true }}
-            />
-          </Grid>
-          <Grid item xs={12} md={12}>
-            <Box display="flex" justifyContent="flex-end">
-              <Button
-                variant="outlined"
-                onClick={() => {
-                  setSearchName("");
-                  setStatusFilter("All");
-                  setSelectedDept("All");
-                  setDateFrom("");
-                  setDateTo("");
-                }}
-              >
-                Reset Filters
-              </Button>
-            </Box>
           </Grid>
         </Grid>
 
@@ -493,7 +434,6 @@ export default function Attendance() {
         </Paper>
       </Paper>
 
-      {/* Detail Dialog */}
       {selectedRecord && (
         <Dialog
           open={!!selectedRecord}

@@ -49,9 +49,16 @@ public class PolicyController {
                                 @RequestParam(required=false) Boolean effective) {
         return svc.list(status, effective);
     }
+    
 
     @GetMapping("/{id}")
     public PolicyDetailDto one(@PathVariable Integer id) {
         return svc.one(id);
+    }
+
+
+    @GetMapping("/list")
+    public List<PolicyDetailDto> getPoliciesList() {
+        return svc.listDetails();
     }
 }

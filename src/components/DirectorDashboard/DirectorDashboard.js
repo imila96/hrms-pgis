@@ -48,7 +48,7 @@ const tabItems = [
   { label: "Attendance", path: "/director/attendance" },
   { label: "Leave", path: "/director/leave" },
   { label: "Complaints", path: "/director/complaints" },
-  { label: "Reports", path: "/director/reports" },
+
 ];
 
 const DirectorDashboard = () => {
@@ -460,10 +460,11 @@ const DirectorDashboard = () => {
                         title: "Announcements",
                         path: "/director/announcements",
                       },
-                      { title: "Complaints", path: "/director/complaints" },
-                      { title: "Reports", path: "/director/reports" },
+                      
+                      
                       { title: "Attendance", path: "/director/attendance" },
                       { title: "Leave", path: "/director/leave" },
+                       { title: "Complaints", path: "/director/complaints" },
                     ].map((item, idx) => (
                       <Grid item xs={12} md={2.4} key={idx}>
                         <Paper

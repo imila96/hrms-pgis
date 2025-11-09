@@ -45,8 +45,6 @@ import {
 
 import axiosInstance from "../../AxiosInstance";
 
-// Simplified Attendance Management overview
-// static department master list (preferred for filters)
 const DEPARTMENTS = [
   "General Administration Division",
   "Finance Administration Division",
@@ -67,7 +65,6 @@ const DEPARTMENTS = [
   "other",
 ];
 export default function AttendanceTracking() {
-  // runtime stats fetched from backend
   const [stats, setStats] = useState({
     present: 0,
     absent: 0,
@@ -83,35 +80,40 @@ export default function AttendanceTracking() {
     alignItems: "flex-start",
     minHeight: 100,
   };
-
-  // Chart filters
+  // available months for selection in the chart (YYYY-MM), from Jan of current year to current month
   const months = useMemo(() => {
     const out = [];
     const now = new Date();
-    for (let i = 0; i < 6; i++) {
-      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
-      const ym = d.toISOString().slice(0, 7);
-      out.push(ym);
+    const year = now.getFullYear();
+    const currentMonth = now.getMonth() + 1; // 1-12
+    for (let m = 1; m <= currentMonth; m++) {
+      const mm = String(m).padStart(2, "0");
+      out.push(`${year}-${mm}`);
     }
     return out;
   }, []);
-  const [chartMonth, setChartMonth] = useState(months[0]);
-
-  const [fetchedEmployees, setFetchedEmployees] = useState([]);
-  const [employeeAttendanceRecords, setEmployeeAttendanceRecords] = useState(
-    []
+  // currently selected month for the chart (YYYY-MM). Default to the
+  // most recent month (current month).
+  const [chartMonth, setChartMonth] = useState(
+    months[months.length - 1] || dayjs().format("YYYY-MM")
   );
-  const [empLoading, setEmpLoading] = useState(false);
-  const [attendanceState, setAttendanceState] = useState(null);
 
-  // Aggregated chart data from backend overview
+  // Employee datasets and loading flags
+  const [fetchedEmployees, setFetchedEmployees] = useState([]); // full employee list
+  const [employeeAttendanceRecords, setEmployeeAttendanceRecords] = useState(
+    [] // per-employee fetched attendance rows
+  );
+  const [empLoading, setEmpLoading] = useState(false); // loading indicator for employee-specific fetches
+  const [attendanceState, setAttendanceState] = useState(null); // current user's punch state
+
+  // Aggregated chart data (array of daily aggregates for selected month)
   const [monthlyData, setMonthlyData] = useState([]);
 
   // --- Daily / Employee attendance records section state ---
   const [recordsTab, setRecordsTab] = useState(0);
-
+  // --- Filters, paging and UI state for the Daily / Employee records table ---
   // department options derived from backend data (populated later)
-  const statuses = ["Present", "Absent", "On Leave", "Late"];
+  const statuses = ["Present", "Absent", "On Leave", "Late"]; // allowed status labels
 
   const [records, setRecords] = useState([]);
 
@@ -136,17 +138,57 @@ export default function AttendanceTracking() {
     setOpenEdit(false);
   };
   const handleSaveEdit = () => {
-    setRecords((prev) =>
-      prev.map((r) => (r.id === selectedRecord.id ? selectedRecord : r))
-    );
-    setOpenEdit(false);
+    // perform backend update and refresh local row
+    (async () => {
+      try {
+        // ensure we have an employeeId on the record
+        const empId = selectedRecord?.employeeId;
+        if (!empId) {
+          // fallback: try to resolve by name (best effort)
+          const emp = fetchedEmployees.find(
+            (e) => e.name === selectedRecord?.name
+          );
+          if (emp) {
+            // try update using resolved id
+            await axiosInstance.put(`/attendance/${emp.id}/record`, {
+              date: selectedRecord.date,
+              checkIn: selectedRecord.checkIn,
+              checkOut: selectedRecord.checkOut,
+              status: selectedRecord.status,
+            });
+          } else {
+            console.warn(
+              "No employeeId available for edit; skipping backend update"
+            );
+          }
+        } else {
+          await axiosInstance.put(`/attendance/${empId}/record`, {
+            date: selectedRecord.date,
+            checkIn: selectedRecord.checkIn,
+            checkOut: selectedRecord.checkOut,
+            status: selectedRecord.status,
+          });
+        }
+
+        // optimistic local update
+        setRecords((prev) =>
+          prev.map((r) => (r.id === selectedRecord.id ? selectedRecord : r))
+        );
+        setOpenEdit(false);
+      } catch (err) {
+        console.error("Failed to save edit", err);
+      }
+    })();
   };
+
+  // Helper to update a single field on the selected record while editing
 
   // Add record handlers removed (frontend now uses punch buttons and backend endpoints)
 
   const handleChangeSelected = (field, value) =>
     setSelectedRecord((s) => ({ ...s, [field]: value }));
 
+  // UI helper: map status label to a colour used for Chips/labels
   const getStatusColor = (status) => {
     switch (status) {
       case "Present":
@@ -159,6 +201,41 @@ export default function AttendanceTracking() {
         return "#F4C430";
       default:
         return "#999";
+    }
+  };
+
+  // CSV export helper — ensures proper quoting, headers and download
+  const exportToCsv = (rows, filename = "data.csv", columns = []) => {
+    try {
+      if (!rows || rows.length === 0) {
+        // still offer an empty CSV with headers
+      }
+      const escape = (v) => {
+        if (v === null || v === undefined) return "";
+        const s = String(v);
+        if (s.includes('"') || s.includes(",") || s.includes("\n")) {
+          return '"' + s.replace(/"/g, '""') + '"';
+        }
+        return s;
+      };
+
+      const headerRow = columns.map((c) => c.label || c.key).join(",");
+      const dataRows = (rows || []).map((r) =>
+        columns.map((c) => escape(r[c.key])).join(",")
+      );
+
+      const csv = [headerRow, ...dataRows].join("\n");
+      const blob = new Blob([csv], { type: "text/csv" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    } catch (e) {
+      console.error("Export failed", e);
     }
   };
 
@@ -325,11 +402,13 @@ export default function AttendanceTracking() {
       // map backend maps to UI rows: employeeId, name, workDate, firstIn, lastOut, breakMinutes, paidMinutes
       const mapped = data.map((d, idx) => ({
         id: idx,
+        employeeId: d.employeeId,
         name: d.name || `EMP${d.employeeId}`,
         department: d.department || "",
         date: d.workDate,
-        checkIn: d.firstIn,
-        checkOut: d.lastOut,
+        // convert timestamps to HH:mm so the edit time inputs accept values
+        checkIn: d.firstIn ? dayjs(d.firstIn).format("HH:mm") : "",
+        checkOut: d.lastOut ? dayjs(d.lastOut).format("HH:mm") : "",
         status:
           d.status ||
           (d.paidMinutes && d.paidMinutes > 0 ? "Present" : "Absent"),
@@ -562,7 +641,7 @@ export default function AttendanceTracking() {
         <Box sx={{ width: "100%", height: 420, overflow: "hidden" }}>
           {/* Month selector inside the chart area (top-right) */}
           <Box sx={{ display: "flex", justifyContent: "flex-end", mb: 1 }}>
-            <FormControl size="small" sx={{ minWidth: 160 }}>
+            <FormControl size="large" sx={{ minWidth: 160 }}>
               <InputLabel>Month</InputLabel>
               <Select
                 value={chartMonth}
@@ -698,29 +777,19 @@ export default function AttendanceTracking() {
                     variant="contained"
                     startIcon={<DownloadIcon />}
                     onClick={() => {
-                      // simple CSV export of filteredRows
-                      const header = [
-                        "id",
-                        "name",
-                        "department",
-                        "date",
-                        "checkIn",
-                        "checkOut",
-                        "status",
+                      const columns = [
+                        { key: "id", label: "ID" },
+                        { key: "name", label: "Employee Name" },
+                        { key: "department", label: "Department" },
+                        { key: "date", label: "Date" },
+                        { key: "checkIn", label: "Check-In" },
+                        { key: "checkOut", label: "Check-Out" },
+                        { key: "status", label: "Status" },
                       ];
-                      const rows = filteredRecords.map((r) =>
-                        header.map((h) => r[h]).join(",")
-                      );
-                      const blob = new Blob(
-                        [[header.join(",")], ...rows].join("\n"),
-                        { type: "text/csv" }
-                      );
-                      const url = URL.createObjectURL(blob);
-                      const a = document.createElement("a");
-                      a.href = url;
-                      a.download = "daily_attendance.csv";
-                      a.click();
-                      URL.revokeObjectURL(url);
+                      const fileName = `daily_attendance_${
+                        selectedMonth || "all"
+                      }.csv`;
+                      exportToCsv(filteredRecords, fileName, columns);
                     }}
                   >
                     Export

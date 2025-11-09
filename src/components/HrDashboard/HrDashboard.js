@@ -56,6 +56,7 @@ const tabItems = [
   { label: "Complaints", path: "/hr/complaints" },
 ];
 
+// quick action card details
 const quickActions = [
   {
     title: "Add New Employee",
@@ -106,6 +107,7 @@ const HrDashboard = () => {
   const navigate = useNavigate();
   const colorMode = useContext(ColorModeContext);
 
+  // State for the account menu anchor element.
   const [anchorEl, setAnchorEl] = useState(null);
   const open = Boolean(anchorEl);
 
@@ -118,13 +120,14 @@ const HrDashboard = () => {
     navigate("/");
   };
 
+  // Produce initials for the avatar
   const getInitials = (nameOrEmail) => {
     if (!nameOrEmail) return "U";
     const parts = nameOrEmail.split(" ");
     if (parts.length === 1) return parts[0].charAt(0).toUpperCase();
     return (parts[0][0] + parts[1][0]).toUpperCase();
   };
-
+  // Map roles to their home routes
   const goToRoleHome = (r) => {
     const map = {
       admin: "/admin",
@@ -171,11 +174,13 @@ const HrDashboard = () => {
     },
   });
 
-  // dashboard data
+  // Dashboard summary state fetched from backend
   const [dashboard, setDashboard] = useState(null);
   const [loadingDashboard, setLoadingDashboard] = useState(true);
+
   const [dashboardError] = useState(null);
 
+  // Fetch dashboard summary on mount
   useEffect(() => {
     let mounted = true;
     setLoadingDashboard(true);
@@ -198,7 +203,9 @@ const HrDashboard = () => {
           backgroundColor: "#f0f1f5ff",
         }}
       >
-        {/* Header AppBar */}
+        {/*
+          Header AppBar
+        */}
         <AppBar
           position="sticky"
           elevation={3}
@@ -208,8 +215,10 @@ const HrDashboard = () => {
             boxShadow: "0 4px 20px rgba(75,73,172,0.25)",
           }}
         >
-          <Toolbar sx={{ display: "flex", justifyContent: "space-between", py: 1 }}>
-            {/* Left: Title clickable */}
+          <Toolbar
+            sx={{ display: "flex", justifyContent: "space-between", py: 1 }}
+          >
+            {/* Hr Dashboard Title */}
             <Typography
               variant="h6"
               noWrap
@@ -226,7 +235,7 @@ const HrDashboard = () => {
               HR Dashboard
             </Typography>
 
-            {/* Center: Tabs */}
+            {/* Tabs - primary navigation across HR modules */}
             <Box sx={{ display: "flex", gap: 0.5 }}>
               {tabItems.map(({ label, path }) => (
                 <Button
@@ -260,9 +269,8 @@ const HrDashboard = () => {
               ))}
             </Box>
 
-            {/* Right: Actions */}
+            {/* Actions (theme toggle, notifications, avatar menu) */}
             <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-              {/* Theme toggle */}
               <IconButton
                 sx={{
                   color: "#E6E9FF",
@@ -279,7 +287,6 @@ const HrDashboard = () => {
                 <Brightness4 />
               </IconButton>
 
-              {/* Notifications */}
               <IconButton
                 sx={{
                   color: "#E6E9FF",
@@ -297,7 +304,7 @@ const HrDashboard = () => {
                 </Badge>
               </IconButton>
 
-              {/* Avatar Menu */}
+              {/* Avatar Menu - shows active role and allows switching roles or logout */}
               <Tooltip title="Account settings">
                 <IconButton
                   sx={{
@@ -313,7 +320,11 @@ const HrDashboard = () => {
                   {user?.photoURL ? (
                     <Avatar
                       src={user.photoURL}
-                      sx={{ width: 36, height: 36, border: "2px solid #98BDFF" }}
+                      sx={{
+                        width: 36,
+                        height: 36,
+                        border: "2px solid #98BDFF",
+                      }}
                     />
                   ) : (
                     <Avatar
@@ -370,7 +381,7 @@ const HrDashboard = () => {
           sx={{ flexGrow: 1, p: 3, backgroundColor: "#f0f1f5ff" }}
         >
           <Routes>
-            {/* Dashboard Home */}
+            {/* Dashboard Home*/}
             <Route
               index
               element={
@@ -411,7 +422,7 @@ const HrDashboard = () => {
                     High-Level Overview
                   </Typography>
 
-                  {/* Overview Cards */}
+                  {/* Overview Cards - total staff, attendance rate, open positions */}
                   <Grid container spacing={2} sx={{ my: 3 }}>
                     {[
                       {
@@ -427,7 +438,7 @@ const HrDashboard = () => {
                                 1
                               )}%`
                             : "-",
-                        subtitle: "Company-wide average for current month",
+                        subtitle: "Attendance rate of PGIS employees(Today)",
                       },
                       {
                         title: "Open Positions",
@@ -464,6 +475,7 @@ const HrDashboard = () => {
                       </Grid>
                     ))}
                   </Grid>
+                  {/* Quick action cards */}
                   <Grid container spacing={3}>
                     {quickActions.map((item) => (
                       <Grid
@@ -547,6 +559,7 @@ const HrDashboard = () => {
                     ))}
                   </Grid>
 
+                  {/* Your Stats - cards */}
                   <Grid container spacing={3}>
                     {/* Stats */}
                     <Grid item xs={12} md={6} mt={2}>
