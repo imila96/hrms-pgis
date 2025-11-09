@@ -438,7 +438,7 @@ const HrDashboard = () => {
                                 1
                               )}%`
                             : "-",
-                        subtitle: "Company-wide average for current month",
+                        subtitle: "Attendance rate of PGIS employees(Today)",
                       },
                       {
                         title: "Open Positions",

@@ -372,7 +372,7 @@ function CreateEditProfile() {
           errs.employmentStatus = "Required";
       }
 
-      // if dateOfJoining present, ensure other employment dates (if provided) are after it
+      // if dateOfJoining present, ensure other employment date are after it
       const doj = e.dateOfJoining ? new Date(e.dateOfJoining) : null;
       if (doj) {
         if (e.probationEndDate) {

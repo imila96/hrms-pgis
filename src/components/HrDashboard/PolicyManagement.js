@@ -42,7 +42,6 @@ const COLORS = {
 
 export default function PolicyManagement() {
   const [policies, setPolicies] = useState([]);
-
   const [tab, setTab] = useState(0); // 0 Active,1 Pending,2 All
   const [search, setSearch] = useState("");
   const [filterStatus, setFilterStatus] = useState("All");
@@ -61,7 +60,6 @@ export default function PolicyManagement() {
   });
   const [selectedPolicy, setSelectedPolicy] = useState(null);
 
-  // summary
   const summary = useMemo(
     () => ({
       total: policies.length,
@@ -81,18 +79,19 @@ export default function PolicyManagement() {
         }
         return "Active";
       }
-      if (rawStatus === "REJECTED") return "Archived";
+      if (rawStatus === "REJECTED") return "Rejected";
       if (rawStatus === "INACTIVE") return "Inactive";
-      return "Pending"; // PENDING or unknown
+      return "Pending";
     } catch (e) {
       return "Pending";
     }
   };
 
+  // Fetch policy summaries from backend on mount.
   useEffect(() => {
     const fetch = async () => {
       try {
-        const res = await axiosInstance.get("/policies");
+        const res = await axiosInstance.get("/policies/list");
         if (Array.isArray(res.data)) {
           const mapped = res.data.map((d) => ({
             id: d.id,
@@ -114,6 +113,7 @@ export default function PolicyManagement() {
     fetch();
   }, []);
 
+  // Client-side filtering and sorting.
   const filtered = useMemo(() => {
     let list = policies.slice();
     if (tab === 0) list = list.filter((p) => p.status === "Active");
@@ -128,6 +128,7 @@ export default function PolicyManagement() {
           (p.description || "").toLowerCase().includes(q)
       );
     }
+    // Sort newest effectiveDate first; missing dates are treated as epoch 0.
     list.sort(
       (a, b) => new Date(b.effectiveDate || 0) - new Date(a.effectiveDate || 0)
     );
@@ -140,6 +141,7 @@ export default function PolicyManagement() {
     setPage(0);
   };
 
+  // Handlers for opening/closing dialogs and saving policies.
   const openAdd = () => {
     setEditing(null);
     setForm({
@@ -152,57 +154,39 @@ export default function PolicyManagement() {
     });
     setDialogOpen(true);
   };
+
+  // Close the create/edit dialog and reset editing state.
   const closeDialog = () => {
     setDialogOpen(false);
     setEditing(null);
   };
 
+  // Open the read-only details dialog.
   const openView = (p) => {
-    (async () => {
-      try {
-        const res = await axiosInstance.get(`/policies/${p.id}`);
-        setSelectedPolicy(res.data);
-      } catch (e) {
-        console.error("Failed to fetch policy detail", e);
-        setSelectedPolicy(p);
-      }
-    })();
+    const full = policies.find((x) => x.id === p.id) || p;
+    setSelectedPolicy(full);
   };
 
   const closeView = () => setSelectedPolicy(null);
   const openEdit = (p) => {
-    // fetch detailed policy before editing to get full fields
-    (async () => {
-      try {
-        const res = await axiosInstance.get(`/policies/${p.id}`);
-        const data = res.data;
-        setEditing(p);
-        setForm({
-          title: data.title || "",
-          description: data.description || "",
-          effectiveDate: data.effectiveDate || "",
-          status: data.status || "PENDING",
-          createdBy: data.createdBy || "",
-          decidedBy: data.decidedBy || "",
-        });
-        setDialogOpen(true);
-      } catch (e) {
-        console.error("Failed to fetch policy detail", e);
-        // fallback to shallow edit
-        setEditing(p);
-        setForm({
-          title: p.title || "",
-          description: p.description || "",
-          effectiveDate: p.effectiveDate || "",
-          status: p.rawStatus || "PENDING",
-          createdBy: p.createdBy || "",
-          decidedBy: p.decidedBy || "",
-        });
-        setDialogOpen(true);
-      }
-    })();
+    // Use the already-fetched policy list for editing instead of making a
+    // per-item backend call. This keeps the UI fast and avoids redundant
+    // network requests because `/policies/list` contains full details.
+    const full = policies.find((x) => x.id === p.id) || p;
+    setEditing(p);
+    setForm({
+      title: full.title || "",
+      description: full.description || "",
+      effectiveDate: full.effectiveDate || "",
+      // prefer rawStatus (backend code) if present, otherwise fall back
+      status: full.rawStatus || full.status || "PENDING",
+      createdBy: full.createdBy || "",
+      decidedBy: full.decidedBy || "",
+    });
+    setDialogOpen(true);
   };
 
+  // Save the policy (create or update based on editing state).
   const savePolicy = async () => {
     if (!form.title) return alert("Please enter a title");
     try {
@@ -245,8 +229,7 @@ export default function PolicyManagement() {
         };
         try {
           await axiosInstance.post("/policies", payload);
-          // refresh list
-          const res = await axiosInstance.get("/policies");
+          const res = await axiosInstance.get("/policies/list");
           if (Array.isArray(res.data)) {
             const mapped = res.data.map((d) => ({
               id: d.id,
@@ -255,19 +238,14 @@ export default function PolicyManagement() {
               effectiveDate: d.effectiveDate || null,
               rawStatus: d.status,
               status: computeDisplayStatus(d.status, d.effectiveDate),
+              createdBy: d.createdBy || null,
+              decidedBy: d.decidedBy || null,
+              decidedAt: d.decidedAt || null,
             }));
             setPolicies(mapped);
           }
         } catch (e) {
           console.error("Failed to create policy", e);
-          const newP = {
-            id: `local-${Date.now()}`,
-            ...payload,
-            createdBy: "Local",
-            status: computeDisplayStatus(payload.status, payload.effectiveDate),
-            rawStatus: payload.status,
-          };
-          setPolicies((prev) => [newP, ...prev]);
         }
       }
       closeDialog();
@@ -378,8 +356,6 @@ export default function PolicyManagement() {
               <Typography variant="caption">Pending</Typography>
             </Paper>
           </Grid>
-
-          {/* Archived overview card removed per request */}
         </Grid>
       </Box>
 
@@ -415,21 +391,27 @@ export default function PolicyManagement() {
           </Grid>
 
           <Grid item xs={12} md={3}>
-            <FormControl fullWidth size="small">
-              <InputLabel>Status</InputLabel>
-              <Select
-                value={filterStatus}
-                label="Status"
-                onChange={(e) => {
-                  setFilterStatus(e.target.value);
-                  setPage(0);
-                }}
-              >
-                <MenuItem value="All">All</MenuItem>
-                <MenuItem value="Active">Active</MenuItem>
-                <MenuItem value="Pending">Pending</MenuItem>
-              </Select>
-            </FormControl>
+            {/* Show status filter only on the 'All' tab (tab index 2). Hiding it
+                on Active/Pending keeps the UI focused and avoids redundant
+                filtering since those tabs already constrain the list. */}
+            {tab === 2 ? (
+              <FormControl fullWidth size="small">
+                <InputLabel>Status</InputLabel>
+                <Select
+                  value={filterStatus}
+                  label="Status"
+                  onChange={(e) => {
+                    setFilterStatus(e.target.value);
+                    setPage(0);
+                  }}
+                >
+                  <MenuItem value="All">All</MenuItem>
+                  <MenuItem value="Active">Active</MenuItem>
+                  <MenuItem value="Rejected">Rejected</MenuItem>
+                  <MenuItem value="Pending">Pending</MenuItem>
+                </Select>
+              </FormControl>
+            ) : null}
           </Grid>
 
           <Grid item xs={12} md={5} textAlign="right">
@@ -539,6 +521,7 @@ export default function PolicyManagement() {
         />
       </Paper>
 
+      {/* Create/Edit dialog */}
       <Dialog open={dialogOpen} onClose={closeDialog} fullWidth maxWidth="md">
         <DialogTitle>{editing ? "Edit Policy" : "Add New Policy"}</DialogTitle>
         <DialogContent dividers>

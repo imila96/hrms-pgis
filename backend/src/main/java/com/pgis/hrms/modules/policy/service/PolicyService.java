@@ -75,6 +75,11 @@ public class PolicyService {
         return repo.findById(id).map(this::toDetail).orElseThrow();
     }
 
+    @Transactional(readOnly = true)
+    public List<PolicyDetailDto> listDetails() {
+        return repo.findAll().stream().map(this::toDetail).toList();
+    }
+
     /* -------- mapping helpers -------- */
     private PolicyDto toDto(Policy p) {
         return new PolicyDto(p.getPolicyId(), p.getTitle(), p.getEffectiveDate(), p.getStatus());
