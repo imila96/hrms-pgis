@@ -27,6 +27,8 @@ import {
   InputLabel,
   Select,
   Stack,
+  Snackbar,
+  Alert,
 } from "@mui/material";
 import SearchIcon from "@mui/icons-material/Search";
 import FilterListIcon from "@mui/icons-material/FilterList";
@@ -64,6 +66,13 @@ export default function LeaveManagement() {
   const [selectedRequest, setSelectedRequest] = useState(null);
   const [detailOpen, setDetailOpen] = useState(false);
   const [decisionComment, setDecisionComment] = useState("");
+
+  // Snackbar state for notifications
+  const [snackbar, setSnackbar] = useState({
+    open: false,
+    message: "",
+    severity: "success", // 'success' | 'error' | 'warning' | 'info'
+  });
 
   // Apply leave dialog state (HR can apply leave on behalf of an employee)
   const [applyOpen, setApplyOpen] = useState(false);
@@ -181,6 +190,14 @@ export default function LeaveManagement() {
     setDetailOpen(false);
   }
 
+  // Close snackbar handler
+  const handleCloseSnackbar = (event, reason) => {
+    if (reason === "clickaway") {
+      return;
+    }
+    setSnackbar({ ...snackbar, open: false });
+  };
+
   // Apply leave handlers
   function closeApply() {
     setApplyOpen(false);
@@ -258,10 +275,20 @@ export default function LeaveManagement() {
         }
       }
 
-      alert(`Leave request ${approve ? "approved" : "rejected"} successfully!`);
+      // Show success notification
+      setSnackbar({
+        open: true,
+        message: `Leave request ${approve ? "approved" : "rejected"} successfully!`,
+        severity: "success",
+      });
     } catch (error) {
       console.error("Failed to update leave request:", error);
-      alert("Failed to update leave request. Please try again.");
+      // Show error notification
+      setSnackbar({
+        open: true,
+        message: "Failed to update leave request. Please try again.",
+        severity: "error",
+      });
     }
 
     closeDetail();
@@ -375,7 +402,12 @@ export default function LeaveManagement() {
         
       } catch (error) {
         console.error("Failed to fetch leave data:", error);
-        alert("Failed to load leave requests. Please try again.");
+        // Show error notification
+        setSnackbar({
+          open: true,
+          message: "Failed to load leave requests. Please try again.",
+          severity: "error",
+        });
       } finally {
         setLoading(false);
       }
@@ -820,9 +852,11 @@ export default function LeaveManagement() {
                       <Button
                         size="small"
                         onClick={() =>
-                          alert(
-                            `Manual adjust for ${b.employeeName} - implement a modal to modify balances and sync with backend.`
-                          )
+                          setSnackbar({
+                            open: true,
+                            message: `Manual adjust for ${b.employeeName} - implement a modal to modify balances and sync with backend.`,
+                            severity: "info",
+                          })
                         }
                       >
                         Adjust
@@ -1111,6 +1145,23 @@ export default function LeaveManagement() {
           )}
         </DialogActions>
       </Dialog>
+
+      {/* Snackbar for notifications */}
+      <Snackbar
+        open={snackbar.open}
+        autoHideDuration={6000}
+        onClose={handleCloseSnackbar}
+        anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
+      >
+        <Alert
+          onClose={handleCloseSnackbar}
+          severity={snackbar.severity}
+          sx={{ width: "100%" }}
+          variant="filled"
+        >
+          {snackbar.message}
+        </Alert>
+      </Snackbar>
     </Box>
   );
 }

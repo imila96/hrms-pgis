@@ -262,4 +262,12 @@ public class EmployeeServiceImpl implements EmployeeService {
                 })
                 .collect(java.util.stream.Collectors.toList());
     }
+    
+    @Override
+    public boolean emailExists(String email) {
+        if (email == null || email.isBlank()) {
+            return false;
+        }
+        return employeeRepository.findByEmail(email).isPresent();
+    }
 }

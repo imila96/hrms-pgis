@@ -22,4 +22,7 @@ public interface EmployeeService {
     void deleteEmployee(Integer id);
 
     EmployeeDto getMyProfile();
+    
+    // Check if email already exists
+    boolean emailExists(String email);
 }

@@ -35,7 +35,7 @@ public class LeaveController {
                 .orElseThrow(() -> new IllegalStateException("User not found"));
     }
 
-    /* ---- apply (employee) ---- */
+    /* ---- /leave submit ---- */
     @PostMapping
     @PreAuthorize("hasAnyRole('HR','ADMIN','DIRECTOR','EMPLOYEE')")
     public void apply(@AuthenticationPrincipal UserDetails ud,

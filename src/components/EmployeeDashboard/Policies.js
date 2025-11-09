@@ -7,7 +7,6 @@ import {
   Grid,
   Button,
   TextField,
-  Chip,
   Dialog,
   DialogTitle,
   DialogContent,
@@ -20,6 +19,8 @@ import {
   TableContainer,
   TablePagination,
   Stack,
+  Tabs,
+  Tab,
 } from "@mui/material";
 import DownloadIcon from "@mui/icons-material/Download";
 import FilterListIcon from "@mui/icons-material/FilterList";
@@ -37,17 +38,46 @@ const COLORS = {
 
 export default function Policies() {
   const [policies, setPolicies] = useState([]);
+  const [tab, setTab] = useState(0); // 0 Active, 1 Upcoming, 2 Archived, 3 All
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(5);
   const [selectedPolicy, setSelectedPolicy] = useState(null);
 
+  const computeDisplayStatus = (rawStatus, effectiveDate) => {
+    try {
+      const today = new Date();
+      if (rawStatus === "APPROVED") {
+        if (effectiveDate) {
+          const d = new Date(effectiveDate);
+          return d > today ? "Upcoming" : "Active";
+        }
+        return "Active";
+      }
+      if (rawStatus === "REJECTED") return "Archived";
+      return "Pending"; // PENDING or unknown
+    } catch (e) {
+      return "Pending";
+    }
+  };
+
   useEffect(() => {
     const fetchPolicies = async () => {
       try {
         const res = await axiosInstance.get("/policies");
-        if (Array.isArray(res.data) && res.data.length) {
-          setPolicies(res.data);
+        if (Array.isArray(res.data)) {
+          const mapped = res.data.map((d) => ({
+            id: d.id,
+            title: d.title,
+            description: d.description || "",
+            effectiveDate: d.effectiveDate || null,
+            rawStatus: d.status,
+            status: computeDisplayStatus(d.status, d.effectiveDate),
+            createdBy: d.createdBy || null,
+            decidedBy: d.decidedBy || null,
+            decidedAt: d.decidedAt || null,
+          }));
+          setPolicies(mapped);
         }
       } catch (e) {
         console.error("Failed to fetch policies:", e);
@@ -56,8 +86,22 @@ export default function Policies() {
     fetchPolicies();
   }, []);
 
+  // summary
+  const summary = useMemo(
+    () => ({
+      total: policies.length,
+      active: policies.filter((p) => p.status === "Active").length,
+      upcoming: policies.filter((p) => p.status === "Upcoming").length,
+      archived: policies.filter((p) => p.status === "Archived").length,
+    }),
+    [policies]
+  );
+
   const filtered = useMemo(() => {
     let list = policies.slice();
+    if (tab === 0) list = list.filter((p) => p.status === "Active");
+    if (tab === 1) list = list.filter((p) => p.status === "Upcoming");
+    if (tab === 2) list = list.filter((p) => p.status === "Archived");
     if (search.trim()) {
       const q = search.toLowerCase();
       list = list.filter(
@@ -70,7 +114,7 @@ export default function Policies() {
       (a, b) => new Date(b.effectiveDate || 0) - new Date(a.effectiveDate || 0)
     );
     return list;
-  }, [policies, search]);
+  }, [policies, tab, search]);
 
   const handleChangePage = (_, newPage) => setPage(newPage);
   const handleChangeRowsPerPage = (e) => {
@@ -78,9 +122,16 @@ export default function Policies() {
     setPage(0);
   };
 
-  const openView = (p) => {
-    setSelectedPolicy(p);
+  const openView = async (p) => {
+    try {
+      const res = await axiosInstance.get(`/policies/${p.id}`);
+      setSelectedPolicy(res.data);
+    } catch (e) {
+      console.error("Failed to fetch policy detail", e);
+      setSelectedPolicy(p);
+    }
   };
+  
   const closeView = () => {
     setSelectedPolicy(null);
   };
@@ -91,7 +142,6 @@ export default function Policies() {
       "Title",
       "Description",
       "EffectiveDate",
-      "Status",
       "CreatedBy",
     ];
     const csv = [header.join(",")]
@@ -102,7 +152,6 @@ export default function Policies() {
             `"${(r.title || "").replace(/"/g, '""')}"`,
             `"${(r.description || "").replace(/"/g, '""')}"`,
             r.effectiveDate || "",
-            r.status || "",
             r.createdBy || "",
           ].join(",")
         )
@@ -137,7 +186,83 @@ export default function Policies() {
           </Box>
         </Stack>
 
-        <Paper sx={{ p: 2, borderRadius: 2, mb: 2 }}>
+        <Box
+          sx={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            mb: 3,
+          }}
+        >
+          <Grid container spacing={2} sx={{ flex: 1 }}>
+            <Grid item xs={12} sm={6} md={3}>
+              <Paper sx={{ p: 2, borderRadius: 2 }}>
+                <Typography variant="body2" color="text.secondary">
+                  Total Policies
+                </Typography>
+                <Typography variant="h4" fontWeight={700} color={COLORS.primary}>
+                  {summary.total}
+                </Typography>
+                <Typography variant="caption">All time</Typography>
+              </Paper>
+            </Grid>
+
+            <Grid item xs={12} sm={6} md={3}>
+              <Paper sx={{ p: 2, borderRadius: 2 }}>
+                <Typography variant="body2" color="text.secondary">
+                  Active
+                </Typography>
+                <Typography variant="h4" fontWeight={700} color={COLORS.alt}>
+                  {summary.active}
+                </Typography>
+                <Typography variant="caption">Currently in effect</Typography>
+              </Paper>
+            </Grid>
+
+            <Grid item xs={12} sm={6} md={3}>
+              <Paper sx={{ p: 2, borderRadius: 2 }}>
+                <Typography variant="body2" color="text.secondary">
+                  Upcoming
+                </Typography>
+                <Typography variant="h4" fontWeight={700} color={COLORS.support}>
+                  {summary.upcoming}
+                </Typography>
+                <Typography variant="caption">Planned</Typography>
+              </Paper>
+            </Grid>
+
+            <Grid item xs={12} sm={6} md={3}>
+              <Paper sx={{ p: 2, borderRadius: 2 }}>
+                <Typography variant="body2" color="text.secondary">
+                  Archived
+                </Typography>
+                <Typography variant="h4" fontWeight={700} color={COLORS.accent}>
+                  {summary.archived}
+                </Typography>
+                <Typography variant="caption">Deprecated</Typography>
+              </Paper>
+            </Grid>
+          </Grid>
+        </Box>
+
+        <Paper sx={{ borderRadius: 2, mb: 2 }}>
+          <Tabs
+            value={tab}
+            onChange={(_, v) => {
+              setTab(v);
+              setPage(0);
+            }}
+            indicatorColor="primary"
+            textColor="primary"
+          >
+            <Tab label={`Active (${summary.active})`} />
+            <Tab label={`Upcoming (${summary.upcoming})`} />
+            <Tab label={`Archived (${summary.archived})`} />
+            <Tab label={`All (${summary.total})`} />
+          </Tabs>
+        </Paper>
+
+        <Paper sx={{ p: 2, borderRadius: 2 }}>
           <Grid container spacing={2} alignItems="center" sx={{ mb: 2 }}>
             <Grid item xs={12} md={4}>
               <TextField
@@ -159,6 +284,7 @@ export default function Policies() {
                 sx={{ mr: 1 }}
                 onClick={() => {
                   setSearch("");
+                  setTab(0);
                   setPage(0);
                 }}
               >
@@ -182,7 +308,6 @@ export default function Policies() {
                   <TableCell sx={{ fontWeight: 700 }}>Title</TableCell>
                   <TableCell>Description</TableCell>
                   <TableCell>Effective</TableCell>
-                  <TableCell>Status</TableCell>
                   <TableCell>Created By</TableCell>
                   <TableCell align="right">Actions</TableCell>
                 </TableRow>
@@ -202,13 +327,6 @@ export default function Policies() {
                         </Typography>
                       </TableCell>
                       <TableCell>{p.effectiveDate || "-"}</TableCell>
-                      <TableCell>
-                        <Chip
-                          label={p.status}
-                          size="small"
-                          sx={{ borderRadius: 1 }}
-                        />
-                      </TableCell>
                       <TableCell>{p.createdBy || "-"}</TableCell>
                       <TableCell align="right">
                         <Button
@@ -224,7 +342,7 @@ export default function Policies() {
 
                 {filtered.length === 0 && (
                   <TableRow>
-                    <TableCell colSpan={6} align="center">
+                    <TableCell colSpan={5} align="center">
                       No policies found.
                     </TableCell>
                   </TableRow>
@@ -271,16 +389,6 @@ export default function Policies() {
                       <Typography>
                         {selectedPolicy.effectiveDate || "-"}
                       </Typography>
-                    </Grid>
-                    <Grid item xs={6}>
-                      <Typography variant="subtitle2" color="text.secondary">
-                        Status
-                      </Typography>
-                      <Chip
-                        label={selectedPolicy.status}
-                        size="small"
-                        sx={{ borderRadius: 1 }}
-                      />
                     </Grid>
 
                     <Grid item xs={6}>

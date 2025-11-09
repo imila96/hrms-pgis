@@ -109,7 +109,6 @@ export default function Leave() {
     reason: "",
   });
   
-  // Calculate working days and holidays for the selected date range
   const leaveDaysInfo = useMemo(() => {
     if (!newLeave.startDate || !newLeave.endDate) {
       return null;
@@ -149,7 +148,7 @@ export default function Leave() {
       const completeBalances = leaveTypesList.map(type => {
         const existing = data?.find(b => b.type === type);
         if (existing) {
-          // Map 'taken' to 'used' for consistency with our component
+          
           return {
             type: existing.type,
             entitled: existing.entitled || 0,
@@ -157,7 +156,7 @@ export default function Leave() {
             remaining: existing.remaining || 0
           };
         }
-        // If type is missing from API response, create a default entry
+        
         return {
           type: type,
           entitled: 0,
@@ -170,7 +169,7 @@ export default function Leave() {
       setBalances(completeBalances);
     } catch (error) {
       console.error("Error loading leave balances:", error); // Debug log
-      // If API fails, show all types with zero values
+      
       setBalances([
         { type: "ANNUAL", entitled: 0, used: 0, remaining: 0 },
         { type: "SICK", entitled: 0, used: 0, remaining: 0 },
@@ -334,6 +333,13 @@ export default function Leave() {
     // Validation: End date must be after or equal to start date
     if (endDate < startDate) {
       return "End date cannot be before start date.";
+    }
+
+    // Validation: Start and end date must be in the same year
+    const startYear = new Date(startDate).getFullYear();
+    const endYear = new Date(endDate).getFullYear();
+    if (startYear !== endYear) {
+      return "Leave application cannot span across different years. Please apply separately for each year.";
     }
 
     // Calculate requested days excluding holidays

@@ -74,5 +74,12 @@ public class EmployeeController {
     public ResponseEntity<EmployeeDto> me() {
         return ResponseEntity.ok(employeeService.getMyProfile());
     }
+    
+    @GetMapping("/validate-email")
+    @PreAuthorize("hasAnyRole('HR','ADMIN')")
+    public ResponseEntity<Boolean> validateEmail(@RequestParam String email) {
+        boolean exists = employeeService.emailExists(email);
+        return ResponseEntity.ok(exists);
+    }
 
 }

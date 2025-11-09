@@ -1,9 +1,7 @@
 package com.pgis.hrms.modules.leave.service;
 
 import com.pgis.hrms.core.employee.entity.Employee;
-import com.pgis.hrms.core.employee.entity.Employment;
 import com.pgis.hrms.core.employee.repository.EmployeeRepository;
-import com.pgis.hrms.core.employee.repository.EmploymentRepository;
 import com.pgis.hrms.modules.leave.config.LeaveConfig;
 import com.pgis.hrms.modules.leave.dto.*;
 import com.pgis.hrms.modules.leave.model.*;
@@ -14,7 +12,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 import java.time.*;
-import java.time.temporal.ChronoUnit;
 import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -26,8 +23,6 @@ public class LeaveService {
     private final LeaveConfig leaveConfig;
 
     private final EmployeeRepository       empRepo;
-
-    private final EmploymentRepository emptRepo;
 
     private final LeaveApplicationRepository appRepo;
     private final LeaveBalanceRepository   balRepo;
@@ -48,18 +43,15 @@ public class LeaveService {
             throw new RuntimeException("Cannot apply for leave with past dates. Start date must be today or in the future.");
         }
         
-        // Validation: End date must be after or equal to start date
+        // Validation 2: End date must be after or equal to start date
         if (in.endDate().isBefore(in.startDate())) {
             throw new RuntimeException("End date cannot be before start date.");
         }
         
-        // Get employment record (optional - may not exist for newly created employees)
-        Optional<Employment> emptOpt = emptRepo.findFirstByEmployeeEmployeeIdOrderByDateOfJoiningAsc(empId);
-        
         int days = workingDays(in.startDate(), in.endDate());
         int year = in.startDate().getYear();
 
-        // Validation 2: Check for overlapping leaves (approved or pending)
+        // Validation 3: Check for overlapping leaves (approved or pending)
         List<LeaveApplication> existingLeaves = appRepo.findByEmployeeEmployeeIdAndStartDateBetween(
             empId, 
             in.startDate().minusDays(365), // Check within a reasonable range
@@ -82,21 +74,11 @@ public class LeaveService {
                 }
             }
         }
+        // VALIDATION 4: Check leave balance
+        // Ensure balance exists (creates if missing with default entitlement)
+        int entitlement = defaultEntitlement(in.type());
+        var bal = ensureBalanceRow(emp, in.type(), year, entitlement);
 
-        // probation accrual rule for ANNUAL leave (only if employment record exists)
-        if (in.type() == LeaveType.ANNUAL && emptOpt.isPresent() && isOnProbation(emptOpt.get())) {
-            int earned = probationDaysEarned(emptOpt.get().getDateOfJoining(), in.startDate());
-            ensureBalanceRow(emp, LeaveType.ANNUAL, year, earned);
-        }
-
-        // ensure balance exists (creates if missing with default entitlement)
-        var bal = ensureBalanceRow(emp, in.type(), year, defaultEntitlement(in.type()));
-
-        // medical slip rule
-        if (in.type()==LeaveType.SICK && days>2 && (medicalFile==null || medicalFile.isEmpty()))
-            throw new RuntimeException("Medical certificate required for sick leave > 2 days");
-
-        // Validation 3: Check if sufficient balance (this was already implemented)
         if (bal.remaining() < days) {
             throw new RuntimeException(
                 String.format("Insufficient leave balance. You have %d days remaining but requested %d days.", 
@@ -113,7 +95,6 @@ public class LeaveService {
         app.setReason(in.reason());
 
         if (medicalFile!=null && !medicalFile.isEmpty()) {
-            // TODO save to S3/minio and set URL
             app.setMedicalDocUrl("/mock/path/"+medicalFile.getOriginalFilename());
         }
         appRepo.save(app);
@@ -188,7 +169,6 @@ public class LeaveService {
                 .stream()
                 .collect(Collectors.toMap(LeaveBalance::getLeaveType, Function.identity()));
 
-        // seed missing & align entitlements from properties
         leaveConfig.getEntitlements().forEach((type, entitled) -> {
             LeaveBalance b = existing.get(type);
             if (b == null) {
@@ -216,16 +196,26 @@ public class LeaveService {
     // ----- helpers -----
 
     private LeaveBalance ensureBalanceRow(Employee emp, LeaveType type, int year, int entitlement) {
-        return balRepo.findByEmployeeEmployeeIdAndLeaveTypeAndYear(emp.getEmployeeId(), type, year)
-                .orElseGet(() -> {
-                    LeaveBalance nb = new LeaveBalance();
-                    nb.setEmployee(emp);
-                    nb.setLeaveType(type);
-                    nb.setYear(year);
-                    nb.setEntitled(entitlement);
-                    nb.setTaken(0);
-                    return balRepo.save(nb);
-                });
+        Optional<LeaveBalance> existing = balRepo.findByEmployeeEmployeeIdAndLeaveTypeAndYear(emp.getEmployeeId(), type, year);
+        
+        if (existing.isPresent()) {
+            LeaveBalance bal = existing.get();
+            // Update entitlement if it has changed (e.g., probation updates)
+            if (bal.getEntitled() != entitlement) {
+                bal.setEntitled(entitlement);
+                return balRepo.save(bal);
+            }
+            return bal;
+        } else {
+            // Create new balance record
+            LeaveBalance nb = new LeaveBalance();
+            nb.setEmployee(emp);
+            nb.setLeaveType(type);
+            nb.setYear(year);
+            nb.setEntitled(entitlement);
+            nb.setTaken(0);
+            return balRepo.save(nb);
+        }
     }
 
     private int defaultEntitlement(LeaveType t) {
@@ -236,22 +226,6 @@ public class LeaveService {
         };
     }
 
-    private boolean isOnProbation(Employment employment) {
-        if (employment.getDateOfJoining() == null) {
-            return false; // If no hire date, assume not on probation
-        }
-        return Period.between(employment.getDateOfJoining(), LocalDate.now()).getMonths() < 6; // 6‑month probation
-    }
-
-    private int probationDaysEarned(LocalDate hireDate, LocalDate asOf) {
-        long months = ChronoUnit.MONTHS.between(hireDate.withDayOfMonth(1), asOf.withDayOfMonth(1));
-        return (int) (months * 0.5);  // ½ day per month
-    }
-
-    /**
-     * Calculate working days excluding Sri Lankan public holidays and Poya days
-     * Note: Saturdays and Sundays are working days in this organization
-     */
     private int workingDays(LocalDate from, LocalDate to) {
         return SriLankanHolidays.calculateWorkingDays(from, to);
     }

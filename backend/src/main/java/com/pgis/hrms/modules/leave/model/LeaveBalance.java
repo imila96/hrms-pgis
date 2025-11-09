@@ -21,13 +21,13 @@ public class LeaveBalance {
     private LeaveType leaveType;
 
     @Column(nullable = false)
-    private int year;            // calendar year
+    private int year;
 
     @Column(nullable = false)
-    private int entitled;        // total possible days
+    private int entitled;
 
     @Column(nullable = false)
-    private int taken;           // approved + not cancelled
+    private int taken;
 
     public int remaining() { return entitled - taken; }
 }
