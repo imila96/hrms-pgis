@@ -408,12 +408,7 @@ function CreateEditProfile() {
     return Object.keys(errs).length === 0;
   };
 
-<<<<<<< HEAD
   const handleNext = async () => {
-=======
-  const handleNext = () => {
-    // Proceed to next step only if current step validates successfully.
->>>>>>> e1e389b8e3a9e6be4c59005883f4c87b9baceb55
     if (!validateStep(activeStep)) return;
     
     // Additional email validation when moving from Personal step (step 0) during employee creation
