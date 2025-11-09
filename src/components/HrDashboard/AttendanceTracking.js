@@ -92,8 +92,7 @@ export default function AttendanceTracking() {
     }
     return out;
   }, []);
-  // currently selected month for the chart (YYYY-MM). Default to the
-  // most recent month (current month).
+  // selected month for the main chart
   const [chartMonth, setChartMonth] = useState(
     months[months.length - 1] || dayjs().format("YYYY-MM")
   );
@@ -101,18 +100,16 @@ export default function AttendanceTracking() {
   // Employee datasets and loading flags
   const [fetchedEmployees, setFetchedEmployees] = useState([]); // full employee list
   const [employeeAttendanceRecords, setEmployeeAttendanceRecords] = useState(
-    [] // per-employee fetched attendance rows
+    []
   );
-  const [empLoading, setEmpLoading] = useState(false); // loading indicator for employee-specific fetches
-  const [attendanceState, setAttendanceState] = useState(null); // current user's punch state
+  const [empLoading, setEmpLoading] = useState(false);
+  const [attendanceState, setAttendanceState] = useState(null);
 
-  // Aggregated chart data (array of daily aggregates for selected month)
   const [monthlyData, setMonthlyData] = useState([]);
 
   // --- Daily / Employee attendance records section state ---
   const [recordsTab, setRecordsTab] = useState(0);
-  // --- Filters, paging and UI state for the Daily / Employee records table ---
-  // department options derived from backend data (populated later)
+
   const statuses = ["Present", "Absent", "On Leave", "Late"]; // allowed status labels
 
   const [records, setRecords] = useState([]);
@@ -181,14 +178,9 @@ export default function AttendanceTracking() {
     })();
   };
 
-  // Helper to update a single field on the selected record while editing
-
-  // Add record handlers removed (frontend now uses punch buttons and backend endpoints)
-
   const handleChangeSelected = (field, value) =>
     setSelectedRecord((s) => ({ ...s, [field]: value }));
 
-  // UI helper: map status label to a colour used for Chips/labels
   const getStatusColor = (status) => {
     switch (status) {
       case "Present":
@@ -329,7 +321,6 @@ export default function AttendanceTracking() {
     fetchMyState();
     // fetch all records for the table on initial load
     fetchOverviewMonth("All");
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const fetchTodayCounts = async () => {
@@ -343,7 +334,6 @@ export default function AttendanceTracking() {
 
   useEffect(() => {
     fetchTodayCounts();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // fetch chart data for a specific month (keeps table data separate)
@@ -385,7 +375,6 @@ export default function AttendanceTracking() {
   // fetch chart data when chartMonth changes
   useEffect(() => {
     if (chartMonth) fetchMonthlyChart(chartMonth);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [chartMonth]);
 
   const fetchOverviewMonth = async (month) => {
@@ -399,7 +388,6 @@ export default function AttendanceTracking() {
         res = await axiosInstance.get("/attendance/overview");
       }
       const data = res.data || [];
-      // map backend maps to UI rows: employeeId, name, workDate, firstIn, lastOut, breakMinutes, paidMinutes
       const mapped = data.map((d, idx) => ({
         id: idx,
         employeeId: d.employeeId,
@@ -429,8 +417,6 @@ export default function AttendanceTracking() {
       console.error("Failed to fetch employees", err);
     }
   };
-
-  // monthlyData is populated from server via fetchMonthlyChart(chartMonth)
 
   // fetch attendance state for current user (canCheckIn / canCheckOut etc)
   const fetchMyState = async () => {
